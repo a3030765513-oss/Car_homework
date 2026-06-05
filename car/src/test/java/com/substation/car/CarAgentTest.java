@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class CarAgentTest {
 
     private static final String REDIS_HOST = "localhost";
-    private static final int REDIS_PORT = 6379;
+    private static final int REDIS_PORT = 6380;
     private static final String RABBIT_HOST = "localhost";
     private static final int RABBIT_PORT = 5672;
     private static final int MAP_SIZE = 30;
