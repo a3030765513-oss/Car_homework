@@ -19,8 +19,8 @@ import java.util.concurrent.TimeoutException;
  *
  * <p>用法：
  * <pre>{@code
- * java -jar car.jar Car001          # 默认 Redis 端口 6380
- * java -jar car.jar Car002 6379     # 指定 Redis 端口
+ * java -jar car.jar Car001          # 默认 Redis 端口 6379
+ * java -jar car.jar Car002 6380     # 指定 Redis 端口
  * }</pre>
  *
  * <p>动态添加小车：任意时刻启动新的 CarMain 进程（如 Car006），
@@ -31,7 +31,7 @@ public class CarMain {
     private static final Logger log = LoggerFactory.getLogger(CarMain.class);
 
     private static final String DEFAULT_REDIS_HOST = "localhost";
-    private static final int DEFAULT_REDIS_PORT = 6380;
+    private static final int DEFAULT_REDIS_PORT = 6379;
     private static final String DEFAULT_MQ_HOST = "localhost";
     private static final int DEFAULT_MQ_PORT = 5672;
     private static final int DEFAULT_MAP_SIZE = 30;
