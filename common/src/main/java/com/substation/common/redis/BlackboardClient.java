@@ -348,6 +348,10 @@ public class BlackboardClient implements AutoCloseable {
         }
     }
 
+    /**
+     * 暴露内部连接池，供需要直接使用 Jedis 的场景（如分布式锁、History 写入）。
+     * 返回的连接池由 BlackboardClient.close() 统一管理生命周期，调用方不要自行关闭。
+     */
     public JedisPool getJedisPool() {
         return pool;
     }

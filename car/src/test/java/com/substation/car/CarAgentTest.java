@@ -4,6 +4,7 @@ import com.substation.common.model.CarStatus;
 import com.substation.common.model.Point;
 import com.substation.common.mq.MessageBuilder;
 import com.substation.common.mq.MessageBus;
+import com.substation.common.mq.MessageTypes;
 import com.substation.common.redis.BlackboardClient;
 
 import org.junit.jupiter.api.AfterEach;
@@ -64,7 +65,7 @@ class CarAgentTest {
         bb.setCarStatus(TEST_CAR, CarStatus.READY);
         bb.pushRoute(TEST_CAR, java.util.List.of(new Point(5, 6), new Point(5, 7)));
 
-        String msg = MessageBuilder.build("TICK_MOVE", 1, TEST_CAR);
+        String msg = MessageBuilder.build(MessageTypes.TICK_MOVE, 1, TEST_CAR);
         agent.handleMessage(msg);
 
         assertEquals(new Point(5, 6), bb.getCarPosition(TEST_CAR).orElseThrow());
@@ -78,7 +79,7 @@ class CarAgentTest {
         bb.setCarStatus(TEST_CAR, CarStatus.READY);
         bb.pushRoute(TEST_CAR, java.util.List.of(new Point(0, 1)));
 
-        String msg = MessageBuilder.build("TICK_MOVE", 2, TEST_CAR);
+        String msg = MessageBuilder.build(MessageTypes.TICK_MOVE, 2, TEST_CAR);
         agent.handleMessage(msg);
 
         assertEquals(CarStatus.IDLE, bb.getCarStatus(TEST_CAR).orElseThrow());
@@ -91,7 +92,7 @@ class CarAgentTest {
     void handleBlockedTimeout_whenIdle() {
         bb.setCarStatus(TEST_CAR, CarStatus.IDLE);
 
-        String msg = MessageBuilder.build("BLOCKED_TIMEOUT", 5, TEST_CAR);
+        String msg = MessageBuilder.build(MessageTypes.BLOCKED_TIMEOUT, 5, TEST_CAR);
         agent.handleMessage(msg);
 
         assertEquals(CarStatus.IDLE, bb.getCarStatus(TEST_CAR).orElseThrow());
@@ -101,7 +102,7 @@ class CarAgentTest {
     void handleBlockedTimeout_whenBlocked() {
         bb.setCarStatus(TEST_CAR, CarStatus.BLOCKED);
 
-        String msg = MessageBuilder.build("BLOCKED_TIMEOUT", 5, TEST_CAR);
+        String msg = MessageBuilder.build(MessageTypes.BLOCKED_TIMEOUT, 5, TEST_CAR);
         agent.handleMessage(msg);
 
         // CarAgent 不应修改状态

@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * MoveExecutor 单元测试。
  *
- * <p>运行前需要本地 Redis (6380) 和 RabbitMQ (5672) 已启动。
+ * <p>运行前需要本地 Redis (6379) 和 RabbitMQ (5672) 已启动。
  */
 class MoveExecutorTest {
 

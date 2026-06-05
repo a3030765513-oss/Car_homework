@@ -34,7 +34,7 @@ public class CarMain {
     private static final int DEFAULT_REDIS_PORT = 6379;
     private static final String DEFAULT_MQ_HOST = "localhost";
     private static final int DEFAULT_MQ_PORT = 5672;
-    private static final int DEFAULT_MAP_SIZE = 30;
+    private static final int FALLBACK_MAP_SIZE = 30;
     private static final int MAX_INIT_ATTEMPTS = 1000;
 
     public static void main(String[] args) throws IOException, TimeoutException {
@@ -44,27 +44,36 @@ public class CarMain {
         log.info("╔══════════════════════════════════════╗");
         log.info("║  {} 模块启动中...", padRight(carId, 24));
         log.info("║  Redis: {}:{}", padRight(DEFAULT_REDIS_HOST + ":" + redisPort, 26));
-        log.info("║  RabbitMQ: {}:{}", padRight(DEFAULT_MQ_HOST + ":" + DEFAULT_MQ_PORT, 22));
+        log.info("║  RabbitMQ: {}:{}",
+                padRight(DEFAULT_MQ_HOST + ":" + DEFAULT_MQ_PORT, 22));
         log.info("╚══════════════════════════════════════╝");
 
-        // 创建连接池
-        JedisPool jedisPool = new JedisPool(DEFAULT_REDIS_HOST, redisPort);
+        // 创建 BlackboardClient（内部自管理连接池）
         BlackboardClient bb = new BlackboardClient(
-                DEFAULT_REDIS_HOST, redisPort, DEFAULT_MAP_SIZE, DEFAULT_MAP_SIZE);
+                DEFAULT_REDIS_HOST, redisPort, FALLBACK_MAP_SIZE, FALLBACK_MAP_SIZE);
+
+        // 读取黑板中已有的地图配置，优先使用（TaskConfigurator 已初始化时有效）
+        int mapW = bb.getMapWidth();
+        int mapH = bb.getMapHeight();
+        if (mapW == 0) {
+            mapW = FALLBACK_MAP_SIZE;
+        }
+        if (mapH == 0) {
+            mapH = FALLBACK_MAP_SIZE;
+        }
+
+        // 自注册（需先知道地图尺寸，避免越界）
+        selfRegister(bb, carId, mapW, mapH);
+
+        // 复用 BlackboardClient 内部的 JedisPool，避免重复创建连接池
+        JedisPool sharedPool = bb.getJedisPool();
 
         MessageBus mb = new MessageBus(DEFAULT_MQ_HOST, DEFAULT_MQ_PORT, "guest", "guest");
         mb.connect();
         mb.declareCarQueue(carId);
 
-        // 自注册（若 TaskConfigurator 未初始化本车）
-        selfRegister(bb, carId);
-
-        // 读取地图尺寸（用黑板中的配置，若不存在则用默认值）
-        int mapW = bb.getMapWidth();
-        int mapH = bb.getMapHeight();
-
         // 组装核心组件
-        MoveExecutor moveExecutor = new MoveExecutor(carId, bb, mb, jedisPool, mapW, mapH);
+        MoveExecutor moveExecutor = new MoveExecutor(carId, bb, mb, sharedPool, mapW, mapH);
         CarAgent agent = new CarAgent(carId, bb, moveExecutor);
 
         // 订阅消息队列
@@ -75,7 +84,6 @@ public class CarMain {
             log.info("[{}] 收到关闭信号，清理资源...", carId);
             mb.close();
             bb.close();
-            jedisPool.close();
         }));
 
         log.info("[{}] 启动完成，等待 TICK_MOVE 消息 (Ctrl+C 退出)", carId);
@@ -98,7 +106,6 @@ public class CarMain {
     private static String parseCarId(String[] args) {
         if (args.length >= 1 && !args[0].isBlank()) {
             String id = args[0].trim();
-            // 自动补全 Car 前缀
             if (!id.startsWith("Car")) {
                 id = "Car" + id;
             }
@@ -124,7 +131,8 @@ public class CarMain {
      * 若黑板中尚无本车状态，则随机选择空地完成初始化。
      * 若已有状态（说明 TaskConfigurator 已初始化），则跳过。
      */
-    private static void selfRegister(BlackboardClient bb, String carId) {
+    private static void selfRegister(BlackboardClient bb, String carId,
+                                      int mapWidth, int mapHeight) {
         if (bb.getCarStatus(carId).isPresent()) {
             CarStatus s = bb.getCarStatus(carId).orElseThrow();
             log.info("[{}] 已在黑板注册，当前状态: {}", carId, s.chineseName());
@@ -134,28 +142,35 @@ public class CarMain {
         log.info("[{}] 未注册，正在自初始化...", carId);
         Random rng = new Random();
         for (int attempt = 0; attempt < MAX_INIT_ATTEMPTS; attempt++) {
-            int x = rng.nextInt(DEFAULT_MAP_SIZE);
-            int y = rng.nextInt(DEFAULT_MAP_SIZE);
+            int x = rng.nextInt(mapWidth);
+            int y = rng.nextInt(mapHeight);
             if (!bb.isBlocked(y, x)) {
-                bb.setCarPosition(carId, new Point(x, y));
+                Point pos = new Point(x, y);
+                bb.setCarPosition(carId, pos);
                 bb.setCarStatus(carId, CarStatus.IDLE);
                 bb.setCarSteps(carId, 0);
                 bb.setBlock(y, x, true);
-                illuminateInitialArea(bb, new Point(x, y));
+                illuminateAndHeat(bb, pos, mapWidth, mapHeight);
                 log.info("[{}] 自初始化完成，初始位置: ({},{})", carId, x, y);
                 return;
             }
         }
-        log.error("[{}] 无法找到初始位置（尝试 {} 次均失败）！", carId, MAX_INIT_ATTEMPTS);
+        log.error("[{}] 无法找到初始位置（{}×{} 地图尝试 {} 次均失败）！",
+                carId, mapWidth, mapHeight, MAX_INIT_ATTEMPTS);
     }
 
-    private static void illuminateInitialArea(BlackboardClient bb, Point center) {
+    /**
+     * 点亮初始位置周围 3×3 区域，与 MoveExecutor 行为一致（含热力图）。
+     */
+    private static void illuminateAndHeat(BlackboardClient bb, Point center,
+                                           int mapWidth, int mapHeight) {
         for (int dr = -1; dr <= 1; dr++) {
             for (int dc = -1; dc <= 1; dc++) {
                 int r = center.y() + dr;
                 int c = center.x() + dc;
-                if (r >= 0 && r < DEFAULT_MAP_SIZE && c >= 0 && c < DEFAULT_MAP_SIZE) {
+                if (r >= 0 && r < mapHeight && c >= 0 && c < mapWidth) {
                     bb.setMapViewBit(r, c, true);
+                    bb.incrementMapHeat(r, c);
                 }
             }
         }
