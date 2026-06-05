@@ -337,6 +337,14 @@ public class BlackboardClient implements AutoCloseable {
         }
     }
 
+    public Set<String> discoverCarIds() {
+        try (Jedis jedis = pool.getResource()) {
+            return jedis.keys("Car*:Status").stream()
+                .map(key -> key.replace(":Status", ""))
+                .collect(java.util.stream.Collectors.toSet());
+        }
+    }
+
     @Override
     public void close() {
         pool.close();
