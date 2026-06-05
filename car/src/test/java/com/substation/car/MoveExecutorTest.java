@@ -21,12 +21,12 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * MoveExecutor 单元测试。
  *
- * <p>运行前需要本地 Redis (6380) 和 RabbitMQ (5672) 已启动。
+ * <p>运行前需要本地 Redis (6379) 和 RabbitMQ (5672) 已启动。
  */
 class MoveExecutorTest {
 
     private static final String REDIS_HOST = "localhost";
-    private static final int REDIS_PORT = 6380;
+    private static final int REDIS_PORT = 6379;
     private static final String RABBIT_HOST = "localhost";
     private static final int RABBIT_PORT = 5672;
     private static final int MAP_SIZE = 30;
