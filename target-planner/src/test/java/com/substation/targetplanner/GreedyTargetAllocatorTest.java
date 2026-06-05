@@ -10,7 +10,9 @@ import org.junit.jupiter.api.Test;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -23,15 +25,19 @@ class GreedyTargetAllocatorTest {
     private BlackboardClient bb;
     private JedisPool pool;
     private GreedyTargetAllocator allocator;
+    private Set<Point> allocated;
 
     @BeforeEach
     void setUp() {
         pool = new JedisPool(TEST_HOST, TEST_PORT);
         bb = new BlackboardClient(TEST_HOST, TEST_PORT, MAP_SIZE, MAP_SIZE);
         allocator = new GreedyTargetAllocator();
+        allocated = new HashSet<>();
         try (Jedis jedis = pool.getResource()) {
             jedis.flushDB();
         }
+        bb.initTaskConfig(java.util.Map.of("mapWidth", String.valueOf(MAP_SIZE),
+            "mapHeight", String.valueOf(MAP_SIZE)));
     }
 
     @AfterEach
@@ -47,20 +53,18 @@ class GreedyTargetAllocatorTest {
 
     @Test
     void allocateReturnsTargetWhenUnexploredCellsExist() {
-        // 地图全未探索、无障碍 → 应该分配目标
         Point carPos = new Point(15, 15);
-        Optional<Point> target = allocator.allocate("Car001", carPos, bb, MAP_SIZE, MAP_SIZE);
+        Optional<Point> target = allocator.allocate(carPos, bb, allocated);
 
         assertTrue(target.isPresent(), "有空闲格子时应该分配目标");
     }
 
     @Test
     void allocatedTargetIsNotBlocked() {
-        // 在 (10,10) 放一个障碍物
         bb.setBlock(10, 10, true);
 
         Point carPos = new Point(15, 15);
-        Optional<Point> target = allocator.allocate("Car001", carPos, bb, MAP_SIZE, MAP_SIZE);
+        Optional<Point> target = allocator.allocate(carPos, bb, allocated);
 
         assertTrue(target.isPresent());
         Point t = target.get();
@@ -69,11 +73,10 @@ class GreedyTargetAllocatorTest {
 
     @Test
     void allocatedTargetIsNotExplored() {
-        // 标记大部分区域已探索，只留一个格子
         markAllExcept(bb, new Point(20, 20));
 
         Point carPos = new Point(1, 1);
-        Optional<Point> target = allocator.allocate("Car001", carPos, bb, MAP_SIZE, MAP_SIZE);
+        Optional<Point> target = allocator.allocate(carPos, bb, allocated);
 
         assertTrue(target.isPresent());
         assertEquals(new Point(20, 20), target.get(), "应分配唯一未探索的格子");
@@ -84,21 +87,20 @@ class GreedyTargetAllocatorTest {
         markAllExplored(bb, MAP_SIZE, MAP_SIZE);
 
         Point carPos = new Point(15, 15);
-        Optional<Point> target = allocator.allocate("Car001", carPos, bb, MAP_SIZE, MAP_SIZE);
+        Optional<Point> target = allocator.allocate(carPos, bb, allocated);
 
         assertTrue(target.isEmpty(), "全部探索完时应无目标");
     }
 
     @Test
     void returnsEmptyWhenAllCellsBlockedOrExplored() {
-        // 把所有格子都标为障碍物
         for (int r = 0; r < MAP_SIZE; r++) {
             for (int c = 0; c < MAP_SIZE; c++) {
                 bb.setBlock(r, c, true);
             }
         }
         Point carPos = new Point(15, 15);
-        Optional<Point> target = allocator.allocate("Car001", carPos, bb, MAP_SIZE, MAP_SIZE);
+        Optional<Point> target = allocator.allocate(carPos, bb, allocated);
 
         assertTrue(target.isEmpty());
     }
@@ -107,9 +109,8 @@ class GreedyTargetAllocatorTest {
 
     @Test
     void distanceRuleAssignsFarEnoughTarget() {
-        // 车在 (15,15)，应分配距离 ≥ 10 的格子
         Point carPos = new Point(15, 15);
-        Optional<Point> target = allocator.allocate("Car001", carPos, bb, MAP_SIZE, MAP_SIZE);
+        Optional<Point> target = allocator.allocate(carPos, bb, allocated);
 
         assertTrue(target.isPresent());
         int dist = carPos.manhattanDistance(target.get());
@@ -119,12 +120,10 @@ class GreedyTargetAllocatorTest {
 
     @Test
     void lastCellNoDistanceLimit() {
-        // 只留 (16, 15) 一个未探索格子（距离=1，< 10）
-        bb.setMapViewBit(16, 15, false); // 确保这个先不被标记
         markAllExcept(bb, new Point(16, 15));
 
         Point carPos = new Point(15, 15);
-        Optional<Point> target = allocator.allocate("Car001", carPos, bb, MAP_SIZE, MAP_SIZE);
+        Optional<Point> target = allocator.allocate(carPos, bb, allocated);
 
         assertTrue(target.isPresent());
         assertEquals(new Point(16, 15), target.get(),
@@ -133,16 +132,28 @@ class GreedyTargetAllocatorTest {
 
     @Test
     void noTargetWhenAllCandidatesTooClose() {
-        // 只留距离 < 10 的区域（但 > 1 个格子），应暂不分配
-        // 保留 (16,15) 和 (15,16) — 距离分别为 1 和 1，都 < 10
         int[][] reserved = {{16, 15}, {15, 16}};
         markAllExceptMultiple(bb, reserved);
 
         Point carPos = new Point(15, 15);
-        Optional<Point> target = allocator.allocate("Car001", carPos, bb, MAP_SIZE, MAP_SIZE);
+        Optional<Point> target = allocator.allocate(carPos, bb, allocated);
 
         assertTrue(target.isEmpty(),
             "多个候选但都距离<10，应暂不分配");
+    }
+
+    @Test
+    void alreadyAllocatedTargetsAreExcluded() {
+        // 预先占用 (16,15)，验证新目标不等于这些预占的
+        Set<Point> preAllocated = new HashSet<>();
+        preAllocated.add(new Point(16, 15));
+
+        Point carPos = new Point(15, 15);
+        Optional<Point> target = allocator.allocate(carPos, bb, preAllocated);
+
+        assertTrue(target.isPresent());
+        assertNotEquals(new Point(16, 15), target.get(),
+            "不应分配到已被占用的 (16,15)");
     }
 
     // ==================== 辅助方法 ====================

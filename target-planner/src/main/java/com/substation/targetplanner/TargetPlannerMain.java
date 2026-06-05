@@ -12,20 +12,29 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeoutException;
 
 public class TargetPlannerMain {
 
     private static final Logger log = LoggerFactory.getLogger(TargetPlannerMain.class);
     private static final String REDIS_HOST = "localhost";
-    private static final int REDIS_PORT = 6379;
+    private static final int REDIS_PORT = Integer.parseInt(
+        System.getenv().getOrDefault("REDIS_PORT", "6379"));
     private static final String MQ_HOST = "localhost";
-    private static final int MQ_PORT = 5672;
+    private static final int MQ_PORT = Integer.parseInt(
+        System.getenv().getOrDefault("MQ_PORT", "5672"));
     private static final String MQ_USER = "guest";
     private static final String MQ_PASS = "guest";
     private static final int INITIAL_MAP_SIZE = 30;
+
+    /** 同一 tick 内已分配的目标集合，防止多车被分到同一格子 */
+    private static final Set<Point> allocatedTargets = new HashSet<>();
+    /** 当前处理中的 tick 号，用于在新 tick 开始时清空已分配集合 */
+    private static int currentTick = -1;
 
     public static void main(String[] args) throws IOException, TimeoutException {
         BlackboardClient bb = new BlackboardClient(REDIS_HOST, REDIS_PORT,
@@ -79,6 +88,11 @@ public class TargetPlannerMain {
                                             GreedyTargetAllocator allocator,
                                             MessageBus messageBus,
                                             String carId, int tick) throws IOException {
+        if (tick != currentTick) {
+            allocatedTargets.clear();
+            currentTick = tick;
+        }
+
         Optional<Point> posOpt = bb.getCarPosition(carId);
         if (posOpt.isEmpty()) {
             log.warn("[TargetPlanner] carId={} 位置不存在，跳过分配", carId);
@@ -86,11 +100,8 @@ public class TargetPlannerMain {
             return;
         }
 
-        int mapWidth = bb.getMapWidth();
-        int mapHeight = bb.getMapHeight();
         Point currentPos = posOpt.get();
-
-        Optional<Point> target = allocator.allocate(carId, currentPos, bb, mapWidth, mapHeight);
+        Optional<Point> target = allocator.allocate(currentPos, bb, allocatedTargets);
 
         if (target.isPresent()) {
             bb.setCarTarget(carId, target.get());

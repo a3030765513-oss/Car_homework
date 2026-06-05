@@ -148,6 +148,7 @@ final class TaskInitializer {
         bb.setCarPosition(carId, position);
         bb.setCarStatus(carId, CarStatus.IDLE);
         bb.setCarSteps(carId, 0);
+        bb.setBlock(position.y(), position.x(), true);
     }
 
     private void lightUpArea(BlackboardClient bb, Point center, int mapWidth, int mapHeight) {

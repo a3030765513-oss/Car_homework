@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 final class GreedyTargetAllocator {
 
@@ -15,17 +16,26 @@ final class GreedyTargetAllocator {
     /**
      * 为一辆车分配探索目标。
      *
+     * @param currentPosition  车辆当前位置
+     * @param bb               BlackboardClient
+     * @param alreadyAllocated  本轮节拍已分配的目标集合（防止多车抢同一格子）
      * @return 目标位置，无可用目标时返回 Optional.empty()
      */
-    Optional<Point> allocate(String carId, Point currentPosition, BlackboardClient bb,
-                             int mapWidth, int mapHeight) {
+    Optional<Point> allocate(Point currentPosition, BlackboardClient bb,
+                             Set<Point> alreadyAllocated) {
+        int mapWidth = bb.getMapWidth();
+        int mapHeight = bb.getMapHeight();
+
         List<Point> candidates = collectUnexploredCells(bb, mapWidth, mapHeight);
+        candidates.removeAll(alreadyAllocated);
 
         if (candidates.isEmpty()) {
             return Optional.empty();
         }
 
-        return selectByDistanceRule(currentPosition, candidates);
+        Optional<Point> chosen = selectByDistanceRule(currentPosition, candidates);
+        chosen.ifPresent(alreadyAllocated::add);
+        return chosen;
     }
 
     // ==================== 候选收集 ====================
@@ -47,12 +57,10 @@ final class GreedyTargetAllocator {
     private Optional<Point> selectByDistanceRule(Point currentPos, List<Point> candidates) {
         candidates.sort(Comparator.comparingInt(p -> p.manhattanDistance(currentPos)));
 
-        // 最后 1 个格子：无距离限制
         if (candidates.size() == 1) {
             return Optional.of(candidates.get(0));
         }
 
-        // 剩余多个：只选距离 ≥ 10 的最近格子
         return candidates.stream()
             .filter(p -> p.manhattanDistance(currentPos) >= MIN_TARGET_DISTANCE)
             .findFirst();

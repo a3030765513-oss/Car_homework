@@ -21,9 +21,11 @@ public class NavigatorMain {
 
     private static final Logger log = LoggerFactory.getLogger(NavigatorMain.class);
     private static final String REDIS_HOST = "localhost";
-    private static final int REDIS_PORT = 6379;
+    private static final int REDIS_PORT = Integer.parseInt(
+        System.getenv().getOrDefault("REDIS_PORT", "6379"));
     private static final String MQ_HOST = "localhost";
-    private static final int MQ_PORT = 5672;
+    private static final int MQ_PORT = Integer.parseInt(
+        System.getenv().getOrDefault("MQ_PORT", "5672"));
     private static final String MQ_USER = "guest";
     private static final String MQ_PASS = "guest";
     private static final int INITIAL_MAP_SIZE = 30;

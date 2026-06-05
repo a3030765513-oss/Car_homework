@@ -120,22 +120,22 @@ class TaskInitializerTest {
 
         int blockedCount = countBlockedCells();
         int interiorCells = (MAP_SIZE - 2) * (MAP_SIZE - 2); // 28*28 = 784
-        int expected = (int) (interiorCells * DEFAULT_OBSTACLE_RATIO); // ≈ 117
+        int expected = (int) (interiorCells * DEFAULT_OBSTACLE_RATIO) + DEFAULT_CAR_COUNT; // ≈ 117+5
 
         // 允许 ±20% 偏差（随机性）
         double tolerance = expected * 0.20;
-        assertEquals(expected, blockedCount, tolerance, "障碍物数量偏差过大");
+        assertEquals(expected, blockedCount, tolerance, "障碍物+车位数量偏差过大");
     }
 
     @Test
-    void initialPositionsNotCoveredByObstacles() {
+    void carPositionsMarkedInMapBlock() {
         initializer.initialize(bb, Map.of());
 
         for (int i = 1; i <= DEFAULT_CAR_COUNT; i++) {
             String carId = String.format("Car%03d", i);
             Point pos = bb.getCarPosition(carId).orElseThrow();
-            assertFalse(bb.isBlocked(pos.y(), pos.x()),
-                carId + " 初始位置(" + pos.x() + "," + pos.y() + ") 被障碍物覆盖");
+            assertTrue(bb.isBlocked(pos.y(), pos.x()),
+                carId + " 初始位置(" + pos.x() + "," + pos.y() + ") 应写入 mapBlock 避免其他车经过");
         }
     }
 
@@ -201,10 +201,12 @@ class TaskInitializerTest {
     }
 
     @Test
-    void zeroObstacleRatioPlacesNoObstacles() {
+    void zeroObstacleRatioPlacesNoExtraObstacles() {
         initializer.initialize(bb, Map.of("obstacleRatio", 0.0));
 
-        assertEquals(0, countBlockedCells(), "比例 0 时不应有障碍物");
+        // 车位本身占 5 个 mapBlock，不应有额外的随机障碍物
+        assertEquals(DEFAULT_CAR_COUNT, countBlockedCells(),
+            "比例 0 时只有车位写入 mapBlock(5个)，不应有额外障碍物");
     }
 
     // ==================== 辅助方法 ====================

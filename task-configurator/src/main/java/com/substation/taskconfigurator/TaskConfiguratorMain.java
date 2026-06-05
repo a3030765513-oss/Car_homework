@@ -14,16 +14,20 @@ import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeoutException;
 
 public class TaskConfiguratorMain {
 
     private static final Logger log = LoggerFactory.getLogger(TaskConfiguratorMain.class);
     private static final String REDIS_HOST = "localhost";
-    private static final int REDIS_PORT = 6379;
+    private static final int REDIS_PORT = Integer.parseInt(
+        System.getenv().getOrDefault("REDIS_PORT", "6379"));
     private static final String MQ_HOST = "localhost";
-    private static final int MQ_PORT = 5672;
+    private static final int MQ_PORT = Integer.parseInt(
+        System.getenv().getOrDefault("MQ_PORT", "5672"));
     private static final String MQ_USER = "guest";
     private static final String MQ_PASS = "guest";
     private static final int INITIAL_MAP_SIZE = 30;
@@ -79,10 +83,7 @@ public class TaskConfiguratorMain {
         Map<String, Object> config = data != null
             ? data.toJavaObject(Map.class) : Map.of();
 
-        JedisPool pool = bb.getJedisPool();
-        try (Jedis jedis = pool.getResource()) {
-            jedis.flushDB();
-        }
+        selectiveClear(bb);
 
         initializer.initialize(bb, config);
         log.info("[TaskConfigurator] 初始化完成");
@@ -94,13 +95,24 @@ public class TaskConfiguratorMain {
 
     private static void handleReset(BlackboardClient bb, MessageBus messageBus,
                                      int tick) throws IOException {
-        JedisPool pool = bb.getJedisPool();
-        try (Jedis jedis = pool.getResource()) {
-            jedis.flushDB();
-        }
+        selectiveClear(bb);
         log.info("[TaskConfigurator] 已重置黑板");
 
         String reply = MessageBuilder.build(MessageTypes.TASK_READY, tick);
         messageBus.publish(QueueNames.CONTROLLER_CMD, reply);
+    }
+
+    private static void selectiveClear(BlackboardClient bb) {
+        JedisPool pool = bb.getJedisPool();
+        try (Jedis jedis = pool.getResource()) {
+            Set<String> keys = new HashSet<>(jedis.keys("Car*"));
+            keys.add("mapView");
+            keys.add("mapBlock");
+            keys.add("mapHeat");
+            keys.add("TaskConfig");
+            if (!keys.isEmpty()) {
+                jedis.del(keys.toArray(new String[0]));
+            }
+        }
     }
 }
