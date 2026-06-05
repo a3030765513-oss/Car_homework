@@ -1,5 +1,6 @@
 package com.substation.controller;
 
+import com.substation.common.model.AlgorithmType;
 import com.substation.common.model.CarStatus;
 import com.substation.common.model.Point;
 import com.substation.common.mq.MessageBuilder;
@@ -14,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class StatusDispatcher {
 
-    private static final double EXPLORATION_COMPLETE = 99.9;
+    private static final int EXPLORATION_COMPLETE = 99;
     private static final int BLOCKED_TIMEOUT_TICKS = 2;
     private static final int MOVING_STUCK_TICKS = 2;
     private static final String FIELD_CAR_ID = "carId";
@@ -82,6 +83,8 @@ public class StatusDispatcher {
     public void onRoutePlanned(String carId, boolean routeFound) {
         if (routeFound) {
             bb.setCarStatus(carId, CarStatus.READY);
+        } else {
+            bb.setCarStatus(carId, CarStatus.IDLE);
         }
     }
 
@@ -147,7 +150,7 @@ public class StatusDispatcher {
                     FIELD_CAR_ID, carId,
                     FIELD_SUB_START, Map.of("x", pos.x(), "y", pos.y()),
                     FIELD_SUB_TARGET, Map.of("x", target.x(), "y", target.y()),
-                    FIELD_ALGORITHM, algorithm != null ? algorithm : "BFS"
+                    FIELD_ALGORITHM, algorithm != null ? algorithm : AlgorithmType.BFS.name()
                 );
                 try {
                     String msg = MessageBuilder.build(MessageTypes.PLAN_ROUTE, tick, carId, data);

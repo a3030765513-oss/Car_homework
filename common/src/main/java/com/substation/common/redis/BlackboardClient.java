@@ -5,6 +5,7 @@ import com.substation.common.model.Point;
 
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.params.SetParams;
 
 import java.util.*;
 
@@ -15,6 +16,7 @@ public class BlackboardClient implements AutoCloseable {
     private static final String KEY_MAP_HEAT = "mapHeat";
     private static final String KEY_TASK_CONFIG = "TaskConfig";
     private static final String KEY_CONTROLLER_INSTANCE = "controller:instance";
+    private static final int CONTROLLER_LOCK_TTL_SECONDS = 30;
     private static final String FIELD_X = "x";
     private static final String FIELD_Y = "y";
     private static final String FIELD_ACTIVE = "active";
@@ -260,7 +262,8 @@ public class BlackboardClient implements AutoCloseable {
 
     public boolean acquireControllerLock() {
         try (Jedis jedis = pool.getResource()) {
-            return jedis.setnx(KEY_CONTROLLER_INSTANCE, "1") == 1L;
+            SetParams params = SetParams.setParams().nx().ex(CONTROLLER_LOCK_TTL_SECONDS);
+            return "OK".equals(jedis.set(KEY_CONTROLLER_INSTANCE, "1", params));
         }
     }
 
@@ -343,6 +346,10 @@ public class BlackboardClient implements AutoCloseable {
                 .map(key -> key.replace(":Status", ""))
                 .collect(java.util.stream.Collectors.toSet());
         }
+    }
+
+    public JedisPool getJedisPool() {
+        return pool;
     }
 
     @Override

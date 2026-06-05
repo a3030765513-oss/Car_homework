@@ -8,6 +8,9 @@ import java.util.Map;
 
 public class CommandHandler {
 
+    private static final int MIN_TICK_INTERVAL_MS = 100;
+    private static final int MAX_TICK_INTERVAL_MS = 2000;
+
     private final MessageBus bus;
     private final StatusDispatcher dispatcher;
     private final TickScheduler scheduler;
@@ -51,7 +54,7 @@ public class CommandHandler {
                 case MessageTypes.SET_TICK_INTERVAL -> {
                     if (data != null) {
                         int interval = data.getIntValue("interval");
-                        if (interval >= 100 && interval <= 2000) {
+                        if (interval >= MIN_TICK_INTERVAL_MS && interval <= MAX_TICK_INTERVAL_MS) {
                             scheduler.setInterval(interval);
                         }
                     }
