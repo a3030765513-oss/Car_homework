@@ -5,6 +5,7 @@ import com.substation.common.model.Point;
 
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.params.SetParams;
 
 import java.util.*;
 
@@ -260,7 +261,8 @@ public class BlackboardClient implements AutoCloseable {
 
     public boolean acquireControllerLock() {
         try (Jedis jedis = pool.getResource()) {
-            return jedis.setnx(KEY_CONTROLLER_INSTANCE, "1") == 1L;
+            SetParams params = SetParams.setParams().nx().ex(30);
+            return "OK".equals(jedis.set(KEY_CONTROLLER_INSTANCE, "1", params));
         }
     }
 
@@ -334,6 +336,23 @@ public class BlackboardClient implements AutoCloseable {
     public void initTaskConfig(Map<String, String> config) {
         try (Jedis jedis = pool.getResource()) {
             jedis.hset(KEY_TASK_CONFIG, config);
+        }
+    }
+
+    // ==================== 供知识源直接获取原生连接 ====================
+
+    public JedisPool getJedisPool() {
+        return pool;
+    }
+
+    public Set<String> discoverCarIds() {
+        try (Jedis jedis = pool.getResource()) {
+            Set<String> keys = jedis.keys("Car*:Status");
+            Set<String> carIds = new HashSet<>();
+            for (String key : keys) {
+                carIds.add(key.replace(":Status", ""));
+            }
+            return Collections.unmodifiableSet(carIds);
         }
     }
 
