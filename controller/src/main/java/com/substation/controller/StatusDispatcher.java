@@ -1,5 +1,6 @@
 package com.substation.controller;
 
+import com.substation.common.DynamicObstacleUtil;
 import com.substation.common.model.AlgorithmType;
 import com.substation.common.model.CarStatus;
 import com.substation.common.model.Point;
@@ -9,6 +10,8 @@ import com.substation.common.mq.MessageBus;
 import com.substation.common.mq.QueueNames;
 import com.substation.common.redis.BlackboardClient;
 
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -47,8 +50,12 @@ public class StatusDispatcher {
     private volatile int tick;
     /** 任务是否活跃 */
     private volatile boolean taskActive;
+    /** 动态障碍物生成间隔（每N个tick触发一次） */
+    private static final int DYNAMIC_OBSTACLE_INTERVAL = 20;
     /** 任务开始时间戳（毫秒） */
     private volatile long taskStartTime;
+    /** 动态障碍物工具 */
+    private final DynamicObstacleUtil dynamicObstacleUtil = new DynamicObstacleUtil();
 
     /** 创建状态分派器，初始化并发集合 */
     public StatusDispatcher(BlackboardClient bb, MessageBus bus) {
@@ -66,6 +73,19 @@ public class StatusDispatcher {
             return;
         }
         tick++;
+
+        if (tick % DYNAMIC_OBSTACLE_INTERVAL == 0) {
+            Set<Point> carPositions = new HashSet<>();
+            for (String cid : bb.discoverCarIds()) {
+                bb.getCarPosition(cid).ifPresent(carPositions::add);
+            }
+            int mapW = Math.max(bb.getMapWidth(), 30);
+            int mapH = Math.max(bb.getMapHeight(), 30);
+            List<String> changes = dynamicObstacleUtil.generate(bb, mapW, mapH, carPositions);
+            if (!changes.isEmpty()) {
+                System.out.println("[Controller] 动态障碍: " + String.join(" ", changes));
+            }
+        }
 
         if (bb.getExplorationRate() >= EXPLORATION_COMPLETE) {
             completeTask();

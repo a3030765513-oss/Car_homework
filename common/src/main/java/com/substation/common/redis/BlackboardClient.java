@@ -1,5 +1,6 @@
 package com.substation.common.redis;
 
+import com.alibaba.fastjson2.JSONObject;
 import com.substation.common.model.CarStatus;
 import com.substation.common.model.Point;
 
@@ -411,6 +412,19 @@ public class BlackboardClient implements AutoCloseable {
     public void clearBlockedTick(String carId) {
         try (Jedis jedis = pool.getResource()) {
             jedis.del(carId + ":BlockedTick");
+        }
+    }
+
+    // ==================== CarID:History ====================
+
+    /** 向小车History追加一条移动记录 RPUSH {x, y, tick} */
+    public void appendCarHistory(String carId, Point position, int tick) {
+        try (Jedis jedis = pool.getResource()) {
+            JSONObject record = new JSONObject();
+            record.put("x", position.x());
+            record.put("y", position.y());
+            record.put("tick", tick);
+            jedis.rpush(carId + ":History", record.toJSONString());
         }
     }
 
