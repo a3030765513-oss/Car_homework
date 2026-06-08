@@ -5,6 +5,10 @@
 - JDK 17 与 Maven 3.9 均通过 IntelliJ IDEA 内置运行时提供，主机系统未配置 `java` / `mvn` 环境变量。所有编译、测试、打包操作应优先在 IDE 内执行，或使用 IntelliJ 捆绑的 Maven 路径。项目根目录下的 `mvnw`（Maven Wrapper）可在终端中作为 `mvn` 的替代品
 - 项目关联 GitHub 远程仓库 `https://github.com/a3030765513-oss/Car_homework.git`，采用多分支协作：`main`（集成分支）、`hzx_common`（Person A）、`lyq_car`（Person B）、`ylj_navigator`（Person C）、`wsh_test`（Person D）。团队共 4 人，所有模块通过 common 共享接口，模块间通过 MQ 消息与 Redis 黑板解耦
 
+# 交互规则
+
+当用户报告问题或描述现象时，默认**只在对话框输出分析和解决方案**，不主动修改代码、不生成 md 文件。仅当用户明确说"改"、"修"、"写文档"等指令时才动手。
+
 # 核心开发原则
 
 ## 对待已有代码的态度

@@ -61,8 +61,11 @@ final class GreedyTargetAllocator {
             return Optional.of(candidates.get(0));
         }
 
-        return candidates.stream()
+        Optional<Point> far = candidates.stream()
             .filter(p -> p.manhattanDistance(currentPos) >= MIN_TARGET_DISTANCE)
             .findFirst();
+
+        // 距离 ≥10 的格子已耗尽，回退到最近的一个，避免全部车卡在 IDLE
+        return far.isPresent() ? far : Optional.of(candidates.get(0));
     }
 }

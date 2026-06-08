@@ -74,19 +74,6 @@ public class StatusDispatcher {
         }
         tick++;
 
-        if (tick % DYNAMIC_OBSTACLE_INTERVAL == 0) {
-            Set<Point> carPositions = new HashSet<>();
-            for (String cid : bb.discoverCarIds()) {
-                bb.getCarPosition(cid).ifPresent(carPositions::add);
-            }
-            int mapW = Math.max(bb.getMapWidth(), 30);
-            int mapH = Math.max(bb.getMapHeight(), 30);
-            List<String> changes = dynamicObstacleUtil.generate(bb, mapW, mapH, carPositions);
-            if (!changes.isEmpty()) {
-                System.out.println("[Controller] 动态障碍: " + String.join(" ", changes));
-            }
-        }
-
         if (bb.getExplorationRate() >= EXPLORATION_COMPLETE) {
             completeTask();
             return;
@@ -127,6 +114,13 @@ public class StatusDispatcher {
         } else {
             bb.setCarStatus(carId, CarStatus.IDLE);
         }
+    }
+
+    /** 切换指定格子的障碍物状态（右键菜单触发） */
+    public void toggleObstacle(int row, int col) {
+        boolean current = bb.isBlocked(row, col);
+        bb.setBlock(row, col, !current);
+        System.out.println("[Controller] 障碍物 " + (!current ? "新增" : "移除") + "(" + col + "," + row + ")");
     }
 
     /** 任务就绪回调：激活调度、记录开始时间、重置节拍计数 */
@@ -219,12 +213,13 @@ public class StatusDispatcher {
         }
     }
 
-    /** 检测阻塞超时：超时后清除路径与目标，车辆回到IDLE并发送超时通知 */
+    /** 检测阻塞超时：超时后清除路径、目标与占位标记，车辆回到IDLE，让其他车可穿行 */
     private void checkBlockedTimeout(String carId) {
         if (tick - bb.getBlockedTick(carId) >= BLOCKED_TIMEOUT_TICKS) {
             bb.clearRoute(carId);
             bb.clearCarTarget(carId);
             bb.clearBlockedTick(carId);
+            bb.getCarPosition(carId).ifPresent(pos -> bb.setBlock(pos.y(), pos.x(), false));
             bb.setCarStatus(carId, CarStatus.IDLE);
             sendBlockedTimeout(carId);
         }

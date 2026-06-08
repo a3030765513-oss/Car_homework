@@ -18,8 +18,8 @@
   // 常量
   // ═══════════════════════════════════════════════════════════
 
-  /** 每格像素尺寸（30 格 × 18px = 540px 画布） */
-  var CELL_SIZE = 18;
+  /** 每格像素尺寸（30 格 × 27px = 810px 画布） */
+  var CELL_SIZE = 27;
 
   /** 默认地图尺寸 */
   var DEFAULT_GRID = 30;
@@ -70,6 +70,7 @@
   var $btnStart   = document.getElementById('btn-start');
   var $btnPause   = document.getElementById('btn-pause');
   var $btnReset   = document.getElementById('btn-reset');
+  var $btnAddCar  = document.getElementById('btn-addcar');
   var $btnReplay  = document.getElementById('btn-replay');
   var $btnLive    = document.getElementById('btn-live');
 
@@ -129,11 +130,19 @@
     ws.onerror = onSocketError;
   }
 
+  var wasEverConnected = false;
+
   function onSocketOpen() {
     console.log('[app] WebSocket 已连接');
+    if (wasEverConnected) {
+      // 重连后自动重置，恢复系统状态
+      ws.send(JSON.stringify({ type: 'RESET', data: {} }));
+      console.log('[app] 检测到重连，已发送 RESET');
+    }
   }
 
   function onSocketMessage(event) {
+    wasEverConnected = true;
     liveData = JSON.parse(event.data);
     if (mode === 'live') {
       initCanvasSize();
@@ -227,16 +236,25 @@
     }
   }
 
-  /** L3: 障碍物。遍历 mapBlock bitmap，红色方块 */
+  /** L3: 障碍物。跳过有车格子，避免小车背上红色方块 */
   function renderObstacles(data) {
     if (!data.mapBlock) { return; }
+
+    var occupied = {};
+    if (data.cars) {
+      for (var i = 0; i < data.cars.length; i++) {
+        var p = data.cars[i].position;
+        occupied[p.x + ',' + p.y] = true;
+      }
+    }
+
     var gridW = getGridW(data);
     var gridH = getGridH(data);
     ctx.fillStyle = '#e94560';
     for (var r = 0; r < gridH; r++) {
       if (!data.mapBlock[r]) { continue; }
       for (var c = 0; c < gridW; c++) {
-        if (data.mapBlock[r][c]) {
+        if (data.mapBlock[r][c] && !occupied[c + ',' + r]) {
           ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
         }
       }
@@ -253,19 +271,38 @@
 
   function drawRouteForCar(car) {
     if (!car.position || !car.routeList || car.routeList.length === 0) { return; }
-    ctx.strokeStyle = 'rgba(100, 200, 255, 0.5)';
+
+    ctx.strokeStyle = 'rgba(100, 200, 255, 0.6)';
     ctx.lineWidth = 2;
-    ctx.beginPath();
-    var sx = car.position.x * CELL_SIZE + CELL_SIZE / 2;
-    var sy = car.position.y * CELL_SIZE + CELL_SIZE / 2;
-    ctx.moveTo(sx, sy);
+    ctx.lineCap = 'round';
+
+    // 起点：小车当前格子中心
+    var prevGx = car.position.x;
+    var prevGy = car.position.y;
+    var prevPx = prevGx * CELL_SIZE + CELL_SIZE / 2;
+    var prevPy = prevGy * CELL_SIZE + CELL_SIZE / 2;
+
     var steps = Math.min(car.routeList.length, MAX_ROUTE_DRAW);
     for (var i = 0; i < steps; i++) {
-      var px = car.routeList[i].x * CELL_SIZE + CELL_SIZE / 2;
-      var py = car.routeList[i].y * CELL_SIZE + CELL_SIZE / 2;
-      ctx.lineTo(px, py);
+      var gx = car.routeList[i].x;
+      var gy = car.routeList[i].y;
+
+      // 仅当曼哈顿距离 = 1（四方向相邻）时画线段，防止跨格斜线
+      var manhattan = Math.abs(gx - prevGx) + Math.abs(gy - prevGy);
+      if (manhattan === 1) {
+        var px = gx * CELL_SIZE + CELL_SIZE / 2;
+        var py = gy * CELL_SIZE + CELL_SIZE / 2;
+        ctx.beginPath();
+        ctx.moveTo(prevPx, prevPy);
+        ctx.lineTo(px, py);
+        ctx.stroke();
+      }
+
+      prevGx = gx;
+      prevGy = gy;
+      prevPx = prevGx * CELL_SIZE + CELL_SIZE / 2;
+      prevPy = prevGy * CELL_SIZE + CELL_SIZE / 2;
     }
-    ctx.stroke();
   }
 
   /** L5: 小车。圆形 + 状态颜色 + 编号文字 */
@@ -280,18 +317,25 @@
     if (!car.position) { return; }
     var cx = car.position.x * CELL_SIZE + CELL_SIZE / 2;
     var cy = car.position.y * CELL_SIZE + CELL_SIZE / 2;
-    var radius = CELL_SIZE / 2 - 2;
     var color = STATUS_COLORS[car.status] || '#9E9E9E';
+    var outerR = CELL_SIZE / 2 - 1;   // 外圈（状态色），半径与格子留 1px 间距
+    var innerR = outerR - 3;           // 内圈（白色），与外圈差 3px
 
-    // 圆形底色
-    ctx.fillStyle = color;
+    // 外圈 —— 状态颜色环
     ctx.beginPath();
-    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
+    ctx.fillStyle = color;
     ctx.fill();
 
-    // 编号文字
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 10px Consolas, monospace';
+    // 内圈 —— 白色填充，与外圈形成对比
+    ctx.beginPath();
+    ctx.arc(cx, cy, innerR, 0, Math.PI * 2);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fill();
+
+    // 编号文字（黑色，白色内圈上可读）
+    ctx.fillStyle = '#000';
+    ctx.font = 'bold 9px Consolas, monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(String(car.number), cx, cy);
@@ -437,6 +481,10 @@
     $elapsed.textContent = '⏱ 00:00';
     // 如果正在回放，返回实时
     if (mode === 'replay') { exitReplay(); }
+  }
+
+  function onAddCarClick() {
+    sendCommand({ type: 'ADD_CAR' });
   }
 
   // ────────── 滑块实时反馈 ──────────
@@ -644,6 +692,30 @@
   // 工具函数
   // ═══════════════════════════════════════════════════════════
 
+  // ═══════════════════════════════════════════════════════════════
+  // Canvas 右键：手动切换障碍物（运行时可增删）
+  // ═══════════════════════════════════════════════════════════════
+
+  function onCanvasContextMenu(e) {
+    e.preventDefault();
+    if (!liveData) { return; }
+
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = canvas.width / rect.width;
+    var scaleY = canvas.height / rect.height;
+    var col = Math.floor((e.clientX - rect.left) * scaleX / CELL_SIZE);
+    var row = Math.floor((e.clientY - rect.top)  * scaleY / CELL_SIZE);
+
+    var gridW = getGridW(liveData);
+    var gridH = getGridH(liveData);
+    if (row < 0 || row >= gridH || col < 0 || col >= gridW) { return; }
+
+    sendCommand({
+      type: 'TOGGLE_OBSTACLE',
+      data: { row: row, col: col }
+    });
+  }
+
   function getGridW(data) {
     return (data.taskConfig && parseInt(data.taskConfig.mapWidth, 10)) || DEFAULT_GRID;
   }
@@ -659,6 +731,10 @@
   $btnStart.addEventListener('click', onStartClick);
   $btnPause.addEventListener('click', onPauseClick);
   $btnReset.addEventListener('click', onResetClick);
+  if ($btnAddCar) {
+    $btnAddCar.addEventListener('click', onAddCarClick);
+  }
+  canvas.addEventListener('contextmenu', onCanvasContextMenu);
   $btnReplay.addEventListener('click', onReplayClick);
   $btnLive.addEventListener('click', onLiveClick);
 

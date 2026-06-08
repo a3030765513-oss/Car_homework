@@ -105,12 +105,26 @@ public class WebSocketBridge extends WebSocketServer {
      * @param conn    发送消息的浏览器连接
      * @param message 原始 JSON 字符串
      */
+    /** 当前动态添加的车辆计数（初始值 = 首次启动的车辆数） */
+    private int carCount = 3;
+
     @Override
     public void onMessage(WebSocket conn, String message) {
         try {
-            mqSender.send(QueueNames.CONTROLLER_CMD, message);
-        } catch (RuntimeException e) {
-            LOG.warn("转发浏览器命令失败: {}", message, e);
+            JSONObject msg = JSON.parseObject(message);
+            String type = msg.getString("type");
+
+            if ("ADD_CAR".equals(type)) {
+                carCount++;
+                String carId = String.format("Car%03d", carCount);
+                String cmd = "java -jar car/target/car-1.0-SNAPSHOT.jar " + carId;
+                Runtime.getRuntime().exec(cmd);
+                LOG.info("动态添加小车: {}", carId);
+            } else {
+                mqSender.send(QueueNames.CONTROLLER_CMD, message);
+            }
+        } catch (Exception e) {
+            LOG.warn("消息处理失败: {}", message, e);
         }
     }
 

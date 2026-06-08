@@ -114,6 +114,7 @@ public class MoveExecutor {
     private void finalizeMove(int tick, Point pos) {
         if (bb.getCarRoute(carId).isEmpty()) {
             bb.setCarStatus(carId, CarStatus.IDLE);
+            bb.setBlock(pos.y(), pos.x(), false);  // IDLE 时释放占位，避免堵死其他车
             sendRouteDone(tick, pos);
             log.info("[{}] 路径走完，最终位置({},{})，tick={}", carId, pos.x(), pos.y(), tick);
         } else {

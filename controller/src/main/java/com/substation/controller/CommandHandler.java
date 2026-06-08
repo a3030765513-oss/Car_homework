@@ -67,6 +67,13 @@ public class CommandHandler {
                         }
                     }
                 }
+                case "TOGGLE_OBSTACLE" -> {
+                    if (data != null) {
+                        int row = data.getIntValue("row");
+                        int col = data.getIntValue("col");
+                        dispatcher.toggleObstacle(row, col);
+                    }
+                }
                 default -> System.out.println("[Controller] 未知消息类型: " + type);
             }
         } catch (Exception e) {
