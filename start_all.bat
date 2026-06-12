@@ -7,6 +7,9 @@ echo   Path: %PROJ%
 echo ============================================
 echo.
 
+echo [0/8] Installing all modules to local repo...
+call .\mvnw.cmd install -DskipTests
+
 echo [1/8] TaskConfigurator...
 start "TaskConfigurator" /d "%PROJ%" cmd /k .\mvnw.cmd exec:java -pl task-configurator -Dexec.mainClass=com.substation.taskconfigurator.TaskConfiguratorMain
 ping -n 3 127.0.0.1 >nul
