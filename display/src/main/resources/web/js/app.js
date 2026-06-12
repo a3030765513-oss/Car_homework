@@ -385,13 +385,16 @@
     }
   }
 
-  /** 全量绘制已走过的格子（每帧调用，简洁可靠） */
+  /** 增量绘制新走过的格子 */
+  var drawnCount = 0;
   function renderExploredUpdates(data) {
-    for (var key in visitedCells) {
-      var parts = key.split(',');
+    var keys = Object.keys(visitedCells);
+    if (keys.length === drawnCount) { return; }
+    // 只画新增的格子
+    for (var i = drawnCount; i < keys.length; i++) {
+      var parts = keys[i].split(',');
       var c = parseInt(parts[0], 10);
       var r = parseInt(parts[1], 10);
-      // 跳过障碍格
       if (data && data.mapBlock && data.mapBlock[r] && data.mapBlock[r][c]) { continue; }
       var x = c * CELL_SIZE;
       var y = r * CELL_SIZE;
@@ -401,6 +404,7 @@
       mapCtx.lineWidth = 0.8;
       mapCtx.strokeRect(x + 0.5, y + 0.5, CELL_SIZE, CELL_SIZE);
     }
+    drawnCount = keys.length;
   }
 
   /** L3: 障碍物。黑色方块 */
@@ -651,6 +655,7 @@
 
     // Clear all state
     visitedCells = {};
+    drawnCount = 0;
     animQueue = {};
     animCurrent = {};
     animFrom = {};
