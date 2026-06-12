@@ -26,6 +26,9 @@ final class BfsPathFinder implements PathPlanner {
         Point[][] parent = new Point[height][width];
         Queue<Point> queue = new ArrayDeque<>();
 
+        // 预先从黑板读取完整障碍物矩阵，避免扩展循环中逐格调用 isBlocked
+        boolean[][] blocked = readBlockedMap(bb, width, height);
+
         visited[start.y()][start.x()] = true;
         queue.add(start);
 
@@ -36,13 +39,23 @@ final class BfsPathFinder implements PathPlanner {
                 return reconstructPath(parent, start, target);
             }
 
-            expandNeighbors(current, visited, parent, queue, bb, width, height);
+            expandNeighbors(current, visited, parent, queue, blocked, width, height);
         }
         return List.of();
     }
 
+    private boolean[][] readBlockedMap(BlackboardClient bb, int width, int height) {
+        boolean[][] blocked = new boolean[height][width];
+        for (int r = 0; r < height; r++) {
+            for (int c = 0; c < width; c++) {
+                blocked[r][c] = bb.isBlocked(r, c);
+            }
+        }
+        return blocked;
+    }
+
     private void expandNeighbors(Point current, boolean[][] visited, Point[][] parent,
-                                  Queue<Point> queue, BlackboardClient bb,
+                                  Queue<Point> queue, boolean[][] blocked,
                                   int width, int height) {
         for (int[] dir : DIRECTIONS) {
             int nx = current.x() + dir[0];
@@ -50,7 +63,7 @@ final class BfsPathFinder implements PathPlanner {
 
             if (!isInBounds(nx, ny, width, height)
                 || visited[ny][nx]
-                || bb.isBlocked(ny, nx)) {
+                || blocked[ny][nx]) {
                 continue;
             }
 
