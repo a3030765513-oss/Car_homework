@@ -408,15 +408,20 @@
   function updateGlobalInfo(data) {
     $tick.textContent = '节拍: ' + (data.tick || 0);
     $rate.textContent = '探索率: ' + (data.explorationRate || 0) + '%';
+    // 动态更新车辆数量显示
+    if (data.cars) { $cfgCarCount.value = data.cars.length; }
 
     // 第一个有效 tick 时启动耗时计时器
     if (data.tick === 1 && !startTimestamp) {
       startTimestamp = Date.now();
       startElapsedTimer();
     }
-    // 探索完成时停止计时
-    if (data.explorationRate >= 99 && elapsedTimerId) {
-      stopElapsedTimer();
+    // 探索完成时停止计时并显示完成提示
+    if (data.explorationRate >= 99) {
+      $rate.textContent = '探索率: ' + (data.explorationRate || 0) + '% ✓ 任务完成';
+      $modeTag.textContent = '✓ 任务完成';
+      $modeTag.hidden = false;
+      if (elapsedTimerId) { stopElapsedTimer(); }
     }
   }
 

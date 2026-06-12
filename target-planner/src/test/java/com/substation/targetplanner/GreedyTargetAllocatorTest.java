@@ -131,15 +131,15 @@ class GreedyTargetAllocatorTest {
     }
 
     @Test
-    void noTargetWhenAllCandidatesTooClose() {
+    void farthestTargetEvenWhenAllClose() {
         int[][] reserved = {{16, 15}, {15, 16}};
         markAllExceptMultiple(bb, reserved);
 
         Point carPos = new Point(15, 15);
         Optional<Point> target = allocator.allocate(carPos, bb, allocated);
 
-        assertTrue(target.isEmpty(),
-            "多个候选但都距离<10，应暂不分配");
+        assertTrue(target.isPresent(),
+            "最远优先策略：即使候选全都很近，也应分配最远的一个");
     }
 
     @Test

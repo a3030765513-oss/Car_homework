@@ -117,9 +117,9 @@ public class WebSocketBridge extends WebSocketServer {
             if ("ADD_CAR".equals(type)) {
                 carCount++;
                 String carId = String.format("Car%03d", carCount);
-                String cmd = "java -jar car/target/car-1.0-SNAPSHOT.jar " + carId;
-                Runtime.getRuntime().exec(cmd);
-                LOG.info("动态添加小车: {}", carId);
+                String cmd = ".\\mvnw.cmd exec:java -pl car -Dexec.mainClass=com.substation.car.CarMain -Dexec.args=" + carId;
+                Runtime.getRuntime().exec(cmd, null, new java.io.File("."));
+                LOG.info("动态添加小车: {} (命令: {})", carId, cmd);
             } else {
                 mqSender.send(QueueNames.CONTROLLER_CMD, message);
             }

@@ -4,14 +4,11 @@ import com.substation.common.model.Point;
 import com.substation.common.redis.BlackboardClient;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 final class GreedyTargetAllocator {
-
-    private static final int MIN_TARGET_DISTANCE = 10;
 
     /**
      * 为一辆车分配探索目标。
@@ -55,17 +52,8 @@ final class GreedyTargetAllocator {
     // ==================== 距离规则选择 ====================
 
     private Optional<Point> selectByDistanceRule(Point currentPos, List<Point> candidates) {
-        candidates.sort(Comparator.comparingInt(p -> p.manhattanDistance(currentPos)));
-
-        if (candidates.size() == 1) {
-            return Optional.of(candidates.get(0));
-        }
-
-        Optional<Point> far = candidates.stream()
-            .filter(p -> p.manhattanDistance(currentPos) >= MIN_TARGET_DISTANCE)
-            .findFirst();
-
-        // 距离 ≥10 的格子已耗尽，回退到最近的一个，避免全部车卡在 IDLE
-        return far.isPresent() ? far : Optional.of(candidates.get(0));
+        // 最远优先：把车分散到地图不同角落，避免多车挤在同一区域互堵
+        candidates.sort((a, b) -> b.manhattanDistance(currentPos) - a.manhattanDistance(currentPos));
+        return Optional.of(candidates.get(0));
     }
 }

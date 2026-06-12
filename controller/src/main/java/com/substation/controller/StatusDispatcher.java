@@ -20,7 +20,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class StatusDispatcher {
 
     /** 探索完成阈值（百分比），达到后自动结束任务 */
-    private static final int EXPLORATION_COMPLETE = 99;
+    private static final int EXPLORATION_COMPLETE = 98;
+    /** 所有车 IDLE 且无事可做的连续 tick 数，超时强制完成 */
+    private static final int ALL_IDLE_COMPLETE_TICKS = 30;
     /** 阻塞超时节拍数，超时后清除路径并重新分配目标 */
     private static final int BLOCKED_TIMEOUT_TICKS = 2;
     /** 移动卡住节拍数，连续MOVING超此时长则强制切为READY */
@@ -52,6 +54,8 @@ public class StatusDispatcher {
     private volatile boolean taskActive;
     /** 动态障碍物生成间隔（每N个tick触发一次） */
     private static final int DYNAMIC_OBSTACLE_INTERVAL = 20;
+    /** 连续所有车 IDLE 且无 pending 请求的 tick 数 */
+    private int allIdleTicks;
     /** 任务开始时间戳（毫秒） */
     private volatile long taskStartTime;
     /** 动态障碍物工具 */
@@ -95,6 +99,19 @@ public class StatusDispatcher {
             });
         }
 
+        // 辅助判定：全部车 IDLE 且无待处理请求持续 N tick → 强制完成
+        boolean allIdle = carIds.stream().allMatch(cid ->
+            bb.getCarStatus(cid).orElse(null) == CarStatus.IDLE);
+        if (allIdle && pendingTargetRequests.isEmpty()) {
+            allIdleTicks++;
+            if (allIdleTicks >= ALL_IDLE_COMPLETE_TICKS) {
+                completeTask();
+                return;
+            }
+        } else {
+            allIdleTicks = 0;
+        }
+
         broadcastRefresh();
     }
 
@@ -128,6 +145,7 @@ public class StatusDispatcher {
         taskActive = true;
         taskStartTime = System.currentTimeMillis();
         tick = 0;
+        allIdleTicks = 0;
     }
 
     /** 转发配置消息到任务配置队列 */
@@ -213,13 +231,12 @@ public class StatusDispatcher {
         }
     }
 
-    /** 检测阻塞超时：超时后清除路径、目标与占位标记，车辆回到IDLE，让其他车可穿行 */
+    /** 检测阻塞超时：超时后清除路径与目标，车辆回到IDLE并发送超时通知 */
     private void checkBlockedTimeout(String carId) {
         if (tick - bb.getBlockedTick(carId) >= BLOCKED_TIMEOUT_TICKS) {
             bb.clearRoute(carId);
             bb.clearCarTarget(carId);
             bb.clearBlockedTick(carId);
-            bb.getCarPosition(carId).ifPresent(pos -> bb.setBlock(pos.y(), pos.x(), false));
             bb.setCarStatus(carId, CarStatus.IDLE);
             sendBlockedTimeout(carId);
         }
@@ -259,10 +276,17 @@ public class StatusDispatcher {
         }
     }
 
-    /** 完成任务：停用调度、计算耗时并写入黑板 */
+    /** 完成任务：停用调度、计算耗时、写入黑板、最后一次广播通知前端 */
     private void completeTask() {
         taskActive = false;
         long elapsed = (System.currentTimeMillis() - taskStartTime) / 1000;
         bb.initTaskConfig(Map.of(FIELD_ELAPSED_SECONDS, String.valueOf(elapsed)));
+        Map<String, Object> data = Map.of("explorationRate", 100);
+        try {
+            String msg = MessageBuilder.build(MessageTypes.REFRESH_ALL, tick, null, data);
+            bus.publishFanout(QueueNames.UPDATE_VIEW_EXCHANGE, msg);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
