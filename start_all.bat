@@ -1,42 +1,62 @@
 @echo off
-set PROJ=%~dp0
-
-echo ============================================
-echo   CarHomework - Start All Modules
-echo   Path: %PROJ%
-echo ============================================
+chcp 65001 >nul
+title 变电站巡检仿真系统
+echo ========================================
+echo   变电站巡检仿真系统 - 一键启动
+echo ========================================
 echo.
 
-echo [1/8] TaskConfigurator...
-start "TaskConfigurator" /d "%PROJ%" cmd /k .\mvnw.cmd exec:java -pl task-configurator -Dexec.mainClass=com.substation.taskconfigurator.TaskConfiguratorMain
-ping -n 3 127.0.0.1 >nul
+:: 检查 Java
+java -version 2>nul
+if %errorlevel% neq 0 (
+    echo [ERROR] 未找到 Java，请安装 JDK 17+
+    pause
+    exit /b 1
+)
 
-echo [2/8] Navigator...
-start "Navigator" /d "%PROJ%" cmd /k .\mvnw.cmd exec:java -pl navigator -Dexec.mainClass=com.substation.navigator.NavigatorMain
+:: 检查 Redis
+echo [检查] Redis (6379)...
+redis-cli ping >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [WARN]  Redis 未响应，请先启动 Redis 服务
+)
 
-echo [3/8] TargetPlanner...
-start "TargetPlanner" /d "%PROJ%" cmd /k .\mvnw.cmd exec:java -pl target-planner -Dexec.mainClass=com.substation.targetplanner.TargetPlannerMain
-ping -n 2 127.0.0.1 >nul
-
-echo [4/8] Car001...
-start "Car001" /d "%PROJ%" cmd /k .\mvnw.cmd exec:java -pl car -Dexec.mainClass=com.substation.car.CarMain -Dexec.args=Car001
-
-echo [5/8] Car002...
-start "Car002" /d "%PROJ%" cmd /k .\mvnw.cmd exec:java -pl car -Dexec.mainClass=com.substation.car.CarMain -Dexec.args=Car002
-
-echo [6/8] Car003...
-start "Car003" /d "%PROJ%" cmd /k .\mvnw.cmd exec:java -pl car -Dexec.mainClass=com.substation.car.CarMain -Dexec.args=Car003
-ping -n 2 127.0.0.1 >nul
-
-echo [7/8] Display...
-start "Display" /d "%PROJ%" cmd /k .\mvnw.cmd exec:java -pl display -Dexec.mainClass=com.substation.display.DisplayMain
-ping -n 2 127.0.0.1 >nul
-
-echo [8/8] Controller (last)...
-start "Controller" /d "%PROJ%" cmd /k .\mvnw.cmd exec:java -pl controller -Dexec.mainClass=com.substation.controller.ControllerMain
+:: 检查 RabbitMQ
+echo [检查] RabbitMQ (5672)...
+curl -s http://localhost:15672 >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [WARN]  RabbitMQ 未响应，请先启动 RabbitMQ 服务
+)
 
 echo.
-echo All 8 modules started.
-echo Open http://localhost:8887
+
+:: 编译全部模块
+echo [1/2] 编译全部模块...
+call mvnw.cmd compile -q
+if %errorlevel% neq 0 (
+    echo [ERROR] 编译失败
+    pause
+    exit /b 1
+)
+echo       编译成功
+
+:: 打包 launcher（含全部依赖的胖 JAR）
+echo [2/2] 打包 Launcher...
+call mvnw.cmd package -pl launcher -am -q -DskipTests
+if %errorlevel% neq 0 (
+    echo [ERROR] 打包失败
+    pause
+    exit /b 1
+)
+echo       打包成功
+
 echo.
+echo ========================================
+echo   启动全部模块...
+echo   按 Ctrl+C 停止所有模块
+echo ========================================
+echo.
+
+java -jar launcher\target\launcher-1.0-SNAPSHOT.jar
+
 pause

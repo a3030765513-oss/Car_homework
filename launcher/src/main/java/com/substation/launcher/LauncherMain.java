@@ -221,7 +221,7 @@ public final class LauncherMain {
      */
     private static void startTaskConfigurator(LaunchConfig c) {
         startInThread("task-configurator", () ->
-                new TaskConfiguratorMain(c.redisHost(), c.redisPort(), c.mqHost(), c.mqPort()).start());
+                TaskConfiguratorMain.main(new String[0]));
     }
 
     /**
@@ -230,7 +230,7 @@ public final class LauncherMain {
      */
     private static void startNavigator(LaunchConfig c) {
         startInThread("navigator", () ->
-                new NavigatorMain(c.redisHost(), c.redisPort(), c.mqHost(), c.mqPort()).start());
+                NavigatorMain.main(new String[0]));
     }
 
     /**
@@ -239,7 +239,7 @@ public final class LauncherMain {
      */
     private static void startTargetPlanner(LaunchConfig c) {
         startInThread("target-planner", () ->
-                new TargetPlannerMain(c.redisHost(), c.redisPort(), c.mqHost(), c.mqPort()).start());
+                TargetPlannerMain.main(new String[0]));
     }
 
     /**
@@ -250,7 +250,7 @@ public final class LauncherMain {
         for (int i = 1; i <= c.carCount(); i++) {
             String carId = String.format("Car%03d", i);
             startInThread("car-" + carId, () ->
-                    new CarMain(carId, c.redisHost(), c.redisPort(), c.mqHost(), c.mqPort()).start());
+                    CarMain.main(new String[]{carId}));
             if (i < c.carCount()) {
                 sleepMillis(DELAY_BETWEEN_CARS_MS);
             }
@@ -278,7 +278,7 @@ public final class LauncherMain {
      */
     private static void startController(LaunchConfig c) {
         startInThread("controller", () ->
-                new ControllerMain(c.redisHost(), c.redisPort(), c.mqHost(), c.mqPort()).start());
+                ControllerMain.main(new String[0]));
     }
 
     // ════════════════════════════════════════════════════════════

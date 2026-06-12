@@ -56,7 +56,7 @@
 
       <div class="form-row">
         <label for="cfg-carCount">小车数量</label>
-        <input type="number" id="cfg-carCount" value="3" min="1" max="10" readonly title="由启动脚本决定，运行中可通过添加按钮增加">
+        <input type="number" id="cfg-carCount" value="5" min="1" max="10">
       </div>
 
       <div class="form-row">
@@ -136,7 +136,10 @@
 
   <!-- ════════════ 中央地图 ════════════ -->
   <main class="map-area">
-    <canvas id="map-canvas"></canvas>
+    <div class="map-stack">
+      <canvas id="map-canvas"></canvas>       <!-- 底层：地图 + 障碍物（静态） -->
+      <canvas id="car-canvas"></canvas>       <!-- 顶层：小车 + 路径（动态） -->
+    </div>
   </main>
 
   <!-- ════════════ 右侧栏：车辆状态卡 ════════════ -->

@@ -39,8 +39,8 @@
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC',
                'Helvetica Neue', Arial, sans-serif;
-  background: #0d1117;
-  color: #e6edf3;
+  background: #F0F2F5;
+  color: #333333;
   height: 100vh;
   overflow: hidden;
   line-height: 1.6;
@@ -158,8 +158,8 @@ body {
 .sidebar {
   width: 264px;
   min-width: 264px;
-  background: #161b22;
-  border-right: 1px solid #30363d;
+  background: #1E293B;
+  border-right: 1px solid #334155;
   padding: 14px 12px;
   display: flex;
   flex-direction: column;
@@ -170,8 +170,8 @@ body {
 /* ────────── Panel ────────── */
 
 .panel {
-  background: #0d1117;
-  border: 1px solid #30363d;
+  background: #0F172A;
+  border: 1px solid #334155;
   border-radius: 8px;
   padding: 14px;
 }
@@ -186,12 +186,12 @@ body {
 .panel-header svg {
   width: 16px;
   height: 16px;
-  color: #8b949e;
+  color: #94A3B8;
   flex-shrink: 0;
 }
 
 .panel-header h3 {
-  color: #e6edf3;
+  color: #E2E8F0;
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
@@ -209,7 +209,7 @@ body {
   align-items: center;
   justify-content: space-between;
   font-size: 12px;
-  color: #8b949e;
+  color: #94A3B8;
   margin-bottom: 4px;
 }
 
@@ -397,21 +397,32 @@ body {
   flex: 1;
   display: flex;
   justify-content: center;
-  align-items: center;
-  padding: 20px;
+  align-items: flex-start;
+  overflow: auto;
+  padding: 10px;
+  background: #FFFFFF;
 }
 
-.map-wrapper {
+.map-stack {
   position: relative;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 0 40px rgba(88, 166, 255, 0.06);
+  flex-shrink: 0;
+  border: 1px solid #CCCCCC;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.08);
 }
 
 #map-canvas {
   display: block;
-  background: #0d1117;
+  background: #D0D0D0;
   image-rendering: pixelated;
+}
+
+#car-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  image-rendering: pixelated;
+  pointer-events: none;  /* 点击穿透，由底层 canvas 处理 */
 }
 
 .map-overlay {
@@ -433,8 +444,8 @@ body {
 .cars-panel {
   width: 248px;
   min-width: 248px;
-  background: #161b22;
-  border-left: 1px solid #30363d;
+  background: #1E293B;
+  border-left: 1px solid #334155;
   padding: 14px 12px;
   overflow-y: auto;
   display: flex;
@@ -445,7 +456,7 @@ body {
 /* ────────── Car Card ────────── */
 
 .car-card {
-  background: #0d1117;
+  background: #0F172A;
   border: 1px solid #30363d;
   border-radius: 8px;
   padding: 12px;
@@ -539,8 +550,10 @@ body {
   padding-left: 18px;
   font-size: 12px;
   line-height: 2;
-  color: #8b949e;
+  color: #94A3B8;
   list-style: decimal;
+  max-height: 200px;
+  overflow-y: auto;
 }
 
 #leaderboard li {
