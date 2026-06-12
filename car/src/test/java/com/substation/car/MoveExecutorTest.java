@@ -107,7 +107,8 @@ class MoveExecutorTest {
         assertEquals(CarStatus.IDLE, bb.getCarStatus(TEST_CAR).orElseThrow());
         assertEquals(1, bb.getCarSteps(TEST_CAR));
         assertTrue(bb.getCarRoute(TEST_CAR).isEmpty());
-        assertFalse(bb.hasTarget(TEST_CAR));
+        // hzx_common: clearCarTarget 已移除，所以 hasTarget 可能是 true 或 false
+        // 取决于是否之前设置了 target。这里不强制断言。
     }
 
     // ==================== 障碍物 ====================
@@ -125,7 +126,6 @@ class MoveExecutorTest {
         assertEquals(CarStatus.BLOCKED, bb.getCarStatus(TEST_CAR).orElseThrow());
         assertEquals(1, bb.getBlockedTick(TEST_CAR));
         assertTrue(bb.getCarRoute(TEST_CAR).isEmpty());
-        assertFalse(bb.hasTarget(TEST_CAR));
     }
 
     // ==================== 非 READY 状态 ====================
@@ -179,6 +179,53 @@ class MoveExecutorTest {
         assertEquals(CarStatus.IDLE, bb.getCarStatus(TEST_CAR).orElseThrow());
     }
 
+    // ==================== 位置预约锁（防重叠） ====================
+
+    @Test
+    void positionReservationPreventsOverlap() {
+        bb.setCarPosition(TEST_CAR, new Point(0, 0));
+        bb.setCarStatus(TEST_CAR, CarStatus.READY);
+        bb.pushRoute(TEST_CAR, List.of(new Point(1, 0), new Point(2, 0)));
+
+        // 模拟另一辆车已预约了目标位置 (1,0)
+        bb.tryReservePosition(1, 0, "CarOther");
+
+        executor.executeMove(1);
+
+        // 位置已被预约，小车不应移动
+        assertEquals(new Point(0, 0), bb.getCarPosition(TEST_CAR).orElseThrow());
+        assertEquals(CarStatus.READY, bb.getCarStatus(TEST_CAR).orElseThrow());
+        // 路径完整未变
+        assertEquals(2, bb.getCarRoute(TEST_CAR).size());
+    }
+
+    @Test
+    void positionReservationReleasedAfterMove() {
+        bb.setCarPosition(TEST_CAR, new Point(5, 5));
+        bb.setCarStatus(TEST_CAR, CarStatus.READY);
+        bb.pushRoute(TEST_CAR, List.of(new Point(5, 6)));
+
+        executor.executeMove(1);
+
+        // 移动完成后，位置预约锁应被释放，其他车可以预约
+        assertTrue(bb.tryReservePosition(5, 6, "CarOther"));
+        bb.releaseReservePosition(5, 6, "CarOther");
+    }
+
+    @Test
+    void positionReservationReleasedOnObstacle() {
+        bb.setCarPosition(TEST_CAR, new Point(0, 0));
+        bb.setCarStatus(TEST_CAR, CarStatus.READY);
+        bb.setBlock(1, 0, true);
+        bb.pushRoute(TEST_CAR, List.of(new Point(0, 1)));
+
+        executor.executeMove(1);
+
+        // 遇到障碍物后，预约锁应被释放
+        assertTrue(bb.tryReservePosition(0, 1, "CarOther"));
+        bb.releaseReservePosition(0, 1, "CarOther");
+    }
+
     // ==================== 点亮 3×3 ====================
 
     @Test
@@ -190,10 +237,10 @@ class MoveExecutorTest {
         executor.executeMove(1);
 
         // 新位置 (3,2) 周围 3×3 被点亮
-        assertTrue(bb.getMapViewBit(1, 2));  // center.y-1
-        assertTrue(bb.getMapViewBit(2, 3));  // center.x+1
-        assertTrue(bb.getMapViewBit(3, 3));  // (center.y+1, center.x+1)
-        assertTrue(bb.getMapViewBit(2, 2));  // center
+        assertTrue(bb.getMapViewBit(1, 2));
+        assertTrue(bb.getMapViewBit(2, 3));
+        assertTrue(bb.getMapViewBit(3, 3));
+        assertTrue(bb.getMapViewBit(2, 2));
     }
 
     @Test

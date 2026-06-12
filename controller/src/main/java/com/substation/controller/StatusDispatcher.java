@@ -46,6 +46,8 @@ public class StatusDispatcher {
     private final MessageBus bus;
     /** 待响应的目标分配请求集合（线程安全） */
     private final Set<String> pendingTargetRequests;
+    /** 待响应的路径规划请求集合（线程安全），防止同车重复发 PLAN_ROUTE */
+    private final Set<String> pendingPlanRequests;
     /** 车辆连续处于MOVING状态的节拍计数 */
     private final Map<String, Integer> movingTickCounts;
     /** 当前节拍号 */
@@ -66,6 +68,7 @@ public class StatusDispatcher {
         this.bb = bb;
         this.bus = bus;
         this.pendingTargetRequests = ConcurrentHashMap.newKeySet();
+        this.pendingPlanRequests = ConcurrentHashMap.newKeySet();
         this.movingTickCounts = new ConcurrentHashMap<>();
     }
 
@@ -126,6 +129,7 @@ public class StatusDispatcher {
 
     /** 路径规划结果回调：成功则车辆就绪等待移动，失败则回到待机状态 */
     public void onRoutePlanned(String carId, boolean routeFound) {
+        pendingPlanRequests.remove(carId);
         if (routeFound) {
             bb.setCarStatus(carId, CarStatus.READY);
         } else {
@@ -158,8 +162,24 @@ public class StatusDispatcher {
         }
     }
 
+    /** 查询调度是否活跃（reset 窗口返回 false，阻断旧消息） */
+    public boolean isActive() {
+        return taskActive;
+    }
+
+    /** 绑定 TickScheduler，供重置时停止节拍 */
+    private TickScheduler scheduler;
+
+    public void setScheduler(TickScheduler scheduler) {
+        this.scheduler = scheduler;
+    }
+
     /** 转发重置消息并清理本地状态（待响应请求、移动计数、任务活跃标志） */
     public void forwardReset() {
+        if (scheduler != null) {
+            scheduler.stop();
+            scheduler.resetPaused();
+        }
         try {
             String msg = MessageBuilder.build(MessageTypes.FORWARD_RESET, tick);
             bus.publish(QueueNames.TASK_CONFIG_CMD, msg);
@@ -167,6 +187,7 @@ public class StatusDispatcher {
             e.printStackTrace();
         }
         pendingTargetRequests.clear();
+        pendingPlanRequests.clear();
         movingTickCounts.clear();
         taskActive = false;
     }
@@ -202,6 +223,9 @@ public class StatusDispatcher {
 
     /** 发送路径规划请求到导航器（携带起点、终点、算法） */
     private void checkAndPlanRoute(String carId) {
+        if (!pendingPlanRequests.add(carId)) {
+            return;  // 已发送过，等 ROUTE_PLANNED 回复，防止重复
+        }
         bb.getCarTarget(carId).ifPresent(target ->
             bb.getCarPosition(carId).ifPresent(pos -> {
                 String algorithm = bb.getAlgorithm();
@@ -280,7 +304,7 @@ public class StatusDispatcher {
     private void completeTask() {
         taskActive = false;
         long elapsed = (System.currentTimeMillis() - taskStartTime) / 1000;
-        bb.initTaskConfig(Map.of(FIELD_ELAPSED_SECONDS, String.valueOf(elapsed)));
+        bb.setElapsedSeconds(elapsed);
         Map<String, Object> data = Map.of("explorationRate", 100);
         try {
             String msg = MessageBuilder.build(MessageTypes.REFRESH_ALL, tick, null, data);

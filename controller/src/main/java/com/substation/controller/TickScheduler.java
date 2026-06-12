@@ -43,6 +43,11 @@ public class TickScheduler {
         paused = !paused;
     }
 
+    /** 重置暂停状态（供 forwardReset 调用） */
+    public void resetPaused() {
+        paused = false;
+    }
+
     /** 查询当前是否处于暂停状态 */
     public boolean isPaused() {
         return paused;
@@ -56,11 +61,17 @@ public class TickScheduler {
         }
     }
 
-    /** 停止调度并关闭执行器 */
+    /** 停止调度，不关闭线程池（允许重启） */
     public void stop() {
         if (future != null) {
             future.cancel(false);
+            future = null;
         }
+    }
+
+    /** 关闭线程池（仅 JVM 退出时调用） */
+    public void shutdown() {
+        stop();
         executor.shutdown();
     }
 

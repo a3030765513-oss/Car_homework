@@ -11,12 +11,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
 
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeoutException;
 
 public class TaskConfiguratorMain {
@@ -103,23 +100,12 @@ public class TaskConfiguratorMain {
 
     private void handleReset(int tick) throws IOException {
         selectiveClear();
-        log.info("[TaskConfigurator] 已重置黑板");
-
-        String reply = MessageBuilder.build(MessageTypes.TASK_READY, tick);
-        messageBus.publish(QueueNames.CONTROLLER_CMD, reply);
+        log.info("[TaskConfigurator] 已重置黑板，等待用户点击开始");
     }
 
     private void selectiveClear() {
-        JedisPool pool = bb.getJedisPool();
-        try (Jedis jedis = pool.getResource()) {
-            Set<String> keys = new HashSet<>(jedis.keys("Car*"));
-            keys.add("mapView");
-            keys.add("mapBlock");
-            keys.add("mapHeat");
-            keys.add("TaskConfig");
-            if (!keys.isEmpty()) {
-                jedis.del(keys.toArray(new String[0]));
-            }
+        try (Jedis jedis = bb.getJedisPool().getResource()) {
+            jedis.flushDB();
         }
     }
 }

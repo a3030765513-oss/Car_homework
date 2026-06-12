@@ -290,7 +290,7 @@ public class BlackboardClient implements AutoCloseable {
      */
     public Optional<Point> peekNextRouteStep(String carId) {
         try (Jedis jedis = pool.getResource()) {
-            String json = jedis.lindex(carId + ":RouteList", -1);
+            String json = jedis.lindex(carId + ":RouteList", 0);
             return json != null ? Optional.of(Point.fromJson(json)) : Optional.empty();
         }
     }
@@ -303,7 +303,7 @@ public class BlackboardClient implements AutoCloseable {
      */
     public Optional<Point> popNextRouteStep(String carId) {
         try (Jedis jedis = pool.getResource()) {
-            String json = jedis.rpop(carId + ":RouteList");
+            String json = jedis.lpop(carId + ":RouteList");
             return json != null ? Optional.of(Point.fromJson(json)) : Optional.empty();
         }
     }
@@ -317,8 +317,9 @@ public class BlackboardClient implements AutoCloseable {
     public void pushRoute(String carId, List<Point> route) {
         try (Jedis jedis = pool.getResource()) {
             String key = carId + ":RouteList";
-            for (Point p : route) {
-                jedis.lpush(key, p.toJson());
+            // 逆序 LPUSH：终点先推，起点最后推，保证索引 0 是第一步
+            for (int i = route.size() - 1; i >= 0; i--) {
+                jedis.lpush(key, route.get(i).toJson());
             }
         }
     }
@@ -596,6 +597,35 @@ public class BlackboardClient implements AutoCloseable {
      *
      * @param config 配置键值对
      */
+    /** 设置任务耗时秒数（单字段写入，不覆盖其他 TaskConfig 字段） */
+    public void setElapsedSeconds(long seconds) {
+        try (Jedis jedis = pool.getResource()) {
+            jedis.hset(KEY_TASK_CONFIG, "elapsedSeconds", String.valueOf(seconds));
+        }
+    }
+
+    // ==================== 位置预约锁（防多车重叠） ====================
+
+    /** 尝试预约目标位置，防止两车同时移动到同一格 */
+    public boolean tryReservePosition(int x, int y, String carId) {
+        try (Jedis jedis = pool.getResource()) {
+            SetParams params = SetParams.setParams().nx().ex(3);
+            String result = jedis.set("pos:reserve:" + x + ":" + y, carId, params);
+            return "OK".equals(result);
+        }
+    }
+
+    /** 释放位置预约 */
+    public void releaseReservePosition(int x, int y, String carId) {
+        try (Jedis jedis = pool.getResource()) {
+            String key = "pos:reserve:" + x + ":" + y;
+            String val = jedis.get(key);
+            if (carId.equals(val)) {
+                jedis.del(key);
+            }
+        }
+    }
+
     public void initTaskConfig(Map<String, String> config) {
         try (Jedis jedis = pool.getResource()) {
             jedis.hset(KEY_TASK_CONFIG, config);

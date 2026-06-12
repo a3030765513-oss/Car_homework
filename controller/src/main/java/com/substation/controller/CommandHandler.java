@@ -43,10 +43,12 @@ public class CommandHandler {
                     scheduler.start();
                 }
                 case MessageTypes.TARGET_ASSIGNED -> {
+                    if (scheduler.isPaused() || !dispatcher.isActive()) break;
                     boolean success = data != null && data.getBooleanValue("success", false);
                     dispatcher.onTargetAssigned(carId, success);
                 }
                 case MessageTypes.ROUTE_PLANNED -> {
+                    if (scheduler.isPaused() || !dispatcher.isActive()) break;
                     boolean routeFound = data != null && data.getBooleanValue("routeFound", false);
                     dispatcher.onRoutePlanned(carId, routeFound);
                 }

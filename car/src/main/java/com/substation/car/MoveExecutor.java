@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * 小车移动执行器 —— 负责 8 步原子移动操作。
+ * 小车移动执行器 —— 负责原子移动操作。
  *
  * <p>核心流程：
  * <ol>
@@ -25,12 +25,13 @@ import java.util.Optional;
  *   <li>检查状态是否为 READY</li>
  *   <li>状态切换为 MOVING（心跳）</li>
  *   <li>peek 下一步位置</li>
- *   <li>检查障碍物</li>
+ *   <li>位置预约锁（防重叠，SET NX EX 原子）</li>
+ *   <li>障碍物检查</li>
  *   <li>pop 消费该步</li>
  *   <li>清除旧位置 + 更新新位置</li>
- *   <li>更新 mapBlock 占位标记</li>
- *   <li>点亮 3×3 区域 + 热力图计数器</li>
- *   <li>递增步数 + 记录 History</li>
+ *   <li>新位置 mapBlock 标记</li>
+ *   <li>释放位置预约锁</li>
+ *   <li>点亮 3×3 + 热力图 + 步数 + History</li>
  *   <li>路径状态判定（IDLE / READY）</li>
  *   <li>分布式锁释放</li>
  * </ol>
@@ -91,13 +92,25 @@ public class MoveExecutor {
             return;
         }
         Point nextPos = nextStep.get();
+        int nx = nextPos.x();
+        int ny = nextPos.y();
 
-        if (bb.isBlocked(nextPos.y(), nextPos.x())) {
-            handleObstacleDetected(tick, nextPos);
+        // 位置预约锁：防多车重叠的核心机制
+        if (!bb.tryReservePosition(nx, ny, carId)) {
+            log.warn("[{}] 目标({},{})已被其他车预约，阻塞 tick={}", carId, nx, ny, tick);
+            bb.setCarStatus(carId, CarStatus.READY);
             return;
         }
 
-        executeStep(nextPos, tick);
+        try {
+            if (bb.isBlocked(ny, nx)) {
+                handleObstacleDetected(tick, nextPos);
+                return;
+            }
+            executeStep(nextPos, tick);
+        } finally {
+            bb.releaseReservePosition(nx, ny, carId);
+        }
     }
 
     private void executeStep(Point nextPos, int tick) {
