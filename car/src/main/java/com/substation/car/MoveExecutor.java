@@ -1,6 +1,5 @@
 package com.substation.car;
 
-import com.alibaba.fastjson2.JSONObject;
 import com.substation.common.model.CarStatus;
 import com.substation.common.model.Point;
 import com.substation.common.mq.MessageBuilder;
@@ -12,14 +11,13 @@ import com.substation.common.redis.DistributedLock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 
 import java.util.Map;
 import java.util.Optional;
 
 /**
- * 小车移动执行器 —— 负责 8 步原子移动操作。
+ * 小车移动执行器 —— 负责原子移动操作。
  *
  * <p>核心流程：
  * <ol>
@@ -27,12 +25,13 @@ import java.util.Optional;
  *   <li>检查状态是否为 READY</li>
  *   <li>状态切换为 MOVING（心跳）</li>
  *   <li>peek 下一步位置</li>
- *   <li>检查障碍物</li>
+ *   <li>位置预约锁（防重叠，SET NX EX 原子）</li>
+ *   <li>障碍物检查</li>
  *   <li>pop 消费该步</li>
  *   <li>清除旧位置 + 更新新位置</li>
- *   <li>更新 mapBlock 占位标记</li>
- *   <li>点亮 3×3 区域 + 热力图计数器</li>
- *   <li>递增步数 + 记录 History</li>
+ *   <li>新位置 mapBlock 标记</li>
+ *   <li>释放位置预约锁</li>
+ *   <li>点亮 3×3 + 热力图 + 步数 + History</li>
  *   <li>路径状态判定（IDLE / READY）</li>
  *   <li>分布式锁释放</li>
  * </ol>
@@ -80,16 +79,12 @@ public class MoveExecutor {
     // ==================== 主流程 ====================
 
     private void doMove(int tick) {
-        // Step 2: 检查状态
         Optional<CarStatus> statusOpt = bb.getCarStatus(carId);
         if (statusOpt.isEmpty() || statusOpt.get() != CarStatus.READY) {
             return;
         }
-
-        // 状态切换为 MOVING（心跳，防 Controller 误判崩溃）
         bb.setCarStatus(carId, CarStatus.MOVING);
 
-        // Step 3: peek 下一步
         Optional<Point> nextStep = bb.peekNextRouteStep(carId);
         if (nextStep.isEmpty()) {
             log.warn("[{}] 状态为 READY 但 RouteList 为空", carId);
@@ -100,46 +95,43 @@ public class MoveExecutor {
         int nx = nextPos.x();
         int ny = nextPos.y();
 
-        // Step 4: 障碍物检测
-        if (bb.isBlocked(ny, nx)) {
-            handleObstacleDetected(tick, nextPos);
+        // 位置预约锁：防多车重叠的核心机制
+        if (!bb.tryReservePosition(nx, ny, carId)) {
+            log.warn("[{}] 目标({},{})已被其他车预约，阻塞 tick={}", carId, nx, ny, tick);
+            bb.setCarStatus(carId, CarStatus.READY);
             return;
         }
 
-        // Step 5: pop 消费该步
+        try {
+            if (bb.isBlocked(ny, nx)) {
+                handleObstacleDetected(tick, nextPos);
+                return;
+            }
+            executeStep(nextPos, tick);
+        } finally {
+            bb.releaseReservePosition(nx, ny, carId);
+        }
+    }
+
+    private void executeStep(Point nextPos, int tick) {
         bb.popNextRouteStep(carId);
-
-        // Step 6 & 7: 清除旧位置 mapBlock 标记
-        Optional<Point> oldPos = bb.getCarPosition(carId);
-        oldPos.ifPresent(p -> bb.setBlock(p.y(), p.x(), false));
-
-        // 更新新位置
+        bb.getCarPosition(carId).ifPresent(old -> bb.setBlock(old.y(), old.x(), false));
         bb.setCarPosition(carId, nextPos);
-
-        // Step 8: 新位置标记为占用
-        bb.setBlock(ny, nx, true);
-
-        // Step 9: 点亮 3×3 + 热力图
+        bb.setBlock(nextPos.y(), nextPos.x(), true);
         illuminateAndHeat(nextPos);
-
-        // Step 10: 步数 +1
         bb.incrementCarSteps(carId);
+        bb.appendCarHistory(carId, nextPos, tick);
+        finalizeMove(tick, nextPos);
+    }
 
-        // History 路径记录
-        recordHistory(nextPos, tick);
-
-        // Step 11: 路径完成判定
-        boolean routeDone = bb.getCarRoute(carId).isEmpty();
-        if (routeDone) {
-            bb.clearCarTarget(carId);
+    private void finalizeMove(int tick, Point pos) {
+        if (bb.getCarRoute(carId).isEmpty()) {
             bb.setCarStatus(carId, CarStatus.IDLE);
-            sendRouteDone(tick, nextPos);
-            log.info("[{}] 路径走完，最终位置({},{})，tick={}", carId, nx, ny, tick);
+            sendRouteDone(tick, pos);
+            log.info("[{}] 路径走完，最终位置({},{})，tick={}", carId, pos.x(), pos.y(), tick);
         } else {
             bb.setCarStatus(carId, CarStatus.READY);
-            sendMoved(tick, nextPos);
-            log.debug("[{}] 移动到({},{})，路径剩余 {} 步", carId, nx, ny,
-                    bb.getCarRoute(carId).size());
+            sendMoved(tick, pos);
         }
     }
 
@@ -147,7 +139,6 @@ public class MoveExecutor {
 
     private void handleObstacleDetected(int tick, Point blockedPos) {
         bb.clearRoute(carId);
-        bb.clearCarTarget(carId);
         bb.setCarStatus(carId, CarStatus.BLOCKED);
         bb.setBlockedTick(carId, tick);
         sendBlocked(tick, blockedPos);
@@ -165,16 +156,6 @@ public class MoveExecutor {
                     bb.incrementMapHeat(r, c);
                 }
             }
-        }
-    }
-
-    private void recordHistory(Point position, int tick) {
-        try (Jedis jedis = pool.getResource()) {
-            JSONObject record = new JSONObject();
-            record.put("x", position.x());
-            record.put("y", position.y());
-            record.put("tick", tick);
-            jedis.rpush(carId + ":History", record.toJSONString());
         }
     }
 

@@ -184,4 +184,52 @@ class BlackboardClientTest {
         int rate = bb.getExplorationRate();
         assertTrue(rate >= 0);
     }
+
+    // ==================== History 记录 ====================
+
+    @Test
+    void appendCarHistory() {
+        bb.appendCarHistory("Car001", new Point(5, 10), 1);
+        bb.appendCarHistory("Car001", new Point(6, 10), 2);
+
+        try (Jedis jedis = pool.getResource()) {
+            List<String> records = jedis.lrange("Car001:History", 0, -1);
+            assertEquals(2, records.size());
+            assertTrue(records.get(0).contains("5") && records.get(0).contains("10"));
+            assertTrue(records.get(1).contains("6") && records.get(1).contains("10"));
+        }
+    }
+
+    // ==================== 位置预约锁（防重叠） ====================
+
+    @Test
+    void tryReservePosition() {
+        assertTrue(bb.tryReservePosition(10, 5, "Car001"));
+        // 同一位置不能被其他车重复预约
+        assertFalse(bb.tryReservePosition(10, 5, "Car002"));
+        // 不同位置不冲突
+        assertTrue(bb.tryReservePosition(11, 5, "Car002"));
+        bb.releaseReservePosition(10, 5, "Car001");
+        bb.releaseReservePosition(11, 5, "Car002");
+    }
+
+    @Test
+    void releaseAndReacquireReservation() {
+        assertTrue(bb.tryReservePosition(3, 3, "Car001"));
+        // 非预约者不能释放
+        bb.releaseReservePosition(3, 3, "Car002");
+        assertFalse(bb.tryReservePosition(3, 3, "Car002"));
+        // 预约者释放后可以重新预约
+        bb.releaseReservePosition(3, 3, "Car001");
+        assertTrue(bb.tryReservePosition(3, 3, "Car002"));
+        bb.releaseReservePosition(3, 3, "Car002");
+    }
+
+    @Test
+    void sameCarCanReserveDifferentPositions() {
+        assertTrue(bb.tryReservePosition(1, 1, "Car001"));
+        assertTrue(bb.tryReservePosition(2, 2, "Car001"));
+        bb.releaseReservePosition(1, 1, "Car001");
+        bb.releaseReservePosition(2, 2, "Car001");
+    }
 }

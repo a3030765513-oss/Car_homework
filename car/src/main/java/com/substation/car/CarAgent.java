@@ -1,6 +1,7 @@
 package com.substation.car;
 
 import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONException;
 import com.alibaba.fastjson2.JSONObject;
 import com.substation.common.model.CarStatus;
 import com.substation.common.mq.MessageTypes;
@@ -54,8 +55,8 @@ public class CarAgent {
             } else {
                 log.warn("[{}] 收到未知消息类型: {}", carId, type);
             }
-        } catch (Exception e) {
-            log.warn("[{}] 收到非法消息: {}", carId, json);
+        } catch (JSONException e) {
+            log.warn("[{}] 收到非法 JSON 消息: {} — {}", carId, json, e.getMessage());
         }
     }
 

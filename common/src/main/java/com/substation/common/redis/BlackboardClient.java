@@ -1,5 +1,6 @@
 package com.substation.common.redis;
 
+import com.alibaba.fastjson2.JSONObject;
 import com.substation.common.model.CarStatus;
 import com.substation.common.model.Point;
 
@@ -8,7 +9,12 @@ import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.params.SetParams;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
+/**
+ * 黑板客户端，封装所有与Redis的交互操作。
+ * 包括地图状态、小车信息、热力图、任务配置、控制器锁、位置预约锁等。
+ */
 public class BlackboardClient implements AutoCloseable {
 
     private static final String KEY_MAP_VIEW = "mapView";
@@ -17,6 +23,10 @@ public class BlackboardClient implements AutoCloseable {
     private static final String KEY_TASK_CONFIG = "TaskConfig";
     private static final String KEY_CONTROLLER_INSTANCE = "controller:instance";
     private static final int CONTROLLER_LOCK_TTL_SECONDS = 30;
+    /** 位置预约锁 key 前缀，防止多车同时移动到同一格子 */
+    private static final String POSITION_RESERVE_PREFIX = "pos:reserve:";
+    /** 位置预约锁 TTL（秒），防止小车崩溃后锁永不释放 */
+    private static final int POSITION_RESERVE_TTL_SECONDS = 5;
     private static final String FIELD_X = "x";
     private static final String FIELD_Y = "y";
     private static final String FIELD_ACTIVE = "active";
@@ -57,13 +67,23 @@ public class BlackboardClient implements AutoCloseable {
 
     public int getExplorationRate() {
         try (Jedis jedis = pool.getResource()) {
-            long total = (long) mapWidth * mapHeight;
-            long blocked = jedis.bitcount(KEY_MAP_BLOCK);
-            long explorable = total - blocked;
+            String ws = jedis.hget(KEY_TASK_CONFIG, FIELD_MAP_WIDTH);
+            String hs = jedis.hget(KEY_TASK_CONFIG, FIELD_MAP_HEIGHT);
+            int w = ws != null ? Integer.parseInt(ws) : mapWidth;
+            int h = hs != null ? Integer.parseInt(hs) : mapHeight;
+            long explored = 0;
+            long blocked = 0;
+            for (int r = 0; r < h; r++) {
+                for (int c = 0; c < w; c++) {
+                    long offset = (long) r * mapWidth + c;
+                    if (jedis.getbit(KEY_MAP_VIEW, offset)) explored++;
+                    if (jedis.getbit(KEY_MAP_BLOCK, offset)) blocked++;
+                }
+            }
+            long explorable = (long) w * h - blocked;
             if (explorable <= 0) {
                 return 100;
             }
-            long explored = jedis.bitcount(KEY_MAP_VIEW);
             return (int) (explored * 100 / explorable);
         }
     }
@@ -222,6 +242,52 @@ public class BlackboardClient implements AutoCloseable {
         }
     }
 
+    // ==================== CarID:History ====================
+
+    /** 向小车History追加一条移动记录 RPUSH {x, y, tick} */
+    public void appendCarHistory(String carId, Point position, int tick) {
+        try (Jedis jedis = pool.getResource()) {
+            JSONObject record = new JSONObject();
+            record.put("x", position.x());
+            record.put("y", position.y());
+            record.put("tick", tick);
+            jedis.rpush(carId + ":History", record.toJSONString());
+        }
+    }
+
+    // ==================== 位置预约锁（防重叠） ====================
+
+    /**
+     * 尝试预约目标格子，防止多车同时移动到同一位置。
+     * 使用 SET NX EX 原子命令，只有第一个成功。
+     *
+     * @param x    目标列号
+     * @param y    目标行号
+     * @param carId 预约者ID
+     * @return true 表示预约成功，false 表示已被其他车预约
+     */
+    public boolean tryReservePosition(int x, int y, String carId) {
+        try (Jedis jedis = pool.getResource()) {
+            String key = POSITION_RESERVE_PREFIX + x + ":" + y;
+            SetParams params = SetParams.setParams().nx().ex(POSITION_RESERVE_TTL_SECONDS);
+            return "OK".equals(jedis.set(key, carId, params));
+        }
+    }
+
+    /** 释放目标格子的预约锁。使用Lua脚本保证只有预约者本人才能释放。 */
+    public void releaseReservePosition(int x, int y, String carId) {
+        try (Jedis jedis = pool.getResource()) {
+            String key = POSITION_RESERVE_PREFIX + x + ":" + y;
+            String script =
+                "if redis.call('get', KEYS[1]) == ARGV[1] then " +
+                "    return redis.call('del', KEYS[1]) " +
+                "else " +
+                "    return 0 " +
+                "end";
+            jedis.eval(script, Collections.singletonList(key), Collections.singletonList(carId));
+        }
+    }
+
     // ==================== CarID:BlockedTick ====================
 
     public int getBlockedTick(String carId) {
@@ -344,7 +410,7 @@ public class BlackboardClient implements AutoCloseable {
         try (Jedis jedis = pool.getResource()) {
             return jedis.keys("Car*:Status").stream()
                 .map(key -> key.replace(":Status", ""))
-                .collect(java.util.stream.Collectors.toSet());
+                .collect(Collectors.toSet());
         }
     }
 
