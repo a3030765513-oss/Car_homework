@@ -131,8 +131,8 @@
 
   // ── 平滑移动动画 ──
 
-  /** 每步动画时长（ms） */
-  var ANIM_DURATION = 350;
+  /** 每步基础动画时长（ms） */
+  var ANIM_BASE_MS = 500;
 
   /** 动画队列: { carId: [{x,y}, {x,y}, ...] } 逐格移动 */
   var animQueue = {};
@@ -258,7 +258,7 @@
       }
 
       var elapsed = timestamp - animStepStart;
-      var progress = Math.min(elapsed / ANIM_DURATION, 1.0);
+      var progress = Math.min(elapsed / ANIM_BASE_MS, 1.0);
       var t = 1 - Math.pow(1 - progress, 3);
 
       animCurrent[id] = {
