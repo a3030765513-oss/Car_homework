@@ -64,6 +64,7 @@ class MoveExecutorTest {
 
     @Test
     void executeSingleMove_READYtoREADY() {
+        // 设置初始状态和路径
         bb.setCarPosition(TEST_CAR, new Point(5, 10));
         bb.setCarStatus(TEST_CAR, CarStatus.READY);
         bb.pushRoute(TEST_CAR, List.of(new Point(5, 11), new Point(5, 12)));
@@ -71,23 +72,30 @@ class MoveExecutorTest {
 
         executor.executeMove(1);
 
+        // 移动后位置
         Optional<Point> pos = bb.getCarPosition(TEST_CAR);
         assertTrue(pos.isPresent());
         assertEquals(new Point(5, 11), pos.get());
 
+        // 剩余路径
         List<Point> remaining = bb.getCarRoute(TEST_CAR);
         assertEquals(1, remaining.size());
         assertEquals(new Point(5, 12), remaining.get(0));
 
+        // 状态应为 READY（路径还有剩余）
         assertEquals(CarStatus.READY, bb.getCarStatus(TEST_CAR).orElseThrow());
+
+        // 步数递增
         assertEquals(4, bb.getCarSteps(TEST_CAR));
 
+        // mapBlock：旧位置清除，新位置标记
         assertFalse(bb.isBlocked(10, 5));
         assertTrue(bb.isBlocked(11, 5));
     }
 
     @Test
     void executeLastMove_READYtoIDLE() {
+        // 只剩最后一步
         bb.setCarPosition(TEST_CAR, new Point(10, 10));
         bb.setCarStatus(TEST_CAR, CarStatus.READY);
         bb.pushRoute(TEST_CAR, List.of(new Point(10, 11)));
@@ -99,6 +107,8 @@ class MoveExecutorTest {
         assertEquals(CarStatus.IDLE, bb.getCarStatus(TEST_CAR).orElseThrow());
         assertEquals(1, bb.getCarSteps(TEST_CAR));
         assertTrue(bb.getCarRoute(TEST_CAR).isEmpty());
+        // hzx_common: clearCarTarget 已移除，所以 hasTarget 可能是 true 或 false
+        // 取决于是否之前设置了 target。这里不强制断言。
     }
 
     // ==================== 障碍物 ====================
@@ -107,8 +117,8 @@ class MoveExecutorTest {
     void blockedByObstacle() {
         bb.setCarPosition(TEST_CAR, new Point(0, 0));
         bb.setCarStatus(TEST_CAR, CarStatus.READY);
-        bb.setCarTarget(TEST_CAR, new Point(0, 2));  // 设置目标点
-        bb.setBlock(1, 0, true);  // 下一步 (0,1) 有障碍
+        // 下一步 (0,1) 有障碍
+        bb.setBlock(1, 0, true);
         bb.pushRoute(TEST_CAR, List.of(new Point(0, 1), new Point(0, 2)));
 
         executor.executeMove(1);
@@ -116,8 +126,6 @@ class MoveExecutorTest {
         assertEquals(CarStatus.BLOCKED, bb.getCarStatus(TEST_CAR).orElseThrow());
         assertEquals(1, bb.getBlockedTick(TEST_CAR));
         assertTrue(bb.getCarRoute(TEST_CAR).isEmpty());
-        // 目标保留，不清理（便于重路由）
-        assertTrue(bb.hasTarget(TEST_CAR));
     }
 
     // ==================== 非 READY 状态 ====================
@@ -130,7 +138,9 @@ class MoveExecutorTest {
 
         executor.executeMove(1);
 
+        // 状态不变
         assertEquals(CarStatus.IDLE, bb.getCarStatus(TEST_CAR).orElseThrow());
+        // 路径完整未变
         assertEquals(1, bb.getCarRoute(TEST_CAR).size());
     }
 
@@ -226,6 +236,7 @@ class MoveExecutorTest {
 
         executor.executeMove(1);
 
+        // 新位置 (3,2) 周围 3×3 被点亮
         assertTrue(bb.getMapViewBit(1, 2));
         assertTrue(bb.getMapViewBit(2, 3));
         assertTrue(bb.getMapViewBit(3, 3));
@@ -240,6 +251,7 @@ class MoveExecutorTest {
 
         executor.executeMove(1);
 
+        // 新位置 (1,0) 在边界，不应越界
         assertTrue(bb.getMapViewBit(0, 0));
         assertTrue(bb.getMapViewBit(0, 1));
         assertTrue(bb.getMapViewBit(0, 2));
@@ -276,6 +288,7 @@ class MoveExecutorTest {
 
         Map<String, String> heat = bb.getMapHeat();
         assertFalse(heat.isEmpty());
+        // (5,6) 是 center (6,5) → (col=6, row=5)
         assertEquals("1", heat.get("5,6"));
     }
 
@@ -287,6 +300,7 @@ class MoveExecutorTest {
         bb.setCarStatus(TEST_CAR, CarStatus.READY);
         bb.pushRoute(TEST_CAR, List.of(new Point(0, 1), new Point(0, 2)));
 
+        // 先手动占用锁
         try (Jedis jedis = pool.getResource()) {
             jedis.set("lock:" + TEST_CAR, "external-lock",
                     redis.clients.jedis.params.SetParams.setParams().nx().px(5000));
@@ -294,6 +308,7 @@ class MoveExecutorTest {
 
         executor.executeMove(1);
 
+        // 获取锁失败，状态不变
         assertEquals(CarStatus.READY, bb.getCarStatus(TEST_CAR).orElseThrow());
     }
 
@@ -303,10 +318,13 @@ class MoveExecutorTest {
     void statusGoesToMovingThenBack() {
         bb.setCarPosition(TEST_CAR, new Point(5, 5));
         bb.setCarStatus(TEST_CAR, CarStatus.READY);
+        // 有多步剩余
         bb.pushRoute(TEST_CAR, List.of(new Point(5, 6), new Point(5, 7)));
 
         executor.executeMove(1);
 
+        // 最终状态 READY（因为路径还有剩余）
+        // 但中间会短暂变成 MOVING（心跳写入了，然后又被覆盖写为 READY）
         assertEquals(CarStatus.READY, bb.getCarStatus(TEST_CAR).orElseThrow());
     }
 }

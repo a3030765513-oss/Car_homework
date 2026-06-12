@@ -45,6 +45,8 @@ public final class DynamicObstacleUtil {
         return Collections.unmodifiableList(changes);
     }
 
+    // ==================== 收集现有障碍物 ====================
+
     private List<Point> collectExistingObstacles(BlackboardClient bb,
                                                   int width, int height) {
         List<Point> obstacles = new ArrayList<>();
@@ -58,6 +60,8 @@ public final class DynamicObstacleUtil {
         return obstacles;
     }
 
+    // ==================== 随机移除 ====================
+
     private void removeRandomObstacles(BlackboardClient bb, List<Point> obstacles,
                                         List<String> changes) {
         Collections.shuffle(obstacles, random);
@@ -68,6 +72,8 @@ public final class DynamicObstacleUtil {
             changes.add("移除(" + p.x() + "," + p.y() + ")");
         }
     }
+
+    // ==================== 随机新增 ====================
 
     private void addRandomObstacles(BlackboardClient bb, int width, int height,
                                      Set<Point> carPositions, List<String> changes) {

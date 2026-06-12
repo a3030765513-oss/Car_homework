@@ -6,21 +6,29 @@ import com.substation.common.mq.MessageTypes;
 
 import java.util.Map;
 
+/** 命令处理器：解析入站消息并按消息类型路由到调度器/分派器/配置模块 */
 public class CommandHandler {
 
+    /** 最小时调节拍间隔（毫秒），防止过于频繁的调度 */
     private static final int MIN_TICK_INTERVAL_MS = 100;
+    /** 最大时调节拍间隔（毫秒），防止间隔过大导致响应迟钝 */
     private static final int MAX_TICK_INTERVAL_MS = 2000;
 
+    /** 消息总线 */
     private final MessageBus bus;
+    /** 状态分派器 */
     private final StatusDispatcher dispatcher;
+    /** 节拍调度器 */
     private final TickScheduler scheduler;
 
+    /** 创建命令处理器，绑定消息总线、状态分派器和节拍调度器 */
     public CommandHandler(MessageBus bus, StatusDispatcher dispatcher, TickScheduler scheduler) {
         this.bus = bus;
         this.dispatcher = dispatcher;
         this.scheduler = scheduler;
     }
 
+    /** 处理入站消息：解析JSON并按消息类型分发到对应组件 */
     public void handle(String raw) {
         try {
             JSONObject msg = JSONObject.parse(raw);
@@ -43,7 +51,7 @@ public class CommandHandler {
                     dispatcher.onRoutePlanned(carId, routeFound);
                 }
                 case MessageTypes.MOVED, MessageTypes.ROUTE_DONE, MessageTypes.BLOCKED ->
-                    {} // Car already wrote status, no action needed
+                    {} // Car 已自行写入状态，无需额外处理
                 case MessageTypes.SET_CONFIG -> {
                     if (data != null) {
                         dispatcher.forwardConfig(data);
@@ -57,6 +65,13 @@ public class CommandHandler {
                         if (interval >= MIN_TICK_INTERVAL_MS && interval <= MAX_TICK_INTERVAL_MS) {
                             scheduler.setInterval(interval);
                         }
+                    }
+                }
+                case "TOGGLE_OBSTACLE" -> {
+                    if (data != null) {
+                        int row = data.getIntValue("row");
+                        int col = data.getIntValue("col");
+                        dispatcher.toggleObstacle(row, col);
                     }
                 }
                 default -> System.out.println("[Controller] 未知消息类型: " + type);
