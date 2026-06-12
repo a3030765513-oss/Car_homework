@@ -16,16 +16,16 @@ if %errorlevel% neq 0 (
 
 :: 检查 Redis
 echo [检查] Redis (6379)...
-redis-cli ping >nul 2>&1
+docker exec redis-car redis-cli ping >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [WARN]  Redis 未响应，请先启动 Redis 服务
+    echo [WARN]  Redis 未响应，请确保 Docker 已启动且 redis-car 容器在运行
 )
 
 :: 检查 RabbitMQ
 echo [检查] RabbitMQ (5672)...
-curl -s http://localhost:15672 >nul 2>&1
+docker exec rabbitmq-car rabbitmqctl status >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [WARN]  RabbitMQ 未响应，请先启动 RabbitMQ 服务
+    echo [WARN]  RabbitMQ 未响应，请确保 Docker 已启动且 rabbitmq-car 容器在运行
 )
 
 echo.
