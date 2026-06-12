@@ -121,6 +121,11 @@ class CommandHandlerTest {
         StubStatusDispatcher() {
             super(null, null);
         }
+
+        @Override
+        public boolean isActive() {
+            return true;  // 测试默认活跃，否则 TARGET_ASSIGNED/ROUTE_PLANNED 被守卫拦截
+        }
     }
 
     private static class StubTickScheduler extends TickScheduler {
@@ -143,5 +148,10 @@ class CommandHandlerTest {
 
         @Override
         public void start() {}
+
+        @Override
+        public boolean isPaused() {
+            return false;
+        }
     }
 }

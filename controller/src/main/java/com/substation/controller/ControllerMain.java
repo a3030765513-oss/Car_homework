@@ -50,12 +50,13 @@ public class ControllerMain {
 
         StatusDispatcher dispatcher = new StatusDispatcher(bb, bus);
         scheduler = new TickScheduler(dispatcher);
+        dispatcher.setScheduler(scheduler);
         CommandHandler handler = new CommandHandler(bus, dispatcher, scheduler);
 
         bus.subscribe(QueueNames.CONTROLLER_CMD, handler::handle);
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            scheduler.stop();
+            scheduler.shutdown();
             bb.releaseControllerLock();
             bus.close();
             bb.close();

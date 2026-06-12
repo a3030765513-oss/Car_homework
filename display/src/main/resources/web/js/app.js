@@ -486,6 +486,28 @@
     $elapsed.textContent = '⏱ 00:00';
     // 如果正在回放，返回实时
     if (mode === 'replay') { exitReplay(); }
+    // 清空地图数据，等待下一次开始
+    liveData = null;
+    replay.histories = {};
+    replay.minTick = 0;
+    replay.maxTick = 0;
+    replay.currentTick = 0;
+    initCanvasSize();
+    clearCanvas();
+  }
+
+  function clearCanvas() {
+    var canvas = document.getElementById('map-canvas');
+    if (canvas) {
+      var ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#0f0f23';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    $carsPanel.innerHTML = '<div class="car-card placeholder"><p>等待车辆数据...</p></div>';
+    $leaderboard.innerHTML = '';
+    $rate.textContent = '探索率: 0%';
+    $tick.textContent = '节拍: 0';
+    $modeTag.hidden = true;
   }
 
   function onAddCarClick() {
