@@ -104,13 +104,14 @@
 
   /** 回放模式专用状态 */
   var replay = {
-    histories: {},     // { carId: [{x, y, tick}, ...] }
-    minTick: 0,
-    maxTick: 0,
     currentTick: 0,
+    maxTick: 0,
     playing: false,
     timerId: null
   };
+
+  /** 从Redis加载的回放数据（REQUEST_REPLAY响应） */
+  var replayData = null;
 
   /** 耗时计时器 ID */
   var elapsedTimerId = null;
@@ -143,14 +144,15 @@
 
   function onSocketMessage(event) {
     wasEverConnected = true;
-    liveData = JSON.parse(event.data);
+    var msg = JSON.parse(event.data);
+    if (msg.type === 'REPLAY_DATA') {
+      receiveReplayData(msg);
+      return;
+    }
+    liveData = msg;
     if (mode === 'live') {
       initCanvasSize();
       renderLive();
-    }
-    // 回放模式下同步更新历史数据，但不干扰回放渲染
-    if (mode === 'replay') {
-      collectHistories(liveData);
     }
   }
 
@@ -488,10 +490,9 @@
     if (mode === 'replay') { exitReplay(); }
     // 清空地图数据，等待下一次开始
     liveData = null;
-    replay.histories = {};
-    replay.minTick = 0;
-    replay.maxTick = 0;
+    replayData = null;
     replay.currentTick = 0;
+    replay.maxTick = 0;
     initCanvasSize();
     clearCanvas();
   }
@@ -532,58 +533,109 @@
   }
 
   // ═══════════════════════════════════════════════════════════
-  // 路径回放
+  // 路径回放（基于Redis存储的完整历史数据）
   // ═══════════════════════════════════════════════════════════
 
-  function collectHistories(data) {
-    if (!data.cars) { return; }
-    for (var i = 0; i < data.cars.length; i++) {
-      var car = data.cars[i];
-      if (!car.position) { continue; }
-      if (!replay.histories[car.carId]) {
-        replay.histories[car.carId] = [];
+  function receiveReplayData(msg) {
+    replayData = msg;
+    replay.maxTick = msg.maxTick || 0;
+    replay.currentTick = 0;
+    replay.playing = false;
+
+    // 构建每辆车的tick→位置索引（提升回放查表性能）
+    replayData._carIndex = {};
+    var histories = msg.carHistories || {};
+    for (var carId in histories) {
+      var arr = histories[carId];
+      if (!Array.isArray(arr)) { arr = []; }
+      var parsed = [];
+      for (var i = 0; i < arr.length; i++) {
+        var e = (typeof arr[i] === 'string') ? JSON.parse(arr[i]) : arr[i];
+        parsed.push({ x: e.x, y: e.y, tick: e.tick });
       }
-      var entry = { x: car.position.x, y: car.position.y, tick: data.tick };
-      var arr = replay.histories[car.carId];
-      // 避免同 tick 重复记录
-      if (arr.length === 0 || arr[arr.length - 1].tick !== data.tick) {
-        arr.push(entry);
+      replayData._carIndex[carId] = parsed;
+    }
+
+    // 构建tick→mapView索引：从explorationEvents按tick累积
+    var events = msg.explorationEvents || [];
+    if (!Array.isArray(events)) { events = []; }
+    var w = msg.mapWidth || 30;
+    var h = msg.mapHeight || 30;
+    replayData._tickViews = [];
+    var currentView = createEmptyView(w, h);
+    replayData._tickViews[0] = cloneView(currentView);
+    var eventIdx = 0;
+    // 对tick排序（event格式："tick,row,col"）
+    var parsedEvents = [];
+    for (var i = 0; i < events.length; i++) {
+      var parts = (typeof events[i] === 'string') ? events[i].split(',') : [events[i].tick, events[i].row, events[i].col];
+      parsedEvents.push({ tick: parseInt(parts[0], 10), row: parseInt(parts[1], 10), col: parseInt(parts[2], 10) });
+    }
+    parsedEvents.sort(function(a, b) { return a.tick - b.tick; });
+
+    for (var tick = 1; tick <= replay.maxTick; tick++) {
+      while (eventIdx < parsedEvents.length && parsedEvents[eventIdx].tick <= tick) {
+        var ev = parsedEvents[eventIdx];
+        if (ev.row >= 0 && ev.row < h && ev.col >= 0 && ev.col < w) {
+          currentView[ev.row][ev.col] = true;
+        }
+        eventIdx++;
+      }
+      replayData._tickViews[tick] = cloneView(currentView);
+    }
+    replayData._mapBlock = msg.mapBlock || [];
+
+    mode = 'replay';
+    replay.playing = false;
+    $btnReplay.hidden = true;
+    $btnLive.hidden = false;
+    $replayControls.hidden = false;
+    $modeTag.hidden = false;
+    $modeTag.textContent = '回放';
+    $replaySlider.min = 0;
+    $replaySlider.max = replay.maxTick;
+    $replaySlider.value = 0;
+    updateReplayLabel();
+    renderReplayFrame();
+  }
+
+  function createEmptyView(w, h) {
+    var view = [];
+    for (var r = 0; r < h; r++) {
+      view[r] = [];
+      for (var c = 0; c < w; c++) {
+        view[r][c] = false;
       }
     }
+    return view;
+  }
+
+  function cloneView(view) {
+    return view.map(function(row) { return row.slice(); });
   }
 
   function enterReplay() {
-    // 基于已收集的 histories 确定时间轴范围
-    replay.minTick = Number.MAX_VALUE;
-    replay.maxTick = 0;
-    var hasData = false;
-    for (var carId in replay.histories) {
-      var arr = replay.histories[carId];
-      if (arr.length > 0) {
-        hasData = true;
-        replay.minTick = Math.min(replay.minTick, arr[0].tick);
-        replay.maxTick = Math.max(replay.maxTick, arr[arr.length - 1].tick);
-      }
-    }
-    if (!hasData) {
-      alert('暂无历史数据可回放，请先运行一段时间');
+    if (replayData && replayData.maxTick > 0) {
+      // 已有数据，直接进入回放
+      replay.currentTick = 0;
+      replay.playing = false;
+      mode = 'replay';
+      $btnReplay.hidden = true;
+      $btnLive.hidden = false;
+      $replayControls.hidden = false;
+      $modeTag.hidden = false;
+      $modeTag.textContent = '回放';
+      $replaySlider.min = 0;
+      $replaySlider.max = replay.maxTick;
+      $replaySlider.value = 0;
+      updateReplayLabel();
+      renderReplayFrame();
       return;
     }
-
-    mode = 'replay';
-    replay.currentTick = replay.minTick;
-    replay.playing = false;
-
-    $btnReplay.hidden = true;
-    $btnLive.hidden   = false;
-    $replayControls.hidden = false;
+    // 向服务器请求回放数据
     $modeTag.hidden = false;
-
-    $replaySlider.min = replay.minTick;
-    $replaySlider.max = replay.maxTick;
-    $replaySlider.value = replay.minTick;
-    updateReplayLabel();
-    renderReplayFrame();
+    $modeTag.textContent = '加载回放数据...';
+    ws.send(JSON.stringify({ type: 'REQUEST_REPLAY' }));
   }
 
   function exitReplay() {
@@ -596,49 +648,51 @@
     $replayControls.hidden = true;
     $modeTag.hidden = true;
 
-    // 恢复实时渲染
     if (liveData) { renderLive(); }
   }
 
   function renderReplayFrame() {
-    // 查表：找到当前 tick 每台车的位置
-    if (!liveData) { return; }
+    if (!replayData) { return; }
+    var tick = replay.currentTick;
+    var mapView = (replayData._tickViews && replayData._tickViews[tick]) || replayData._tickViews[0] || createEmptyView(replayData.mapWidth || 30, replayData.mapHeight || 30);
 
-    // 用 liveData 的结构做模板，替换 car 位置
     var frame = {
-      tick: replay.currentTick,
-      explorationRate: liveData.explorationRate,
-      taskConfig: liveData.taskConfig,
-      mapView: liveData.mapView,
-      mapBlock: liveData.mapBlock,
+      tick: tick,
+      explorationRate: 0,
+      taskConfig: { mapWidth: String(replayData.mapWidth || 30), mapHeight: String(replayData.mapHeight || 30) },
+      mapView: mapView,
+      mapBlock: replayData._mapBlock || [],
       cars: []
     };
 
-    for (var i = 0; i < liveData.cars.length; i++) {
-      var carTemplate = liveData.cars[i];
-      var pos = lookupReplayPosition(carTemplate.carId, replay.currentTick);
-      frame.cars.push({
-        carId:     carTemplate.carId,
-        number:    carTemplate.number,
-        position:  pos,
-        target:    carTemplate.target,
-        routeList: [],               // 回放不显示路径
-        status:    pos ? 'MOVING' : 'IDLE',
-        steps:     carTemplate.steps
-      });
+    var index = replayData._carIndex || {};
+    for (var carId in index) {
+      var pos = lookupReplayPosition(carId, tick);
+      if (pos) {
+        var num = carId.replace('Car', '');
+        frame.cars.push({
+          carId: carId,
+          number: parseInt(num, 10) || 0,
+          position: pos,
+          target: null,
+          routeList: [],
+          status: 'MOVING',
+          steps: 0
+        });
+      }
     }
 
     renderGrid(frame);
     renderExplored(frame);
     renderObstacles(frame);
     renderCars(frame);
+    renderCarsPanel(frame);
     updateReplayLabel();
   }
 
   function lookupReplayPosition(carId, tick) {
-    var arr = replay.histories[carId];
+    var arr = replayData && replayData._carIndex && replayData._carIndex[carId];
     if (!arr || arr.length === 0) { return null; }
-    // 找到 ≤ tick 的最后一条记录
     var best = null;
     for (var i = 0; i < arr.length; i++) {
       if (arr[i].tick <= tick) {
@@ -659,13 +713,13 @@
   function startReplayTimer() {
     stopReplayTimer();
     replay.playing = true;
-    $replayToggle.textContent = '⏸';  // ⏸
+    $replayToggle.textContent = '⏸';
     replay.timerId = setInterval(replayTickForward, REPLAY_FRAME_MS);
   }
 
   function stopReplayTimer() {
     replay.playing = false;
-    $replayToggle.textContent = '▶';  // ▶
+    $replayToggle.textContent = '▶';
     if (replay.timerId) {
       clearInterval(replay.timerId);
       replay.timerId = null;

@@ -98,8 +98,7 @@ public class TaskConfiguratorMain {
         log.info("[TaskConfigurator] 已发送 TASK_READY");
     }
 
-    private void handleReset(int tick) throws IOException {
-        selectiveClear();
+    private void handleReset(int tick) {
         log.info("[TaskConfigurator] 已重置黑板，等待用户点击开始");
     }
 

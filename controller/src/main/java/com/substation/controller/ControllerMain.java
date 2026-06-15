@@ -46,6 +46,7 @@ public class ControllerMain {
         bus.declareTargetPlannerQueue();
         bus.declareNavigatorQueue();
         bus.declareTaskConfigQueue();
+        bus.declareStrategySupervisorQueue();
         bus.declareFanoutExchange();
 
         StatusDispatcher dispatcher = new StatusDispatcher(bb, bus);

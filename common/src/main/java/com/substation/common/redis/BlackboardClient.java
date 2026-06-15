@@ -27,6 +27,8 @@ public class BlackboardClient implements AutoCloseable {
     private static final String KEY_TASK_CONFIG = "TaskConfig";
     /** Redis key: 控制器实例锁 */
     private static final String KEY_CONTROLLER_INSTANCE = "controller:instance";
+    /** Redis key: 探索事件列表（回放用），每元素为 {tick,row,col} */
+    private static final String KEY_EXPLORATION_EVENTS = "explorationEvents";
     /** 控制器锁的TTL（秒），防止宕机后锁永不释放 */
     private static final int CONTROLLER_LOCK_TTL_SECONDS = 30;
     /** Hash字段名: X坐标 */
@@ -50,10 +52,14 @@ public class BlackboardClient implements AutoCloseable {
 
     /** Redis连接池 */
     private final JedisPool pool;
-    /** 地图宽度（列数） */
+    /** 地图宽度（列数）——构造函数默认值 */
     private final int mapWidth;
-    /** 地图高度（行数） */
+    /** 地图高度（行数）——构造函数默认值 */
     private final int mapHeight;
+    /** 从TaskConfig读取的有效宽度缓存，-1表示未初始化 */
+    private volatile int cachedTaskWidth = -1;
+    /** 从TaskConfig读取的有效高度缓存，-1表示未初始化 */
+    private volatile int cachedTaskHeight = -1;
 
     /**
      * 构造黑板客户端，创建Redis连接池。
@@ -71,13 +77,34 @@ public class BlackboardClient implements AutoCloseable {
 
     /**
      * 将二维坐标(row, col)转换为位图中的一维偏移量。
-     *
-     * @param row 行号
-     * @param col 列号
-     * @return 位图偏移量
+     * 优先使用TaskConfig中的地图宽度，未配置时回退到构造函数默认值。
      */
     private long bitmapOffset(int row, int col) {
-        return (long) row * mapWidth + col;
+        return (long) row * effectiveWidth() + col;
+    }
+
+    /** 获取有效地图宽度：优先TaskConfig，回退构造函数默认值 */
+    private int effectiveWidth() {
+        int w = cachedTaskWidth;
+        if (w > 0) return w;
+        w = getMapWidth();
+        if (w > 0) {
+            cachedTaskWidth = w;
+            return w;
+        }
+        return mapWidth;
+    }
+
+    /** 获取有效地图高度：优先TaskConfig，回退构造函数默认值 */
+    private int effectiveHeight() {
+        int h = cachedTaskHeight;
+        if (h > 0) return h;
+        h = getMapHeight();
+        if (h > 0) {
+            cachedTaskHeight = h;
+            return h;
+        }
+        return mapHeight;
     }
 
     // ==================== mapView ====================
@@ -108,6 +135,38 @@ public class BlackboardClient implements AutoCloseable {
         }
     }
 
+    /** 一次GET读取整个mapView位图的字节数组 */
+    public byte[] getMapViewBytes() {
+        try (Jedis jedis = pool.getResource()) {
+            byte[] bytes = jedis.get(KEY_MAP_VIEW.getBytes());
+            return bytes != null ? bytes : new byte[0];
+        }
+    }
+
+    /** 一次GET读取整个mapBlock位图的字节数组 */
+    public byte[] getMapBlockBytes() {
+        try (Jedis jedis = pool.getResource()) {
+            byte[] bytes = jedis.get(KEY_MAP_BLOCK.getBytes());
+            return bytes != null ? bytes : new byte[0];
+        }
+    }
+
+    /** 从字节数组构建boolean二维数组 */
+    public static boolean[][] bytesToBitmap(byte[] bytes, int width, int height) {
+        boolean[][] bitmap = new boolean[height][width];
+        for (int r = 0; r < height; r++) {
+            for (int c = 0; c < width; c++) {
+                long offset = (long) r * width + c;
+                int byteIdx = (int) (offset / 8);
+                int bitIdx = (int) (7 - (offset % 8));
+                if (byteIdx < bytes.length) {
+                    bitmap[r][c] = ((bytes[byteIdx] >> bitIdx) & 1) == 1;
+                }
+            }
+        }
+        return bitmap;
+    }
+
     /**
      * 计算地图探索率（百分比），排除障碍物格子。
      *
@@ -115,7 +174,9 @@ public class BlackboardClient implements AutoCloseable {
      */
     public int getExplorationRate() {
         try (Jedis jedis = pool.getResource()) {
-            long total = (long) mapWidth * mapHeight;
+            int w = readMapWidth(jedis);
+            int h = readMapHeight(jedis);
+            long total = (long) w * h;
             long blocked = jedis.bitcount(KEY_MAP_BLOCK);
             long explorable = total - blocked;
             if (explorable <= 0) {
@@ -124,6 +185,16 @@ public class BlackboardClient implements AutoCloseable {
             long explored = jedis.bitcount(KEY_MAP_VIEW);
             return (int) (explored * 100 / explorable);
         }
+    }
+
+    private int readMapWidth(Jedis jedis) {
+        String val = jedis.hget(KEY_TASK_CONFIG, FIELD_MAP_WIDTH);
+        return val != null ? Integer.parseInt(val) : mapWidth;
+    }
+
+    private int readMapHeight(Jedis jedis) {
+        String val = jedis.hget(KEY_TASK_CONFIG, FIELD_MAP_HEIGHT);
+        return val != null ? Integer.parseInt(val) : mapHeight;
     }
 
     /**
@@ -426,6 +497,49 @@ public class BlackboardClient implements AutoCloseable {
             record.put("y", position.y());
             record.put("tick", tick);
             jedis.rpush(carId + ":History", record.toJSONString());
+        }
+    }
+
+    /** 获取指定小车的全部历史轨迹 */
+    public List<String> getCarHistory(String carId) {
+        try (Jedis jedis = pool.getResource()) {
+            return jedis.lrange(carId + ":History", 0, -1);
+        }
+    }
+
+    /** 获取所有小车的历史轨迹，返回 carId → 轨迹列表 */
+    public Map<String, List<String>> getAllCarHistories() {
+        Map<String, List<String>> result = new java.util.LinkedHashMap<>();
+        for (String carId : discoverCarIds()) {
+            List<String> history = getCarHistory(carId);
+            if (!history.isEmpty()) {
+                result.put(carId, history);
+            }
+        }
+        return result;
+    }
+
+    // ==================== explorationEvents ====================
+
+    /**
+     * 尝试探索指定格子并记录事件。仅在格子首次被探索时记录到回放事件列表。
+     * 集成了 setMapViewBit 功能：返回 true 表示之前未被探索（新发现）。
+     */
+    public boolean recordExploration(int tick, int row, int col) {
+        try (Jedis jedis = pool.getResource()) {
+            boolean wasExplored = jedis.setbit(KEY_MAP_VIEW, bitmapOffset(row, col), true);
+            if (!wasExplored) {
+                String event = tick + "," + row + "," + col;
+                jedis.rpush(KEY_EXPLORATION_EVENTS, event);
+            }
+            return !wasExplored;
+        }
+    }
+
+    /** 获取全部探索事件列表（回放用） */
+    public List<String> getExplorationEvents() {
+        try (Jedis jedis = pool.getResource()) {
+            return jedis.lrange(KEY_EXPLORATION_EVENTS, 0, -1);
         }
     }
 

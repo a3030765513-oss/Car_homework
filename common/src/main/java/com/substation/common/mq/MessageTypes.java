@@ -43,4 +43,8 @@ public final class MessageTypes {
     public static final String TOGGLE_PAUSE = "TOGGLE_PAUSE";
     /** 前端请求修改tick间隔时间 */
     public static final String SET_TICK_INTERVAL = "SET_TICK_INTERVAL";
+    /** 策略监督：Controller请求审查路线优化 */
+    public static final String SUPERVISE_ROUTE = "SUPERVISE_ROUTE";
+    /** 策略监督：路线优化结果回复 */
+    public static final String ROUTE_OPTIMIZED = "ROUTE_OPTIMIZED";
 }

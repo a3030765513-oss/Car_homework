@@ -90,6 +90,11 @@ public class MessageBus implements AutoCloseable {
         channel.queueDeclare(QueueNames.CONTROLLER_CMD, true, false, false, null);
     }
 
+    /** 声明策略监督器指令队列。 */
+    public void declareStrategySupervisorQueue() throws IOException {
+        channel.queueDeclare(QueueNames.STRATEGY_SUPERVISOR_CMD, true, false, false, null);
+    }
+
     /** 声明视图更新Fanout交换机。 */
     public void declareFanoutExchange() throws IOException {
         channel.exchangeDeclare(QueueNames.UPDATE_VIEW_EXCHANGE, BuiltinExchangeType.FANOUT, true);

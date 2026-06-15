@@ -17,6 +17,7 @@
         <module>car</module>
         <module>navigator</module>
         <module>target-planner</module>
+        <module>strategy-supervisor</module>
         <module>task-configurator</module>
         <module>display</module>
         <module>launcher</module>

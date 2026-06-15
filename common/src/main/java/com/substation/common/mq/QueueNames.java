@@ -18,6 +18,8 @@ public final class QueueNames {
     public static final String TASK_CONFIG_CMD = "TaskConfigCmd";
     /** 控制器指令队列 */
     public static final String CONTROLLER_CMD = "ControllerCmd";
+    /** 策略监督器指令队列 */
+    public static final String STRATEGY_SUPERVISOR_CMD = "StrategySupervisorCmd";
     /** 视图更新广播交换机（Fanout） */
     public static final String UPDATE_VIEW_EXCHANGE = "UpdateView";
 

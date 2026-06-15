@@ -52,15 +52,25 @@ public class CommandHandler {
                     boolean routeFound = data != null && data.getBooleanValue("routeFound", false);
                     dispatcher.onRoutePlanned(carId, routeFound);
                 }
-                case MessageTypes.MOVED, MessageTypes.ROUTE_DONE, MessageTypes.BLOCKED ->
-                    {} // Car 已自行写入状态，无需额外处理
+                case MessageTypes.MOVED, MessageTypes.ROUTE_DONE -> {
+                    if (carId != null) dispatcher.onMoveAcknowledged(carId);
+                }
+                case MessageTypes.BLOCKED, MessageTypes.ROUTE_OPTIMIZED ->
+                    {}
                 case MessageTypes.SET_CONFIG -> {
                     if (data != null) {
                         dispatcher.forwardConfig(data);
                     }
                 }
-                case MessageTypes.RESET -> dispatcher.forwardReset();
-                case MessageTypes.TOGGLE_PAUSE -> scheduler.togglePause();
+                case MessageTypes.RESET -> {
+                    System.out.println("[Controller] 收到 RESET 消息");
+                    dispatcher.forwardReset();
+                }
+                case MessageTypes.TOGGLE_PAUSE -> {
+                    System.out.println("[Controller] 收到 TOGGLE_PAUSE, paused=" + scheduler.isPaused());
+                    scheduler.togglePause();
+                    System.out.println("[Controller] toggle后 paused=" + scheduler.isPaused());
+                }
                 case MessageTypes.SET_TICK_INTERVAL -> {
                     if (data != null) {
                         int interval = data.getIntValue("interval");

@@ -19,7 +19,7 @@ final class TaskInitializer {
     private static final int DEFAULT_CAR_COUNT = 5;
     private static final double DEFAULT_OBSTACLE_RATIO = 0.15;
     private static final String DEFAULT_ALGORITHM = "BFS";
-    private static final int DEFAULT_TICK_INTERVAL = 500;
+    private static final int DEFAULT_TICK_INTERVAL = 200;
     private static final int EDGE_MARGIN = 1;
     private static final int ILLUMINATION_RADIUS = 1;
     private static final int RANDOM_POSITION_MAX_ATTEMPTS = 200;
@@ -148,6 +148,7 @@ final class TaskInitializer {
         bb.setCarPosition(carId, position);
         bb.setCarStatus(carId, CarStatus.IDLE);
         bb.setCarSteps(carId, 0);
+        bb.appendCarHistory(carId, position, 0);
     }
 
     private void lightUpArea(BlackboardClient bb, Point center, int mapWidth, int mapHeight) {
@@ -158,7 +159,7 @@ final class TaskInitializer {
 
         for (int r = rStart; r <= rEnd; r++) {
             for (int c = cStart; c <= cEnd; c++) {
-                bb.setMapViewBit(r, c, true);
+                bb.recordExploration(0, r, c);
             }
         }
     }

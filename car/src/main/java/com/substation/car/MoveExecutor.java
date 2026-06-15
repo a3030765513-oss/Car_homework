@@ -41,12 +41,17 @@ public class MoveExecutor {
     private static final Logger log = LoggerFactory.getLogger(MoveExecutor.class);
     private static final int DEFAULT_MAP_SIZE = 30;
 
+    private static final int MAX_RESERVE_RETRIES = 3;
+
     private final String carId;
     private final BlackboardClient bb;
     private final MessageBus mb;
     private final JedisPool pool;
     private final int mapWidth;
     private final int mapHeight;
+    private int lastFailedX = -1;
+    private int lastFailedY = -1;
+    private int consecutiveReserveFailures;
 
     public MoveExecutor(String carId, BlackboardClient bb, MessageBus mb,
                         JedisPool pool, int mapWidth, int mapHeight) {
@@ -97,13 +102,38 @@ public class MoveExecutor {
 
         // 位置预约锁：防多车重叠的核心机制
         if (!bb.tryReservePosition(nx, ny, carId)) {
-            log.warn("[{}] 目标({},{})已被其他车预约，阻塞 tick={}", carId, nx, ny, tick);
+            if (nx == lastFailedX && ny == lastFailedY) {
+                consecutiveReserveFailures++;
+            } else {
+                consecutiveReserveFailures = 1;
+                lastFailedX = nx;
+                lastFailedY = ny;
+            }
+            if (consecutiveReserveFailures >= MAX_RESERVE_RETRIES) {
+                log.warn("[{}] tick={} 预约({},{})连续失败{}次，清路线回IDLE重分配",
+                    carId, tick, nx, ny, consecutiveReserveFailures);
+                consecutiveReserveFailures = 0;
+                bb.clearRoute(carId);
+                bb.clearCarTarget(carId);
+                bb.setCarStatus(carId, CarStatus.IDLE);
+                return;
+            }
+            log.warn("[{}] tick={} 预约失败({},{}) 第{}次，退回READY",
+                carId, tick, nx, ny, consecutiveReserveFailures);
             bb.setCarStatus(carId, CarStatus.READY);
             return;
         }
+        consecutiveReserveFailures = 0;
+        log.info("[{}] tick={} 预约成功({},{})", carId, tick, nx, ny);
 
         try {
             if (bb.isBlocked(ny, nx)) {
+                log.warn("[{}] tick={} 目标({},{})是障碍物 → handleObstacle", carId, tick, nx, ny);
+                handleObstacleDetected(tick, nextPos);
+                return;
+            }
+            if (isOccupiedByOtherCar(nx, ny)) {
+                log.warn("[{}] tick={} 目标({},{})被其他车占据 → IDLE重分配", carId, tick, nx, ny);
                 handleObstacleDetected(tick, nextPos);
                 return;
             }
@@ -113,10 +143,23 @@ public class MoveExecutor {
         }
     }
 
+    private boolean isOccupiedByOtherCar(int x, int y) {
+        for (String otherId : bb.discoverCarIds()) {
+            if (otherId.equals(carId)) {
+                continue;
+            }
+            Optional<Point> pos = bb.getCarPosition(otherId);
+            if (pos.isPresent() && pos.get().x() == x && pos.get().y() == y) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void executeStep(Point nextPos, int tick) {
         bb.popNextRouteStep(carId);
         bb.setCarPosition(carId, nextPos);
-        illuminateAndHeat(nextPos);
+        illuminateAndHeat(nextPos, tick);
         bb.incrementCarSteps(carId);
         bb.appendCarHistory(carId, nextPos, tick);
         finalizeMove(tick, nextPos);
@@ -138,20 +181,19 @@ public class MoveExecutor {
 
     private void handleObstacleDetected(int tick, Point blockedPos) {
         bb.clearRoute(carId);
-        bb.setCarStatus(carId, CarStatus.BLOCKED);
-        bb.setBlockedTick(carId, tick);
-        sendBlocked(tick, blockedPos);
-        log.warn("[{}] 下一步位置({},{})有障碍，进入 BLOCKED，tick={}",
+        bb.clearCarTarget(carId);
+        bb.setCarStatus(carId, CarStatus.IDLE);
+        log.warn("[{}] 下一步位置({},{})有障碍/被占，清路径+目标回IDLE重分配，tick={}",
                 carId, blockedPos.x(), blockedPos.y(), tick);
     }
 
-    private void illuminateAndHeat(Point center) {
+    private void illuminateAndHeat(Point center, int tick) {
         for (int dr = -1; dr <= 1; dr++) {
             for (int dc = -1; dc <= 1; dc++) {
                 int r = center.y() + dr;
                 int c = center.x() + dc;
                 if (r >= 0 && r < mapHeight && c >= 0 && c < mapWidth) {
-                    bb.setMapViewBit(r, c, true);
+                    bb.recordExploration(tick, r, c);
                     bb.incrementMapHeat(r, c);
                 }
             }

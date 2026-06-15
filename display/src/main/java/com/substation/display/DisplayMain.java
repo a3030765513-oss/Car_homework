@@ -207,17 +207,18 @@ public class DisplayMain {
         try {
             JSONObject mqMsg = JSONObject.parseObject(rawMessage);
 
-            // 从顶层取出 tick
             int tick = mqMsg.getIntValue("tick");
-
-            // 从 data 子对象中取出 explorationRate
             JSONObject data = mqMsg.getJSONObject("data");
             int explorationRate = 0;
             if (data != null) {
                 explorationRate = data.getIntValue("explorationRate");
             }
 
-            // 触发黑板读取 + 前端推送
+            if (tick == 1 || tick % 50 == 0) {
+                LOG.info("MQ收到 tick={} rawData={} parsedRate={}",
+                    tick, data != null ? data.toJSONString() : "null", explorationRate);
+            }
+
             wsBridge.pushSimulationState(tick, explorationRate);
         } catch (Exception e) {
             LOG.warn("解析 REFRESH_ALL 消息失败: {}", rawMessage, e);

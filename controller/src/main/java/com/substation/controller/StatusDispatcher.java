@@ -13,6 +13,7 @@ import com.substation.common.redis.BlackboardClient;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -23,10 +24,13 @@ public class StatusDispatcher {
     private static final int EXPLORATION_COMPLETE = 98;
     /** 所有车 IDLE 且无事可做的连续 tick 数，超时强制完成 */
     private static final int ALL_IDLE_COMPLETE_TICKS = 30;
-    /** 阻塞超时节拍数，超时后清除路径并重新分配目标 */
-    private static final int BLOCKED_TIMEOUT_TICKS = 2;
+    /** 阻塞随机超时范围（打破死锁） */
+    private static final int BLOCKED_TIMEOUT_MIN = 2;
+    private static final int BLOCKED_TIMEOUT_MAX = 5;
     /** 移动卡住节拍数，连续MOVING超此时长则强制切为READY */
     private static final int MOVING_STUCK_TICKS = 2;
+    /** 等待路径超时节拍数，超时后移除锁并退回IDLE重新分配 */
+    private static final int WAITING_ROUTE_TIMEOUT_TICKS = 5;
     /** 消息字段名：车辆ID */
     private static final String FIELD_CAR_ID = "carId";
     /** 消息字段名：路径起点 */
@@ -50,6 +54,16 @@ public class StatusDispatcher {
     private final Set<String> pendingPlanRequests;
     /** 车辆连续处于MOVING状态的节拍计数 */
     private final Map<String, Integer> movingTickCounts;
+    /** 车辆连续处于WAITING_ROUTE状态的节拍计数（超时兜底） */
+    private final Map<String, Integer> waitingRouteTickCounts;
+    /** 已发送TICK_MOVE等待车响应的集合（线程安全），防跳格 */
+    private final Set<String> pendingMoveRequests;
+    /** 本周期已完成策略监督的车辆（新目标后重置） */
+    private final Set<String> supervisedCarIds;
+    /** 随机数生成器 */
+    private final Random random = new Random();
+    /** 每车随机阻塞超时阈值（打破多车互堵死锁） */
+    private final Map<String, Integer> blockedTimeoutTicks;
     /** 当前节拍号 */
     private volatile int tick;
     /** 任务是否活跃 */
@@ -70,6 +84,10 @@ public class StatusDispatcher {
         this.pendingTargetRequests = ConcurrentHashMap.newKeySet();
         this.pendingPlanRequests = ConcurrentHashMap.newKeySet();
         this.movingTickCounts = new ConcurrentHashMap<>();
+        this.waitingRouteTickCounts = new ConcurrentHashMap<>();
+        this.pendingMoveRequests = ConcurrentHashMap.newKeySet();
+        this.supervisedCarIds = ConcurrentHashMap.newKeySet();
+        this.blockedTimeoutTicks = new ConcurrentHashMap<>();
     }
 
     // ==================== dispatch ====================
@@ -81,7 +99,12 @@ public class StatusDispatcher {
         }
         tick++;
 
-        if (bb.getExplorationRate() >= EXPLORATION_COMPLETE) {
+        int rate = bb.getExplorationRate();
+        if (tick % 20 == 0 || rate >= 95) {
+            System.out.println("[Controller] tick=" + tick + " rate=" + rate + "%");
+        }
+        if (rate >= EXPLORATION_COMPLETE) {
+            System.out.println("[Controller] 探索完成! tick=" + tick + " rate=" + rate);
             completeTask();
             return;
         }
@@ -97,9 +120,20 @@ public class StatusDispatcher {
         for (String carId : carIds) {
             bb.getCarStatus(carId).ifPresent(status -> dispatchCar(carId, status));
         }
+
+        // 兜底：Navigator 已把 route 写入 Redis 但 ROUTE_PLANNED 消息丢失 → 直接切 READY
+        for (String carId : carIds) {
+            if (pendingPlanRequests.contains(carId) && !bb.getCarRoute(carId).isEmpty()) {
+                pendingPlanRequests.remove(carId);
+                waitingRouteTickCounts.remove(carId);
+                bb.setCarStatus(carId, CarStatus.READY);
+            }
+        }
+
         for (String carId : carIds) {
             bb.getCarStatus(carId).ifPresent(status -> {
-                if (status == CarStatus.READY) {
+                if (status == CarStatus.READY && !pendingMoveRequests.contains(carId)) {
+                    pendingMoveRequests.add(carId);
                     sendTickMove(carId);
                 }
             });
@@ -128,14 +162,23 @@ public class StatusDispatcher {
         }
     }
 
-    /** 路径规划结果回调：成功则车辆就绪等待移动，失败则回到待机状态 */
+    /** 路径规划结果回调：成功则车辆就绪等待移动并触发策略监督，失败则回到待机状态 */
     public void onRoutePlanned(String carId, boolean routeFound) {
         pendingPlanRequests.remove(carId);
         if (routeFound) {
             bb.setCarStatus(carId, CarStatus.READY);
+            if (supervisedCarIds.add(carId)) {
+                sendSuperviseRoute(carId);
+            }
         } else {
             bb.setCarStatus(carId, CarStatus.IDLE);
+            supervisedCarIds.remove(carId);
         }
+    }
+
+    /** 车辆移动完成回调：清除TICK_MOVE发送标记，允许下一轮发送 */
+    public void onMoveAcknowledged(String carId) {
+        pendingMoveRequests.remove(carId);
     }
 
     /** 切换指定格子的障碍物状态（右键菜单触发） */
@@ -177,9 +220,11 @@ public class StatusDispatcher {
 
     /** 转发重置消息并清理本地状态（待响应请求、移动计数、任务活跃标志） */
     public void forwardReset() {
+        System.out.println("[Controller] forwardReset called, taskActive=" + taskActive + " tick=" + tick);
         if (scheduler != null) {
             scheduler.stop();
             scheduler.resetPaused();
+            System.out.println("[Controller] scheduler stopped, paused=" + scheduler.isPaused());
         }
         try {
             String msg = MessageBuilder.build(MessageTypes.FORWARD_RESET, tick);
@@ -190,6 +235,10 @@ public class StatusDispatcher {
         pendingTargetRequests.clear();
         pendingPlanRequests.clear();
         movingTickCounts.clear();
+        waitingRouteTickCounts.clear();
+        pendingMoveRequests.clear();
+        supervisedCarIds.clear();
+        blockedTimeoutTicks.clear();
         taskActive = false;
     }
 
@@ -199,6 +248,12 @@ public class StatusDispatcher {
     private void dispatchCar(String carId, CarStatus status) {
         if (status != CarStatus.MOVING) {
             movingTickCounts.remove(carId);
+        }
+        if (status != CarStatus.WAITING_ROUTE) {
+            waitingRouteTickCounts.remove(carId);
+        }
+        if (status != CarStatus.READY && status != CarStatus.MOVING) {
+            pendingMoveRequests.remove(carId);
         }
         switch (status) {
             case IDLE -> sendAssignTarget(carId);
@@ -211,6 +266,7 @@ public class StatusDispatcher {
 
     /** 发送目标分配请求到目标规划器 */
     private void sendAssignTarget(String carId) {
+        supervisedCarIds.remove(carId); // 新目标周期，允许再次监督
         pendingTargetRequests.add(carId);
         Map<String, Object> data = Map.of(FIELD_CAR_ID, carId);
         try {
@@ -222,27 +278,48 @@ public class StatusDispatcher {
         }
     }
 
-    /** 发送路径规划请求到导航器（携带起点、终点、算法） */
+    /** 发送路径规划请求到导航器，带缺失保护与超时兜底 */
     private void checkAndPlanRoute(String carId) {
-        if (!pendingPlanRequests.add(carId)) {
-            return;  // 已发送过，等 ROUTE_PLANNED 回复，防止重复
+        int waitingTicks = waitingRouteTickCounts.getOrDefault(carId, 0) + 1;
+        waitingRouteTickCounts.put(carId, waitingTicks);
+
+        if (waitingTicks >= WAITING_ROUTE_TIMEOUT_TICKS) {
+            waitingRouteTickCounts.remove(carId);
+            pendingPlanRequests.remove(carId);
+            bb.clearCarTarget(carId);
+            bb.setCarStatus(carId, CarStatus.IDLE);
+            return;
         }
-        bb.getCarTarget(carId).ifPresent(target ->
-            bb.getCarPosition(carId).ifPresent(pos -> {
-                String algorithm = bb.getAlgorithm();
-                Map<String, Object> data = Map.of(
-                    FIELD_CAR_ID, carId,
-                    FIELD_SUB_START, Map.of("x", pos.x(), "y", pos.y()),
-                    FIELD_SUB_TARGET, Map.of("x", target.x(), "y", target.y()),
-                    FIELD_ALGORITHM, algorithm != null ? algorithm : AlgorithmType.BFS.name()
-                );
-                try {
-                    String msg = MessageBuilder.build(MessageTypes.PLAN_ROUTE, tick, carId, data);
-                    bus.publish(QueueNames.NAVIGATOR_CMD, msg);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }));
+
+        if (!pendingPlanRequests.add(carId)) {
+            return;
+        }
+
+        var targetOpt = bb.getCarTarget(carId);
+        var posOpt = bb.getCarPosition(carId);
+        if (targetOpt.isEmpty() || posOpt.isEmpty()) {
+            pendingPlanRequests.remove(carId);
+            bb.setCarStatus(carId, CarStatus.IDLE);
+            return;
+        }
+
+        Point target = targetOpt.get();
+        Point pos = posOpt.get();
+        String algorithm = bb.getAlgorithm();
+        Map<String, Object> data = Map.of(
+            FIELD_CAR_ID, carId,
+            FIELD_SUB_START, Map.of("x", pos.x(), "y", pos.y()),
+            FIELD_SUB_TARGET, Map.of("x", target.x(), "y", target.y()),
+            FIELD_ALGORITHM, algorithm != null ? algorithm : AlgorithmType.BFS.name()
+        );
+        try {
+            String msg = MessageBuilder.build(MessageTypes.PLAN_ROUTE, tick, carId, data);
+            bus.publish(QueueNames.NAVIGATOR_CMD, msg);
+        } catch (Exception e) {
+            pendingPlanRequests.remove(carId);
+            bb.setCarStatus(carId, CarStatus.IDLE);
+            e.printStackTrace();
+        }
     }
 
     /** 检测车辆移动卡住：连续MOVING超过阈值则强制切为READY以重新触发移动 */
@@ -256,14 +333,28 @@ public class StatusDispatcher {
         }
     }
 
-    /** 检测阻塞超时：超时后清除路径与目标，车辆回到IDLE并发送超时通知 */
+    /** 检测阻塞超时：随机阈值打破死锁，超时后清除路径与目标 */
     private void checkBlockedTimeout(String carId) {
-        if (tick - bb.getBlockedTick(carId) >= BLOCKED_TIMEOUT_TICKS) {
+        int threshold = blockedTimeoutTicks.computeIfAbsent(carId,
+            k -> BLOCKED_TIMEOUT_MIN + random.nextInt(BLOCKED_TIMEOUT_MAX - BLOCKED_TIMEOUT_MIN + 1));
+        if (tick - bb.getBlockedTick(carId) >= threshold) {
             bb.clearRoute(carId);
             bb.clearCarTarget(carId);
             bb.clearBlockedTick(carId);
             bb.setCarStatus(carId, CarStatus.IDLE);
+            blockedTimeoutTicks.remove(carId);
             sendBlockedTimeout(carId);
+        }
+    }
+
+    /** 发送路线优化请求到策略监督器 */
+    private void sendSuperviseRoute(String carId) {
+        Map<String, Object> data = Map.of(FIELD_CAR_ID, carId);
+        try {
+            String msg = MessageBuilder.build(MessageTypes.SUPERVISE_ROUTE, tick, carId, data);
+            bus.publish(QueueNames.STRATEGY_SUPERVISOR_CMD, msg);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -303,6 +394,9 @@ public class StatusDispatcher {
 
     /** 完成任务：停用调度、计算耗时、写入黑板、最后一次广播通知前端 */
     private void completeTask() {
+        if (scheduler != null) {
+            scheduler.stop();
+        }
         taskActive = false;
         long elapsed = (System.currentTimeMillis() - taskStartTime) / 1000;
         bb.setElapsedSeconds(elapsed);

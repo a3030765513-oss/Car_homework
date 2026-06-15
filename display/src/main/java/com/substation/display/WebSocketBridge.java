@@ -120,6 +120,8 @@ public class WebSocketBridge extends WebSocketServer {
                 String cmd = ".\\mvnw.cmd exec:java -pl car -Dexec.mainClass=com.substation.car.CarMain -Dexec.args=" + carId;
                 Runtime.getRuntime().exec(cmd, null, new java.io.File("."));
                 LOG.info("动态添加小车: {} (命令: {})", carId, cmd);
+            } else if ("REQUEST_REPLAY".equals(type)) {
+                sendReplayData(conn);
             } else {
                 mqSender.send(QueueNames.CONTROLLER_CMD, message);
             }
@@ -159,6 +161,9 @@ public class WebSocketBridge extends WebSocketServer {
         if (clients.isEmpty()) {
             return;
         }
+        if (tick % 20 == 0 || tick == 1) {
+            LOG.info("pushState tick={} rate={}%", tick, explorationRate);
+        }
         SimulationState state = buildSimulationState(tick, explorationRate);
         broadcast(JSON.toJSONString(state));
     }
@@ -193,26 +198,56 @@ public class WebSocketBridge extends WebSocketServer {
      * 通过连接池复用连接，900 次调用在局域网中耗时约 10-20ms。</p>
      */
     private boolean[][] readViewBitmap(int mapWidth, int mapHeight) {
-        boolean[][] bitmap = new boolean[mapHeight][mapWidth];
-        for (int r = 0; r < mapHeight; r++) {
-            for (int c = 0; c < mapWidth; c++) {
-                bitmap[r][c] = blackboard.getMapViewBit(r, c);
-            }
-        }
-        return bitmap;
+        return BlackboardClient.bytesToBitmap(
+            blackboard.getMapViewBytes(), mapWidth, mapHeight);
     }
 
-    /**
-     * 从 Redis mapBlock bitmap 逐格读取，构建二维 boolean 数组。
-     */
     private boolean[][] readBlockBitmap(int mapWidth, int mapHeight) {
-        boolean[][] bitmap = new boolean[mapHeight][mapWidth];
-        for (int r = 0; r < mapHeight; r++) {
-            for (int c = 0; c < mapWidth; c++) {
-                bitmap[r][c] = blackboard.isBlocked(r, c);
+        return BlackboardClient.bytesToBitmap(
+            blackboard.getMapBlockBytes(), mapWidth, mapHeight);
+    }
+
+    // ────────────────── 回放数据构建 ──────────────────
+
+    /** 从Redis读取全部回放数据并推送给指定客户端 */
+    private void sendReplayData(WebSocket conn) {
+        Map<String, String> config = blackboard.getTaskConfig();
+        int mapWidth = parseIntOrDefault(config.get("mapWidth"), DEFAULT_MAP_SIZE);
+        int mapHeight = parseIntOrDefault(config.get("mapHeight"), DEFAULT_MAP_SIZE);
+
+        JSONObject replayData = new JSONObject();
+        replayData.put("type", "REPLAY_DATA");
+        replayData.put("mapWidth", mapWidth);
+        replayData.put("mapHeight", mapHeight);
+        replayData.put("mapBlock", readBlockBitmap(mapWidth, mapHeight));
+        replayData.put("carHistories", buildHistoryMap());
+        replayData.put("explorationEvents", blackboard.getExplorationEvents());
+
+        // 找最大tick
+        int maxTick = 0;
+        Map<String, List<String>> histories = blackboard.getAllCarHistories();
+        for (List<String> hist : histories.values()) {
+            for (String entry : hist) {
+                JSONObject e = JSON.parseObject(entry);
+                int t = e.getIntValue("tick", 0);
+                if (t > maxTick) maxTick = t;
             }
         }
-        return bitmap;
+        replayData.put("maxTick", maxTick);
+
+        conn.send(replayData.toJSONString());
+        LOG.info("已发送回放数据到 {}, maxTick={}", conn.getRemoteSocketAddress(), maxTick);
+    }
+
+    private JSONObject buildHistoryMap() {
+        JSONObject map = new JSONObject();
+        for (String carId : blackboard.discoverCarIds()) {
+            List<String> history = blackboard.getCarHistory(carId);
+            if (!history.isEmpty()) {
+                map.put(carId, history);
+            }
+        }
+        return map;
     }
 
     // ────────────────── 车辆信息构建 ──────────────────
