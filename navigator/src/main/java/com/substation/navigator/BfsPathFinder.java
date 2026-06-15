@@ -22,7 +22,7 @@ final class BfsPathFinder implements PathPlanner {
             return List.of();
         }
 
-        boolean[][] visited = new boolean[height][width];
+        boolean[][] visited = readBlockedMap(bb, width, height);
         Point[][] parent = new Point[height][width];
         Queue<Point> queue = new ArrayDeque<>();
 
@@ -36,21 +36,29 @@ final class BfsPathFinder implements PathPlanner {
                 return reconstructPath(parent, start, target);
             }
 
-            expandNeighbors(current, visited, parent, queue, bb, width, height);
+            expandNeighbors(current, visited, parent, queue, width, height);
         }
         return List.of();
     }
 
+    /** 读障碍物 + 车占位，合并为 visited 矩阵 */
+    private boolean[][] readBlockedMap(BlackboardClient bb, int width, int height) {
+        boolean[][] blocked = new boolean[height][width];
+        for (int r = 0; r < height; r++)
+            for (int c = 0; c < width; c++)
+                if (bb.isBlocked(r, c)) blocked[r][c] = true;
+        for (String carId : bb.discoverCarIds())
+            bb.getCarPosition(carId).ifPresent(p -> blocked[p.y()][p.x()] = true);
+        return blocked;
+    }
+
     private void expandNeighbors(Point current, boolean[][] visited, Point[][] parent,
-                                  Queue<Point> queue, BlackboardClient bb,
-                                  int width, int height) {
+                                  Queue<Point> queue, int width, int height) {
         for (int[] dir : DIRECTIONS) {
             int nx = current.x() + dir[0];
             int ny = current.y() + dir[1];
 
-            if (!isInBounds(nx, ny, width, height)
-                || visited[ny][nx]
-                || bb.isBlocked(ny, nx)) {
+            if (!isInBounds(nx, ny, width, height) || visited[ny][nx]) {
                 continue;
             }
 

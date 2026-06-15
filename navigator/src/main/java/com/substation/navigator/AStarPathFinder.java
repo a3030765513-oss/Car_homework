@@ -24,6 +24,7 @@ final class AStarPathFinder implements PathPlanner {
             return List.of();
         }
 
+        boolean[][] blocked = readBlockedMap(bb, width, height);
         Point[][] parent = new Point[height][width];
         int[][] gScore = createGScoreMatrix(height, width);
 
@@ -39,9 +40,20 @@ final class AStarPathFinder implements PathPlanner {
                 return reconstructPath(parent, start, target);
             }
 
-            expandNode(current, gScore, parent, openSet, bb, width, height, target);
+            expandNode(current, gScore, parent, openSet, blocked, width, height, target);
         }
         return List.of();
+    }
+
+    /** 读障碍物 + 车占位，合并为 blocked 矩阵 */
+    private boolean[][] readBlockedMap(BlackboardClient bb, int width, int height) {
+        boolean[][] blocked = new boolean[height][width];
+        for (int r = 0; r < height; r++)
+            for (int c = 0; c < width; c++)
+                if (bb.isBlocked(r, c)) blocked[r][c] = true;
+        for (String carId : bb.discoverCarIds())
+            bb.getCarPosition(carId).ifPresent(p -> blocked[p.y()][p.x()] = true);
+        return blocked;
     }
 
     private int[][] createGScoreMatrix(int height, int width) {
@@ -53,14 +65,14 @@ final class AStarPathFinder implements PathPlanner {
     }
 
     private void expandNode(Node current, int[][] gScore, Point[][] parent,
-                             PriorityQueue<Node> openSet, BlackboardClient bb,
+                             PriorityQueue<Node> openSet, boolean[][] blocked,
                              int width, int height, Point target) {
         Point pos = current.point;
         for (int[] dir : DIRECTIONS) {
             int nx = pos.x() + dir[0];
             int ny = pos.y() + dir[1];
 
-            if (!isInBounds(nx, ny, width, height) || bb.isBlocked(ny, nx)) {
+            if (!isInBounds(nx, ny, width, height) || blocked[ny][nx]) {
                 continue;
             }
 

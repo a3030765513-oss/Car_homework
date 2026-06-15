@@ -115,9 +115,7 @@ public class MoveExecutor {
 
     private void executeStep(Point nextPos, int tick) {
         bb.popNextRouteStep(carId);
-        bb.getCarPosition(carId).ifPresent(old -> bb.setBlock(old.y(), old.x(), false));
         bb.setCarPosition(carId, nextPos);
-        bb.setBlock(nextPos.y(), nextPos.x(), true);
         illuminateAndHeat(nextPos);
         bb.incrementCarSteps(carId);
         bb.appendCarHistory(carId, nextPos, tick);
@@ -132,6 +130,7 @@ public class MoveExecutor {
         } else {
             bb.setCarStatus(carId, CarStatus.READY);
             sendMoved(tick, pos);
+            log.info("[{}] 移动到({},{})，tick={}", carId, pos.x(), pos.y(), tick);
         }
     }
 

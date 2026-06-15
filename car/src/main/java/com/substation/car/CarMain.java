@@ -151,7 +151,6 @@ public class CarMain {
                 bb.setCarPosition(carId, pos);
                 bb.setCarStatus(carId, CarStatus.IDLE);
                 bb.setCarSteps(carId, 0);
-                bb.setBlock(y, x, true);
                 illuminateAndHeat(bb, pos, mapWidth, mapHeight);
                 bb.appendCarHistory(carId, pos, 0);
                 log.info("[{}] 自初始化完成，初始位置: ({},{})", carId, x, y);

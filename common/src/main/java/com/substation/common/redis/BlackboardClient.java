@@ -115,23 +115,13 @@ public class BlackboardClient implements AutoCloseable {
      */
     public int getExplorationRate() {
         try (Jedis jedis = pool.getResource()) {
-            String ws = jedis.hget(KEY_TASK_CONFIG, FIELD_MAP_WIDTH);
-            String hs = jedis.hget(KEY_TASK_CONFIG, FIELD_MAP_HEIGHT);
-            int w = ws != null ? Integer.parseInt(ws) : mapWidth;
-            int h = hs != null ? Integer.parseInt(hs) : mapHeight;
-            long explored = 0;
-            long blocked = 0;
-            for (int r = 0; r < h; r++) {
-                for (int c = 0; c < w; c++) {
-                    long offset = (long) r * mapWidth + c;
-                    if (jedis.getbit(KEY_MAP_VIEW, offset)) explored++;
-                    if (jedis.getbit(KEY_MAP_BLOCK, offset)) blocked++;
-                }
-            }
-            long explorable = (long) w * h - blocked;
+            long total = (long) mapWidth * mapHeight;
+            long blocked = jedis.bitcount(KEY_MAP_BLOCK);
+            long explorable = total - blocked;
             if (explorable <= 0) {
                 return 100;
             }
+            long explored = jedis.bitcount(KEY_MAP_VIEW);
             return (int) (explored * 100 / explorable);
         }
     }

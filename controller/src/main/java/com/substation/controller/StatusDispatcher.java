@@ -91,6 +91,9 @@ public class StatusDispatcher {
             return;
         }
 
+        // 先广播当前帧（Display 读到车移动前的干净状态，避免跳格）
+        broadcastRefresh();
+
         for (String carId : carIds) {
             bb.getCarStatus(carId).ifPresent(status -> dispatchCar(carId, status));
         }
@@ -105,7 +108,7 @@ public class StatusDispatcher {
         // 辅助判定：全部车 IDLE 且无待处理请求持续 N tick → 强制完成
         boolean allIdle = carIds.stream().allMatch(cid ->
             bb.getCarStatus(cid).orElse(null) == CarStatus.IDLE);
-        if (allIdle && pendingTargetRequests.isEmpty()) {
+        if (allIdle && pendingTargetRequests.isEmpty() && pendingPlanRequests.isEmpty()) {
             allIdleTicks++;
             if (allIdleTicks >= ALL_IDLE_COMPLETE_TICKS) {
                 completeTask();
@@ -114,8 +117,6 @@ public class StatusDispatcher {
         } else {
             allIdleTicks = 0;
         }
-
-        broadcastRefresh();
     }
 
     // ==================== callbacks for CommandHandler ====================
