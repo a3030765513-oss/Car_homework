@@ -113,7 +113,7 @@
     if (mode === 'live') {
       finalizeCanvas();
       if (canvasReady) {
-        if (mapLayerDirty) renderMapLayer();
+        renderMapLayer();
         renderCarsLayer();
         renderCarsPanel(liveData);
         renderLeaderboard(liveData);
