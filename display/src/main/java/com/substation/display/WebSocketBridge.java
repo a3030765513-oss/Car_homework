@@ -108,6 +108,12 @@ public class WebSocketBridge extends WebSocketServer {
      */
     /** 当前动态添加的车辆计数（初始值 = 首次启动的车辆数） */
     private int carCount = 3;
+    /** 操作日志存储（SQL Server，可选） */
+    private com.substation.common.sql.OperationLogStore operationLogStore;
+
+    public void setOperationLogStore(com.substation.common.sql.OperationLogStore store) {
+        this.operationLogStore = store;
+    }
 
     @Override
     public void onMessage(WebSocket conn, String message) {

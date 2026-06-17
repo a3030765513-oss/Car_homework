@@ -101,7 +101,7 @@ class HttpFileServerTest {
         Files.writeString(testFile, content);
 
         // 启动服务器
-        HttpFileServer server = new HttpFileServer(0, tempDir);
+        HttpFileServer server = new HttpFileServer(0, tempDir, null, null, null, null);
         server.start();
         server.stop();
 
@@ -113,7 +113,7 @@ class HttpFileServerTest {
     @Test
     void constructorCreatesWithoutError(@TempDir Path tempDir) throws IOException {
         // 验证构造函数不会因端口 0（系统自动分配）而失败
-        HttpFileServer server = new HttpFileServer(0, tempDir);
+        HttpFileServer server = new HttpFileServer(0, tempDir, null, null, null, null);
         assertNotNull(server);
         server.start();
         server.stop();
@@ -121,7 +121,7 @@ class HttpFileServerTest {
 
     @Test
     void startStopDoesNotThrow(@TempDir Path tempDir) throws IOException {
-        HttpFileServer server = new HttpFileServer(0, tempDir);
+        HttpFileServer server = new HttpFileServer(0, tempDir, null, null, null, null);
 
         // 启动和停止不应该抛异常
         assertDoesNotThrow(server::start);

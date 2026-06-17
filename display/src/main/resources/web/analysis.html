@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>统计分析 — 变电站巡检仿真系统</title>
+<link rel="stylesheet" href="css/style.css?v=4">
+</head>
+<body>
+
+<header class="header">
+  <h1>&#x26A1; 变电站巡检仿真系统</h1>
+  <div class="global-info">
+    <span id="info-user">&#x1F464; 加载中...</span>
+    <span class="nav-link active">统计分析</span>
+    <a href="dashboard.html" class="nav-link">← 返回</a>
+    <button id="btn-logout" class="btn-small">退出</button>
+  </div>
+</header>
+
+<div class="main-container">
+
+  <!-- 左侧筛选栏 -->
+  <aside class="sidebar">
+    <section class="panel">
+      <h3>时间范围</h3>
+      <div class="form-row">
+        <label>起始 Tick</label>
+        <input type="number" id="filter-start" value="0" min="0">
+      </div>
+      <div class="form-row">
+        <label>结束 Tick</label>
+        <input type="number" id="filter-end" value="100" min="0">
+      </div>
+    </section>
+
+    <section class="panel">
+      <h3>统计维度</h3>
+      <div class="form-row">
+        <label><input type="checkbox" class="filter-metric" value="steps" checked> 步数</label>
+      </div>
+      <div class="form-row">
+        <label><input type="checkbox" class="filter-metric" value="coverage" checked> 覆盖率</label>
+      </div>
+      <div class="form-row">
+        <label><input type="checkbox" class="filter-metric" value="duration"> 耗时</label>
+      </div>
+      <div class="form-row">
+        <label><input type="checkbox" class="filter-metric" value="efficiency"> 效率</label>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h3>车辆选择</h3>
+      <div id="car-checkboxes">
+        <div class="form-row">
+          <label><input type="checkbox" class="filter-car" value="Car001" checked> Car001</label>
+        </div>
+        <div class="form-row">
+          <label><input type="checkbox" class="filter-car" value="Car002" checked> Car002</label>
+        </div>
+        <div class="form-row">
+          <label><input type="checkbox" class="filter-car" value="Car003" checked> Car003</label>
+        </div>
+      </div>
+    </section>
+
+    <div class="btn-group">
+      <button id="btn-apply" class="btn info">应用筛选</button>
+    </div>
+    <div class="btn-group" style="margin-top:4px">
+      <button id="btn-export" class="btn secondary">导出报表</button>
+    </div>
+  </aside>
+
+  <!-- 中央分析区 -->
+  <main class="map-area analysis-main">
+    <div class="analysis-placeholder" id="chart-area">
+      <p>请选择筛选条件后点击"应用筛选"</p>
+    </div>
+    <div class="analysis-placeholder" id="table-area" style="margin-top:12px">
+      <p>数据表格（待实现）</p>
+    </div>
+  </main>
+
+  <!-- 右侧数据面板 -->
+  <aside class="cars-panel" id="analysis-data">
+    <div class="car-card">
+      <div class="car-header"><span class="car-number">关键指标</span></div>
+      <div class="car-detail" id="metrics-display">
+        <div>总步数: --</div>
+        <div>覆盖率: --</div>
+        <div>探索效率: --</div>
+        <div>总耗时: --</div>
+      </div>
+    </div>
+    <div class="car-card">
+      <div class="car-header"><span class="car-number">排行</span></div>
+      <ol id="lb" style="padding-left:18px;font-size:12px;line-height:2">
+        <li>等待数据...</li>
+      </ol>
+    </div>
+  </aside>
+
+</div>
+
+<script src="js/auth.js"></script>
+<script src="js/analysis.js"></script>
+
+</body>
+</html>
