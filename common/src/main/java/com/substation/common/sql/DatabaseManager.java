@@ -22,7 +22,7 @@ public class DatabaseManager {
 
     public static final String DB_URL = "jdbc:sqlserver://localhost:1433;databaseName=CarHomework;encrypt=false;trustServerCertificate=true";
     public static final String DB_USER = "sa";
-    public static final String DB_PASSWORD = "Root@1234";
+    public static final String DB_PASSWORD = "Hospital#2024";
 
     public DatabaseManager() {
         this(DB_URL, DB_USER, DB_PASSWORD);
