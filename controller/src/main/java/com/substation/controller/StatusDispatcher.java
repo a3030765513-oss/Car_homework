@@ -136,8 +136,7 @@ public class StatusDispatcher {
 
         for (String carId : carIds) {
             bb.getCarStatus(carId).ifPresent(status -> {
-                if (status == CarStatus.READY && !pendingMoveRequests.contains(carId)) {
-                    pendingMoveRequests.add(carId);
+                if (status == CarStatus.READY) {
                     sendTickMove(carId);
                 }
             });
