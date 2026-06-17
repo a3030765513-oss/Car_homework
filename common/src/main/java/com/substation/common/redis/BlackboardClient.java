@@ -56,14 +56,10 @@ public class BlackboardClient implements AutoCloseable {
 
     /** Redis连接池 */
     private final JedisPool pool;
-    /** 地图宽度（列数）——构造函数默认值 */
+    /** 地图宽度（列数）——构造函数默认值，仅在TaskConfig未设置时回退 */
     private final int mapWidth;
-    /** 地图高度（行数）——构造函数默认值 */
+    /** 地图高度（行数）——构造函数默认值，仅在TaskConfig未设置时回退 */
     private final int mapHeight;
-    /** 从TaskConfig读取的有效宽度缓存，-1表示未初始化 */
-    private volatile int cachedTaskWidth = -1;
-    /** 从TaskConfig读取的有效高度缓存，-1表示未初始化 */
-    private volatile int cachedTaskHeight = -1;
 
     /**
      * 构造黑板客户端，创建Redis连接池。
@@ -87,28 +83,16 @@ public class BlackboardClient implements AutoCloseable {
         return (long) row * effectiveWidth() + col;
     }
 
-    /** 获取有效地图宽度：优先TaskConfig，回退构造函数默认值 */
+    /** 获取有效地图宽度：每次从TaskConfig读取，保证FLUSHDB后不残留旧值 */
     private int effectiveWidth() {
-        int w = cachedTaskWidth;
-        if (w > 0) return w;
-        w = getMapWidth();
-        if (w > 0) {
-            cachedTaskWidth = w;
-            return w;
-        }
-        return mapWidth;
+        int w = getMapWidth();
+        return w > 0 ? w : mapWidth;
     }
 
-    /** 获取有效地图高度：优先TaskConfig，回退构造函数默认值 */
+    /** 获取有效地图高度：每次从TaskConfig读取 */
     private int effectiveHeight() {
-        int h = cachedTaskHeight;
-        if (h > 0) return h;
-        h = getMapHeight();
-        if (h > 0) {
-            cachedTaskHeight = h;
-            return h;
-        }
-        return mapHeight;
+        int h = getMapHeight();
+        return h > 0 ? h : mapHeight;
     }
 
     // ==================== mapView ====================
