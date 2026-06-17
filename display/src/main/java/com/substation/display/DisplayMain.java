@@ -43,7 +43,7 @@ public class DisplayMain {
     private static final Logger LOG = LoggerFactory.getLogger(DisplayMain.class);
 
     /** 地图默认尺寸（当 TaskConfig 未设置时使用） */
-    private static final int DEFAULT_MAP_SIZE = 30;
+    private static final int DEFAULT_MAP_SIZE = BlackboardClient.DEFAULT_SIZE;
 
     /** HTTP 服务默认端口 */
     private static final int DEFAULT_HTTP_PORT = 8887;

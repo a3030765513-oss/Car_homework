@@ -20,7 +20,7 @@ import java.util.concurrent.TimeoutException;
 public class NavigatorMain {
 
     private static final Logger log = LoggerFactory.getLogger(NavigatorMain.class);
-    private static final int INITIAL_MAP_SIZE = 30;
+    private static final int INITIAL_MAP_SIZE = BlackboardClient.DEFAULT_SIZE;
     private static final String MQ_USER = "guest";
     private static final String MQ_PASS = "guest";
     private static final String DEFAULT_ALGORITHM = "BFS";

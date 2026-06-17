@@ -21,7 +21,7 @@ import java.util.concurrent.TimeoutException;
 public class TargetPlannerMain {
 
     private static final Logger log = LoggerFactory.getLogger(TargetPlannerMain.class);
-    private static final int INITIAL_MAP_SIZE = 30;
+    private static final int INITIAL_MAP_SIZE = BlackboardClient.DEFAULT_SIZE;
     private static final String MQ_USER = "guest";
     private static final String MQ_PASS = "guest";
 

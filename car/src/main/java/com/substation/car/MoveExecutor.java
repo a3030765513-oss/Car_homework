@@ -39,7 +39,7 @@ import java.util.Optional;
 public class MoveExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(MoveExecutor.class);
-    private static final int DEFAULT_MAP_SIZE = 30;
+    private static final int DEFAULT_MAP_SIZE = BlackboardClient.DEFAULT_SIZE;
 
     private static final int MAX_RESERVE_RETRIES = 3;
 

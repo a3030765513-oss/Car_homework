@@ -44,7 +44,7 @@ public class WebSocketBridge extends WebSocketServer {
     private static final Logger LOG = LoggerFactory.getLogger(WebSocketBridge.class);
 
     /** 地图默认尺寸（TaskConfig 未设置时回退） */
-    private static final int DEFAULT_MAP_SIZE = 30;
+    private static final int DEFAULT_MAP_SIZE = BlackboardClient.DEFAULT_SIZE;
     /** 车辆 ID 前缀长度，"Car" 占 3 个字符 */
     private static final int CAR_PREFIX_LENGTH = 3;
 

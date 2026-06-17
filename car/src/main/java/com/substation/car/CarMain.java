@@ -33,7 +33,7 @@ public class CarMain {
 
     private static final Logger log = LoggerFactory.getLogger(CarMain.class);
 
-    private static final int FALLBACK_MAP_SIZE = 30;
+    private static final int FALLBACK_MAP_SIZE = BlackboardClient.DEFAULT_SIZE;
     private static final int MAX_INIT_ATTEMPTS = 1000;
 
     private final String carId;

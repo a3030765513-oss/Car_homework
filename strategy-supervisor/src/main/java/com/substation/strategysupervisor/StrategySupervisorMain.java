@@ -25,7 +25,7 @@ import java.util.concurrent.TimeoutException;
 public class StrategySupervisorMain {
 
     private static final Logger log = LoggerFactory.getLogger(StrategySupervisorMain.class);
-    private static final int INITIAL_MAP_SIZE = 30;
+    private static final int INITIAL_MAP_SIZE = BlackboardClient.DEFAULT_SIZE;
     private static final String MQ_USER = "guest";
     private static final String MQ_PASS = "guest";
     private static final double MAX_PATH_LENGTH_RATIO = 2.0;
