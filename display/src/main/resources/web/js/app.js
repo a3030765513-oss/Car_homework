@@ -18,11 +18,12 @@
   // 常量
   // ═══════════════════════════════════════════════════════════
 
-  /** 每格像素尺寸（30 格 × 27px = 810px 画布） */
-  var CELL_SIZE = 27;
+  /** 每格像素尺寸——initCanvasSize()中根据地图和容器动态计算 */
+  var CELL_SIZE = 18;
 
-  /** 默认地图尺寸 */
-  var DEFAULT_GRID = 30;
+  /** 默认地图宽/高 */
+  var DEFAULT_GRID_W = 30;
+  var DEFAULT_GRID_H = 30;
 
   /** WebSocket 重连间隔（毫秒） */
   var RECONNECT_DELAY_MS = 3000;
@@ -170,12 +171,26 @@
   // ═══════════════════════════════════════════════════════════
 
   function initCanvasSize() {
-    if (!liveData || !liveData.taskConfig) { return; }
-    var w = parseInt(liveData.taskConfig.mapWidth, 10)  || DEFAULT_GRID;
-    var h = parseInt(liveData.taskConfig.mapHeight, 10) || DEFAULT_GRID;
-    var size = Math.max(w, h);
-    canvas.width  = size * CELL_SIZE;
-    canvas.height = size * CELL_SIZE;
+    var mapArea = document.querySelector('.map-area');
+    if (!mapArea) { return; }
+    var availW = mapArea.clientWidth;
+    var availH = mapArea.clientHeight;
+    if (availW < 100 || availH < 100) { return; }
+
+    var w = (liveData && liveData.taskConfig)
+        ? parseInt(liveData.taskConfig.mapWidth, 10)  || DEFAULT_GRID_W
+        : DEFAULT_GRID_W;
+    var h = (liveData && liveData.taskConfig)
+        ? parseInt(liveData.taskConfig.mapHeight, 10) || DEFAULT_GRID_H
+        : DEFAULT_GRID_H;
+
+    var maxCells = Math.max(w, h);
+    var canvasMax = Math.min(availW, availH);
+    CELL_SIZE = Math.floor(canvasMax / maxCells);
+    if (CELL_SIZE < 4) { CELL_SIZE = 4; }
+
+    canvas.width  = w * CELL_SIZE;
+    canvas.height = h * CELL_SIZE;
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -798,11 +813,11 @@
   }
 
   function getGridW(data) {
-    return (data.taskConfig && parseInt(data.taskConfig.mapWidth, 10)) || DEFAULT_GRID;
+    return (data.taskConfig && parseInt(data.taskConfig.mapWidth, 10)) || DEFAULT_GRID_W;
   }
 
   function getGridH(data) {
-    return (data.taskConfig && parseInt(data.taskConfig.mapHeight, 10)) || DEFAULT_GRID;
+    return (data.taskConfig && parseInt(data.taskConfig.mapHeight, 10)) || DEFAULT_GRID_H;
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -832,5 +847,11 @@
   // 启动
   // ═══════════════════════════════════════════════════════════
 
+  initCanvasSize(); // 初始占位
+  window.addEventListener('resize', function () {
+    initCanvasSize();
+    if (mode === 'live' && liveData) { renderLive(); }
+    if (mode === 'replay' && replayData) { renderReplayFrame(); }
+  });
   connectWebSocket();
 })();
