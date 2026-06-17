@@ -31,6 +31,10 @@ public class StatusDispatcher {
     private static final int MOVING_STUCK_TICKS = 2;
     /** 等待路径超时节拍数，超时后移除锁并退回IDLE重新分配 */
     private static final int WAITING_ROUTE_TIMEOUT_TICKS = 5;
+    /** 全局探索率超此阈值则跳过策略监督 */
+    private static final int SUPERVISE_RATE_THRESHOLD = 85;
+    /** 同一辆车两次监督间的最小tick间隔 */
+    private static final int SUPERVISE_COOLDOWN_TICKS = 15;
     /** 消息字段名：车辆ID */
     private static final String FIELD_CAR_ID = "carId";
     /** 消息字段名：路径起点 */
@@ -58,8 +62,8 @@ public class StatusDispatcher {
     private final Map<String, Integer> waitingRouteTickCounts;
     /** 已发送TICK_MOVE等待车响应的集合（线程安全），防跳格 */
     private final Set<String> pendingMoveRequests;
-    /** 本周期已完成策略监督的车辆（新目标后重置） */
-    private final Set<String> supervisedCarIds;
+    /** 每车上次被监督的tick号（用于冷却控制） */
+    private final Map<String, Integer> lastSupervisedTick;
     /** 随机数生成器 */
     private final Random random = new Random();
     /** 每车随机阻塞超时阈值（打破多车互堵死锁） */
@@ -86,7 +90,7 @@ public class StatusDispatcher {
         this.movingTickCounts = new ConcurrentHashMap<>();
         this.waitingRouteTickCounts = new ConcurrentHashMap<>();
         this.pendingMoveRequests = ConcurrentHashMap.newKeySet();
-        this.supervisedCarIds = ConcurrentHashMap.newKeySet();
+        this.lastSupervisedTick = new ConcurrentHashMap<>();
         this.blockedTimeoutTicks = new ConcurrentHashMap<>();
     }
 
@@ -167,13 +171,22 @@ public class StatusDispatcher {
         pendingPlanRequests.remove(carId);
         if (routeFound) {
             bb.setCarStatus(carId, CarStatus.READY);
-            if (supervisedCarIds.add(carId)) {
+            if (shouldSupervise(carId)) {
+                lastSupervisedTick.put(carId, tick);
                 sendSuperviseRoute(carId);
             }
         } else {
             bb.setCarStatus(carId, CarStatus.IDLE);
-            supervisedCarIds.remove(carId);
         }
+    }
+
+    /** 判断是否应对该车触发策略监督：全局探索率<85% 且冷却已过 */
+    private boolean shouldSupervise(String carId) {
+        if (bb.getExplorationRate() >= SUPERVISE_RATE_THRESHOLD) {
+            return false;
+        }
+        Integer last = lastSupervisedTick.get(carId);
+        return last == null || tick - last >= SUPERVISE_COOLDOWN_TICKS;
     }
 
     /** 车辆移动完成回调：清除TICK_MOVE发送标记，允许下一轮发送 */
@@ -237,7 +250,7 @@ public class StatusDispatcher {
         movingTickCounts.clear();
         waitingRouteTickCounts.clear();
         pendingMoveRequests.clear();
-        supervisedCarIds.clear();
+        lastSupervisedTick.clear();
         blockedTimeoutTicks.clear();
         taskActive = false;
     }
@@ -266,7 +279,6 @@ public class StatusDispatcher {
 
     /** 发送目标分配请求到目标规划器 */
     private void sendAssignTarget(String carId) {
-        supervisedCarIds.remove(carId); // 新目标周期，允许再次监督
         pendingTargetRequests.add(carId);
         Map<String, Object> data = Map.of(FIELD_CAR_ID, carId);
         try {

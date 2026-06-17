@@ -1,6 +1,7 @@
 package com.substation.strategysupervisor;
 
 import com.alibaba.fastjson2.JSONObject;
+import com.substation.common.model.CarStatus;
 import com.substation.common.model.Point;
 import com.substation.common.mq.MessageBuilder;
 import com.substation.common.mq.MessageBus;
@@ -120,9 +121,12 @@ public class StrategySupervisorMain {
             return;
         }
 
+        // 不直接写RouteList避免瞬移——清路线+目标回IDLE让Controller正常重分配
         bb.clearRoute(carId);
-        bb.pushRoute(carId, newRoute);
-        log.info("[StrategySupervisor] carId={} 路线已优化 {}→{}", carId, currentRoute.size(), newRoute.size());
+        bb.clearCarTarget(carId);
+        bb.setCarStatus(carId, CarStatus.IDLE);
+        log.info("[StrategySupervisor] carId={} 路线需优化，已清路线回IDLE等待重分配 (原{}步→新{}步)",
+            carId, currentRoute.size(), newRoute.size());
         sendResult(carId, true, currentRoute.size(), newRoute.size(), tick);
     }
 
