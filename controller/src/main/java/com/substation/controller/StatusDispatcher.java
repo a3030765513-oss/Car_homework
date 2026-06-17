@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class StatusDispatcher {
 
     /** 探索完成阈值（百分比），达到后自动结束任务 */
-    private static final int EXPLORATION_COMPLETE = 98;
+    private static final int EXPLORATION_COMPLETE = 100;
     /** 所有车 IDLE 且无事可做的连续 tick 数，超时强制完成 */
     private static final int ALL_IDLE_COMPLETE_TICKS = 30;
     /** 阻塞随机超时范围（打破死锁） */

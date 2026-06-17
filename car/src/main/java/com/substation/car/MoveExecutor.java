@@ -126,8 +126,8 @@ public class MoveExecutor {
                 return;
             }
             if (isOccupiedByOtherCar(nx, ny)) {
-                log.warn("[{}] tick={} 目标({},{})被其他车占据 → IDLE重分配", carId, tick, nx, ny);
-                handleObstacleDetected(tick, nextPos);
+                log.warn("[{}] tick={} 目标({},{})被其他车占据，退回READY等下tick", carId, tick, nx, ny);
+                bb.setCarStatus(carId, CarStatus.READY);
                 return;
             }
             executeStep(nextPos, tick);
