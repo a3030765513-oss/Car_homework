@@ -529,10 +529,13 @@ public class BlackboardClient implements AutoCloseable {
      */
     public boolean recordExploration(int tick, int row, int col) {
         try (Jedis jedis = pool.getResource()) {
-            boolean wasExplored = jedis.setbit(KEY_MAP_VIEW, bitmapOffset(row, col), true);
+            long offset = bitmapOffset(row, col);
+            if (jedis.getbit(KEY_MAP_BLOCK, offset)) {
+                return false; // 障碍物不计入探索
+            }
+            boolean wasExplored = jedis.setbit(KEY_MAP_VIEW, offset, true);
             if (!wasExplored) {
-                String event = tick + "," + row + "," + col;
-                jedis.rpush(KEY_EXPLORATION_EVENTS, event);
+                jedis.rpush(KEY_EXPLORATION_EVENTS, tick + "," + row + "," + col);
             }
             return !wasExplored;
         }
