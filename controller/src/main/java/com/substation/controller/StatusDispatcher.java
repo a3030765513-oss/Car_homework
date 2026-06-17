@@ -103,12 +103,12 @@ public class StatusDispatcher {
         }
         tick++;
 
-        int rate = bb.getExplorationRate();
-        if (tick % 20 == 0 || rate >= 95) {
-            System.out.println("[Controller] tick=" + tick + " rate=" + rate + "%");
-        }
+        long[] stats = bb.getExplorationStats();
+        long w = stats[0], h = stats[1], total = stats[2], blocked = stats[3];
+        long explorable = stats[4], explored = stats[5], rate = stats[6];
+        System.out.printf("[Controller] tick=%d | %dx%d total=%d blocked=%d explorable=%d explored=%d rate=%d%%\n",
+            tick, w, h, total, blocked, explorable, explored, rate);
         if (rate >= EXPLORATION_COMPLETE) {
-            System.out.println("[Controller] 探索完成! tick=" + tick + " rate=" + rate);
             completeTask();
             return;
         }
