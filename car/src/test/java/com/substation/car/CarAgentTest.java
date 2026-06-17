@@ -43,7 +43,7 @@ class CarAgentTest {
         mb = new MessageBus(RABBIT_HOST, RABBIT_PORT, "guest", "guest");
         mb.connect();
         mb.declareControllerQueue();
-        MoveExecutor executor = new MoveExecutor(TEST_CAR, bb, mb, pool, MAP_SIZE, MAP_SIZE);
+        MoveExecutor executor = new MoveExecutor(TEST_CAR, bb, mb, pool);
         agent = new CarAgent(TEST_CAR, bb, executor);
     }
 
