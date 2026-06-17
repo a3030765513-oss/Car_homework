@@ -52,6 +52,7 @@ public class StrategySupervisorMain {
         messageBus.declareStrategySupervisorQueue();
 
         RouteEvaluator evaluator = new RouteEvaluator();
+        RouteOverlapEvaluator overlapEvaluator = new RouteOverlapEvaluator();
         WeightedPathPlanner planner = new WeightedPathPlanner();
         log.info("[StrategySupervisor] 启动完成，等待监督命令...");
 
@@ -69,7 +70,7 @@ public class StrategySupervisorMain {
             log.info("[StrategySupervisor] 收到 SUPERVISE_ROUTE carId={}, tick={}", carId, tick);
 
             try {
-                handleSupervise(evaluator, planner, carId, tick);
+                handleSupervise(evaluator, overlapEvaluator, planner, carId, tick);
             } catch (Exception e) {
                 log.error("[StrategySupervisor] 监督失败 carId={}", carId, e);
                 sendResult(carId, false, 0, 0, tick);
@@ -90,14 +91,24 @@ public class StrategySupervisorMain {
         }
     }
 
-    private void handleSupervise(RouteEvaluator evaluator, WeightedPathPlanner planner,
-                                  String carId, int tick) throws IOException {
+    private void handleSupervise(RouteEvaluator evaluator, RouteOverlapEvaluator overlapEvaluator,
+                                  WeightedPathPlanner planner, String carId, int tick) throws IOException {
         Optional<Point> posOpt = bb.getCarPosition(carId);
         Optional<Point> targetOpt = bb.getCarTarget(carId);
         List<Point> currentRoute = bb.getCarRoute(carId);
 
         if (posOpt.isEmpty() || targetOpt.isEmpty() || currentRoute.isEmpty()) {
             sendResult(carId, false, 0, 0, tick);
+            return;
+        }
+
+        // 多车路线重合检测：重合率≥50%则清路线回IDLE重分配
+        if (overlapEvaluator.isHighlyOverlapped(carId, currentRoute, bb)) {
+            log.info("[StrategySupervisor] carId={} 与其他车路线高度重合，清路线回IDLE", carId);
+            bb.clearRoute(carId);
+            bb.clearCarTarget(carId);
+            bb.setCarStatus(carId, CarStatus.IDLE);
+            sendResult(carId, true, currentRoute.size(), 0, tick);
             return;
         }
 
