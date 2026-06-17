@@ -249,9 +249,9 @@ public class BlackboardClient implements AutoCloseable {
      */
     public void setCarPosition(String carId, Point pos) {
         try (Jedis jedis = pool.getResource()) {
-            String key = carId + ":Position";
-            jedis.hset(key, FIELD_X, String.valueOf(pos.x()));
-            jedis.hset(key, FIELD_Y, String.valueOf(pos.y()));
+            jedis.hset(carId + ":Position",
+                Map.of(FIELD_X, String.valueOf(pos.x()),
+                       FIELD_Y, String.valueOf(pos.y())));
         }
     }
 
@@ -287,9 +287,9 @@ public class BlackboardClient implements AutoCloseable {
      */
     public void setCarTarget(String carId, Point target) {
         try (Jedis jedis = pool.getResource()) {
-            String key = carId + ":Target";
-            jedis.hset(key, FIELD_X, String.valueOf(target.x()));
-            jedis.hset(key, FIELD_Y, String.valueOf(target.y()));
+            jedis.hset(carId + ":Target",
+                Map.of(FIELD_X, String.valueOf(target.x()),
+                       FIELD_Y, String.valueOf(target.y())));
         }
     }
 
