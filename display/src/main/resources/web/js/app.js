@@ -61,8 +61,14 @@
   // DOM 引用（一次性获取，避免重复 querySelector）
   // ═══════════════════════════════════════════════════════════
 
-  var canvas   = document.getElementById('map-canvas');
-  var ctx      = canvas.getContext('2d');
+  var mapCanvas = document.getElementById('map-canvas');
+  var mapCtx    = mapCanvas.getContext('2d');
+  var carCanvas = document.getElementById('car-canvas');
+  var carCtx    = carCanvas.getContext('2d');
+  var mapStack  = document.getElementById('map-stack');
+  var welcome   = document.getElementById('welcome-overlay');
+  /** 地图层是否需要重绘 */
+  var mapLayerDirty = true;
 
   var $tick       = document.getElementById('info-tick');
   var $rate       = document.getElementById('info-rate');
@@ -175,7 +181,7 @@
   // Canvas 尺寸初始化
   // ═══════════════════════════════════════════════════════════
 
-  /** 仅首帧调用：根据地图尺寸+容器空间一次算出CELL_SIZE，之后不再变 */
+  /** 首帧调用：根据地图尺寸+容器空间一次算出CELL_SIZE，之后不再变 */
   function finalizeCanvas() {
     if (canvasReady) { return; }
     if (!liveData || !liveData.taskConfig) { return; }
@@ -194,26 +200,20 @@
     CELL_SIZE = Math.min(cellW, cellH);
     if (CELL_SIZE < 4) { CELL_SIZE = 4; }
 
-    canvas.width  = w * CELL_SIZE;
-    canvas.height = h * CELL_SIZE;
+    var cw = w * CELL_SIZE, ch = h * CELL_SIZE;
+    mapCanvas.width  = cw; mapCanvas.height = ch;
+    carCanvas.width  = cw; carCanvas.height = ch;
     canvasReady = true;
+    mapLayerDirty = true;
+    if (welcome) { welcome.style.display = 'none'; }
+    if (mapStack) { mapStack.style.display = 'block'; }
   }
 
   function showLoading() {
-    var mapArea = document.querySelector('.map-area');
-    var w = mapArea ? mapArea.clientWidth  : 500;
-    var h = mapArea ? mapArea.clientHeight : 500;
-    canvas.width  = w;
-    canvas.height = h;
-    ctx.fillStyle = '#0f0f23';
-    ctx.fillRect(0, 0, w, h);
-    ctx.fillStyle = '#8b949e';
-    var fs = Math.min(20, Math.floor(Math.min(w, h) / 20));
-    ctx.font = fs + 'px Consolas, monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('加载地图中...', w / 2, h / 2);
-    ctx.fillText('等待任务启动', w / 2, h / 2 + fs * 1.5);
+    if (welcome) {
+      welcome.style.display = 'flex';
+    }
+    if (mapStack) { mapStack.style.display = 'none'; }
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -223,14 +223,28 @@
   function renderLive() {
     var data = liveData;
     if (!data) { return; }
-    renderGrid(data);
-    renderExplored(data);
-    renderObstacles(data);
-    renderRoutes(data);
-    renderCars(data);
+    if (mapLayerDirty) {
+      renderMapLayer(data);
+      mapLayerDirty = false;
+    }
+    renderCarLayer(data);
     renderCarsPanel(data);
     renderLeaderboard(data);
     updateGlobalInfo(data);
+  }
+
+  function renderMapLayer(data) {
+    var gw = getGridW(data), gh = getGridH(data);
+    mapCtx.clearRect(0, 0, mapCanvas.width, mapCanvas.height);
+    renderGrid(mapCtx, data);
+    renderExplored(mapCtx, data);
+    renderObstacles(mapCtx, data);
+  }
+
+  function renderCarLayer(data) {
+    carCtx.clearRect(0, 0, carCanvas.width, carCanvas.height);
+    renderRoutes(carCtx, data);
+    renderCars(carCtx, data);
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -238,46 +252,46 @@
   // ═══════════════════════════════════════════════════════════
 
   /** L1: 网格背景。先清空画布，再画 30×30 网格线 */
-  function renderGrid(data) {
+  function renderGrid(c, data) {
     var gridW = getGridW(data);
     var gridH = getGridH(data);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    c.clearRect(0, 0, c.canvas.width, c.canvas.height);
 
     // 未探索区域底色
-    ctx.fillStyle = '#0f0f23';
-    ctx.fillRect(0, 0, gridW * CELL_SIZE, gridH * CELL_SIZE);
+    c.fillStyle = '#0f0f23';
+    c.fillRect(0, 0, gridW * CELL_SIZE, gridH * CELL_SIZE);
 
     // 网格线
-    ctx.strokeStyle = '#2a2a4a';
-    ctx.lineWidth = 0.5;
+    c.strokeStyle = '#2a2a4a';
+    c.lineWidth = 0.5;
     for (var i = 0; i <= gridW; i++) {
       var x = i * CELL_SIZE;
-      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, gridH * CELL_SIZE); ctx.stroke();
+      c.beginPath(); c.moveTo(x, 0); c.lineTo(x, gridH * CELL_SIZE); c.stroke();
     }
     for (var j = 0; j <= gridH; j++) {
       var y = j * CELL_SIZE;
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(gridW * CELL_SIZE, y); ctx.stroke();
+      c.beginPath(); c.moveTo(0, y); c.lineTo(gridW * CELL_SIZE, y); c.stroke();
     }
   }
 
   /** L2: 已探索区域。遍历 mapView bitmap，点亮已探索格 */
-  function renderExplored(data) {
+  function renderExplored(c, data) {
     if (!data.mapView) { return; }
     var gridW = getGridW(data);
     var gridH = getGridH(data);
-    ctx.fillStyle = '#16213e';
+    c.fillStyle = '#16213e';
     for (var r = 0; r < gridH; r++) {
       if (!data.mapView[r]) { continue; }
       for (var c = 0; c < gridW; c++) {
         if (data.mapView[r][c]) {
-          ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+          c.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
         }
       }
     }
   }
 
   /** L3: 障碍物。跳过有车格子，避免小车背上红色方块 */
-  function renderObstacles(data) {
+  function renderObstacles(c, data) {
     if (!data.mapBlock) { return; }
 
     var occupied = {};
@@ -290,31 +304,31 @@
 
     var gridW = getGridW(data);
     var gridH = getGridH(data);
-    ctx.fillStyle = '#e94560';
+    c.fillStyle = '#e94560';
     for (var r = 0; r < gridH; r++) {
       if (!data.mapBlock[r]) { continue; }
       for (var c = 0; c < gridW; c++) {
         if (data.mapBlock[r][c] && !occupied[c + ',' + r]) {
-          ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+          c.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
         }
       }
     }
   }
 
   /** L4: 规划路径。半透明蓝色折线，每车最多画 10 步 */
-  function renderRoutes(data) {
+  function renderRoutes(c, data) {
     if (!data.cars) { return; }
     for (var i = 0; i < data.cars.length; i++) {
-      drawRouteForCar(data.cars[i]);
+      drawRouteForCar(c, data.cars[i]);
     }
   }
 
-  function drawRouteForCar(car) {
+  function drawRouteForCar(c, car) {
     if (!car.position || !car.routeList || car.routeList.length === 0) { return; }
 
-    ctx.strokeStyle = 'rgba(100, 200, 255, 0.6)';
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
+    c.strokeStyle = 'rgba(100, 200, 255, 0.6)';
+    c.lineWidth = 2;
+    c.lineCap = 'round';
 
     // 起点：小车当前格子中心
     var prevGx = car.position.x;
@@ -332,10 +346,10 @@
       if (manhattan === 1) {
         var px = gx * CELL_SIZE + CELL_SIZE / 2;
         var py = gy * CELL_SIZE + CELL_SIZE / 2;
-        ctx.beginPath();
-        ctx.moveTo(prevPx, prevPy);
-        ctx.lineTo(px, py);
-        ctx.stroke();
+        c.beginPath();
+        c.moveTo(prevPx, prevPy);
+        c.lineTo(px, py);
+        c.stroke();
       }
 
       prevGx = gx;
@@ -346,14 +360,14 @@
   }
 
   /** L5: 小车。圆形 + 状态颜色 + 编号文字 */
-  function renderCars(data) {
+  function renderCars(c, data) {
     if (!data.cars) { return; }
     for (var i = 0; i < data.cars.length; i++) {
-      drawCar(data.cars[i]);
+      drawCar(c, data.cars[i]);
     }
   }
 
-  function drawCar(car) {
+  function drawCar(c, car) {
     if (!car.position) { return; }
     var cx = car.position.x * CELL_SIZE + CELL_SIZE / 2;
     var cy = car.position.y * CELL_SIZE + CELL_SIZE / 2;
@@ -362,24 +376,24 @@
     var innerR = outerR - 3;           // 内圈（白色），与外圈差 3px
 
     // 外圈 —— 状态颜色环
-    ctx.beginPath();
-    ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
-    ctx.fillStyle = color;
-    ctx.fill();
+    c.beginPath();
+    c.arc(cx, cy, outerR, 0, Math.PI * 2);
+    c.fillStyle = color;
+    c.fill();
 
     // 内圈 —— 白色填充，与外圈形成对比
-    ctx.beginPath();
-    ctx.arc(cx, cy, innerR, 0, Math.PI * 2);
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fill();
+    c.beginPath();
+    c.arc(cx, cy, innerR, 0, Math.PI * 2);
+    c.fillStyle = '#FFFFFF';
+    c.fill();
 
     // 编号文字，字号随格子缩放
-    ctx.fillStyle = '#000';
+    c.fillStyle = '#000';
     var numFontSize = Math.max(8, Math.floor(CELL_SIZE * 0.45));
-    ctx.font = 'bold ' + numFontSize + 'px Consolas, monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(String(car.number), cx, cy);
+    c.font = 'bold ' + numFontSize + 'px Consolas, monospace';
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.fillText(String(car.number), cx, cy);
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -582,8 +596,10 @@
       var availW = mapArea.clientWidth, availH = mapArea.clientHeight;
       var w = msg.mapWidth || 30, h = msg.mapHeight || 30;
       CELL_SIZE = Math.max(4, Math.min(Math.floor(availW / w), Math.floor(availH / h)));
-      canvas.width  = w * CELL_SIZE;
-      canvas.height = h * CELL_SIZE;
+      mapCanvas.width  = w * CELL_SIZE;
+      mapCanvas.height = h * CELL_SIZE;
+      carCanvas.width  = w * CELL_SIZE;
+      carCanvas.height = h * CELL_SIZE;
       canvasReady = true;
     }
 
@@ -727,10 +743,10 @@
       }
     }
 
-    renderGrid(frame);
-    renderExplored(frame);
-    renderObstacles(frame);
-    renderCars(frame);
+    renderGrid(mapCtx, frame);
+    renderExplored(mapCtx, frame);
+    renderObstacles(mapCtx, frame);
+    renderCars(mapCtx, frame);
     renderCarsPanel(frame);
     updateReplayLabel();
   }
@@ -826,9 +842,9 @@
     e.preventDefault();
     if (!liveData) { return; }
 
-    var rect = canvas.getBoundingClientRect();
-    var scaleX = canvas.width / rect.width;
-    var scaleY = canvas.height / rect.height;
+    var rect = mapCanvas.getBoundingClientRect();
+    var scaleX = mapCanvas.width / rect.width;
+    var scaleY = mapCanvas.height / rect.height;
     var col = Math.floor((e.clientX - rect.left) * scaleX / CELL_SIZE);
     var row = Math.floor((e.clientY - rect.top)  * scaleY / CELL_SIZE);
 
@@ -860,7 +876,7 @@
   if ($btnAddCar) {
     $btnAddCar.addEventListener('click', onAddCarClick);
   }
-  canvas.addEventListener('contextmenu', onCanvasContextMenu);
+  mapCanvas.addEventListener('contextmenu', onCanvasContextMenu);
   $btnReplay.addEventListener('click', onReplayClick);
   $btnLive.addEventListener('click', onLiveClick);
 
