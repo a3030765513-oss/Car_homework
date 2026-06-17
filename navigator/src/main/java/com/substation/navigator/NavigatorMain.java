@@ -20,7 +20,8 @@ import java.util.concurrent.TimeoutException;
 public class NavigatorMain {
 
     private static final Logger log = LoggerFactory.getLogger(NavigatorMain.class);
-    private static final int INITIAL_MAP_SIZE = BlackboardClient.DEFAULT_SIZE;
+    private static final int INITIAL_W = BlackboardClient.DEFAULT_WIDTH;
+    private static final int INITIAL_H = BlackboardClient.DEFAULT_HEIGHT;
     private static final String MQ_USER = "guest";
     private static final String MQ_PASS = "guest";
     private static final String DEFAULT_ALGORITHM = "BFS";
@@ -42,7 +43,7 @@ public class NavigatorMain {
 
     /** 启动路径规划服务：连接中间件、声明队列、订阅 PLAN_ROUTE。返回不阻塞 */
     public void start() throws IOException, TimeoutException {
-        bb = new BlackboardClient(redisHost, redisPort, INITIAL_MAP_SIZE, INITIAL_MAP_SIZE);
+        bb = new BlackboardClient(redisHost, redisPort, INITIAL_W, INITIAL_H);
         messageBus = new MessageBus(mqHost, mqPort, MQ_USER, MQ_PASS);
         messageBus.connect();
         messageBus.declareNavigatorQueue();

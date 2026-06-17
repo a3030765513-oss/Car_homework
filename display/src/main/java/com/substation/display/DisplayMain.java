@@ -43,7 +43,8 @@ public class DisplayMain {
     private static final Logger LOG = LoggerFactory.getLogger(DisplayMain.class);
 
     /** 地图默认尺寸（当 TaskConfig 未设置时使用） */
-    private static final int DEFAULT_MAP_SIZE = BlackboardClient.DEFAULT_SIZE;
+    private static final int DEFAULT_W = BlackboardClient.DEFAULT_WIDTH;
+    private static final int DEFAULT_H = BlackboardClient.DEFAULT_HEIGHT;
 
     /** HTTP 服务默认端口 */
     private static final int DEFAULT_HTTP_PORT = 8887;
@@ -90,7 +91,7 @@ public class DisplayMain {
 
         // 创建 Redis 黑板客户端（Display 只读黑板，不写）
         this.blackboard = new BlackboardClient(redisHost, redisPort,
-                DEFAULT_MAP_SIZE, DEFAULT_MAP_SIZE);
+                DEFAULT_W, DEFAULT_H);
 
         // 创建 RabbitMQ 消息总线（启用自动恢复）
         this.messageBus = new MessageBus(mqHost, mqPort, "guest", "guest");

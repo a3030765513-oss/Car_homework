@@ -44,7 +44,8 @@ public class WebSocketBridge extends WebSocketServer {
     private static final Logger LOG = LoggerFactory.getLogger(WebSocketBridge.class);
 
     /** 地图默认尺寸（TaskConfig 未设置时回退） */
-    private static final int DEFAULT_MAP_SIZE = BlackboardClient.DEFAULT_SIZE;
+    private static final int DEFAULT_W = BlackboardClient.DEFAULT_WIDTH;
+    private static final int DEFAULT_H = BlackboardClient.DEFAULT_HEIGHT;
     /** 车辆 ID 前缀长度，"Car" 占 3 个字符 */
     private static final int CAR_PREFIX_LENGTH = 3;
 
@@ -181,8 +182,8 @@ public class WebSocketBridge extends WebSocketServer {
      */
     private SimulationState buildSimulationState(int tick, int explorationRate) {
         Map<String, String> config = blackboard.getTaskConfig();
-        int mapWidth = parseIntOrDefault(config.get("mapWidth"), DEFAULT_MAP_SIZE);
-        int mapHeight = parseIntOrDefault(config.get("mapHeight"), DEFAULT_MAP_SIZE);
+        int mapWidth = parseIntOrDefault(config.get("mapWidth"), DEFAULT_W);
+        int mapHeight = parseIntOrDefault(config.get("mapHeight"), DEFAULT_H);
 
         boolean[][] mapView = readViewBitmap(mapWidth, mapHeight);
         boolean[][] mapBlock = readBlockBitmap(mapWidth, mapHeight);
@@ -212,8 +213,8 @@ public class WebSocketBridge extends WebSocketServer {
     /** 从Redis读取全部回放数据并推送给指定客户端 */
     private void sendReplayData(WebSocket conn) {
         Map<String, String> config = blackboard.getTaskConfig();
-        int mapWidth = parseIntOrDefault(config.get("mapWidth"), DEFAULT_MAP_SIZE);
-        int mapHeight = parseIntOrDefault(config.get("mapHeight"), DEFAULT_MAP_SIZE);
+        int mapWidth = parseIntOrDefault(config.get("mapWidth"), DEFAULT_W);
+        int mapHeight = parseIntOrDefault(config.get("mapHeight"), DEFAULT_H);
 
         JSONObject replayData = new JSONObject();
         replayData.put("type", "REPLAY_DATA");

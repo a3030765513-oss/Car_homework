@@ -39,7 +39,8 @@ import java.util.Optional;
 public class MoveExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(MoveExecutor.class);
-    private static final int DEFAULT_MAP_SIZE = BlackboardClient.DEFAULT_SIZE;
+    private static final int DEFAULT_W = BlackboardClient.DEFAULT_WIDTH;
+    private static final int DEFAULT_H = BlackboardClient.DEFAULT_HEIGHT;
 
     private static final int MAX_RESERVE_RETRIES = 3;
 
@@ -59,8 +60,8 @@ public class MoveExecutor {
         this.bb = bb;
         this.mb = mb;
         this.pool = pool;
-        this.mapWidth = mapWidth > 0 ? mapWidth : DEFAULT_MAP_SIZE;
-        this.mapHeight = mapHeight > 0 ? mapHeight : DEFAULT_MAP_SIZE;
+        this.mapWidth = mapWidth > 0 ? mapWidth : DEFAULT_W;
+        this.mapHeight = mapHeight > 0 ? mapHeight : DEFAULT_H;
     }
 
     /**

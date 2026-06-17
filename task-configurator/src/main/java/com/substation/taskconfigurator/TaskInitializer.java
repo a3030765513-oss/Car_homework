@@ -14,8 +14,8 @@ import java.util.Set;
 
 final class TaskInitializer {
 
-    private static final int DEFAULT_MAP_WIDTH = BlackboardClient.DEFAULT_SIZE;
-    private static final int DEFAULT_MAP_HEIGHT = BlackboardClient.DEFAULT_SIZE;
+    private static final int DEFAULT_MAP_WIDTH = BlackboardClient.DEFAULT_WIDTH;
+    private static final int DEFAULT_MAP_HEIGHT = BlackboardClient.DEFAULT_HEIGHT;
     private static final int DEFAULT_CAR_COUNT = 5;
     private static final double DEFAULT_OBSTACLE_RATIO = 0.15;
     private static final String DEFAULT_ALGORITHM = "BFS";

@@ -17,8 +17,9 @@ import java.util.*;
  */
 public class BlackboardClient implements AutoCloseable {
 
-    /** 地图默认尺寸，所有模块引用此常量而非各自硬编码 */
-    public static final int DEFAULT_SIZE = 30;
+    /** 地图默认宽/高，所有模块引用此常量而非各自硬编码 */
+    public static final int DEFAULT_WIDTH = 30;
+    public static final int DEFAULT_HEIGHT = 30;
 
     /** Redis key: 地图探索状态（位图） */
     private static final String KEY_MAP_VIEW = "mapView";

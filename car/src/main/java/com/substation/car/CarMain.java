@@ -33,7 +33,8 @@ public class CarMain {
 
     private static final Logger log = LoggerFactory.getLogger(CarMain.class);
 
-    private static final int FALLBACK_MAP_SIZE = BlackboardClient.DEFAULT_SIZE;
+    private static final int FALLBACK_W = BlackboardClient.DEFAULT_WIDTH;
+    private static final int FALLBACK_H = BlackboardClient.DEFAULT_HEIGHT;
     private static final int MAX_INIT_ATTEMPTS = 1000;
 
     private final String carId;
@@ -55,10 +56,10 @@ public class CarMain {
 
     /** 启动小车：连接中间件、自注册、订阅 TICK_MOVE。返回不阻塞 */
     public void start() throws IOException, TimeoutException {
-        bb = new BlackboardClient(redisHost, redisPort, FALLBACK_MAP_SIZE, FALLBACK_MAP_SIZE);
+        bb = new BlackboardClient(redisHost, redisPort, FALLBACK_W, FALLBACK_H);
 
-        int mapW = Math.max(bb.getMapWidth(), FALLBACK_MAP_SIZE);
-        int mapH = Math.max(bb.getMapHeight(), FALLBACK_MAP_SIZE);
+        int mapW = Math.max(bb.getMapWidth(), FALLBACK_W);
+        int mapH = Math.max(bb.getMapHeight(), FALLBACK_H);
 
         selfRegister(bb, carId, mapW, mapH);
 

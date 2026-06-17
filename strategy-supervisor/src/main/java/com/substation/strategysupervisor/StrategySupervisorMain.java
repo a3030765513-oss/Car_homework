@@ -25,7 +25,8 @@ import java.util.concurrent.TimeoutException;
 public class StrategySupervisorMain {
 
     private static final Logger log = LoggerFactory.getLogger(StrategySupervisorMain.class);
-    private static final int INITIAL_MAP_SIZE = BlackboardClient.DEFAULT_SIZE;
+    private static final int INITIAL_W = BlackboardClient.DEFAULT_WIDTH;
+    private static final int INITIAL_H = BlackboardClient.DEFAULT_HEIGHT;
     private static final String MQ_USER = "guest";
     private static final String MQ_PASS = "guest";
     private static final double MAX_PATH_LENGTH_RATIO = 2.0;
@@ -45,7 +46,7 @@ public class StrategySupervisorMain {
     }
 
     public void start() throws IOException, TimeoutException {
-        bb = new BlackboardClient(redisHost, redisPort, INITIAL_MAP_SIZE, INITIAL_MAP_SIZE);
+        bb = new BlackboardClient(redisHost, redisPort, INITIAL_W, INITIAL_H);
         messageBus = new MessageBus(mqHost, mqPort, MQ_USER, MQ_PASS);
         messageBus.connect();
         messageBus.declareStrategySupervisorQueue();
