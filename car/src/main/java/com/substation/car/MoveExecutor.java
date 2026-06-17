@@ -45,9 +45,10 @@ public class MoveExecutor {
     private final BlackboardClient bb;
     private final MessageBus mb;
     private final JedisPool pool;
-    private int lastFailedX = -1;
-    private int lastFailedY = -1;
-    private int consecutiveReserveFailures;
+    /** 上次无法移动的目标格及连续失败次数（含预约失败和占据检测） */
+    private int stuckX = -1;
+    private int stuckY = -1;
+    private int stuckCount;
 
     public MoveExecutor(String carId, BlackboardClient bb, MessageBus mb, JedisPool pool) {
         this.carId = carId;
@@ -93,41 +94,37 @@ public class MoveExecutor {
         int nx = nextPos.x();
         int ny = nextPos.y();
 
-        // 位置预约锁：防多车重叠的核心机制
+        // 更新同位置卡住计数
+        if (nx == stuckX && ny == stuckY) {
+            stuckCount++;
+        } else {
+            stuckCount = 1;
+            stuckX = nx;
+            stuckY = ny;
+        }
+
+        // 位置预约锁
         if (!bb.tryReservePosition(nx, ny, carId)) {
-            if (nx == lastFailedX && ny == lastFailedY) {
-                consecutiveReserveFailures++;
-            } else {
-                consecutiveReserveFailures = 1;
-                lastFailedX = nx;
-                lastFailedY = ny;
-            }
-            if (consecutiveReserveFailures >= MAX_RESERVE_RETRIES) {
-                log.warn("[{}] tick={} 预约({},{})连续失败{}次，清路线回IDLE重分配",
-                    carId, tick, nx, ny, consecutiveReserveFailures);
-                consecutiveReserveFailures = 0;
-                bb.clearRoute(carId);
-                bb.clearCarTarget(carId);
-                bb.setCarStatus(carId, CarStatus.IDLE);
-                return;
-            }
             log.warn("[{}] tick={} 预约失败({},{}) 第{}次，退回READY",
-                carId, tick, nx, ny, consecutiveReserveFailures);
-            bb.setCarStatus(carId, CarStatus.READY);
+                carId, tick, nx, ny, stuckCount);
+            handleStuckRetryOrReplan(tick, nx, ny);
             return;
         }
-        consecutiveReserveFailures = 0;
         log.info("[{}] tick={} 预约成功({},{})", carId, tick, nx, ny);
 
         try {
             if (bb.isBlocked(ny, nx)) {
-                log.warn("[{}] tick={} 目标({},{})是障碍物 → handleObstacle", carId, tick, nx, ny);
-                handleObstacleDetected(tick, nextPos);
+                log.warn("[{}] tick={} 目标({},{})是障碍物", carId, tick, nx, ny);
+                bb.clearRoute(carId);
+                bb.clearCarTarget(carId);
+                bb.setCarStatus(carId, CarStatus.IDLE);
+                stuckCount = 0;
                 return;
             }
             if (isOccupiedByOtherCar(nx, ny)) {
-                log.warn("[{}] tick={} 目标({},{})被其他车占据，退回READY等下tick", carId, tick, nx, ny);
-                bb.setCarStatus(carId, CarStatus.READY);
+                log.warn("[{}] tick={} 目标({},{})被占据 第{}次，退回READY",
+                    carId, tick, nx, ny, stuckCount);
+                handleStuckRetryOrReplan(tick, nx, ny);
                 return;
             }
             executeStep(nextPos, tick);
@@ -149,7 +146,21 @@ public class MoveExecutor {
         return false;
     }
 
+    private void handleStuckRetryOrReplan(int tick, int nx, int ny) {
+        if (stuckCount >= MAX_RESERVE_RETRIES) {
+            log.warn("[{}] tick={} 目标({},{})连续卡住{}次，清路线回IDLE重分配",
+                carId, tick, nx, ny, stuckCount);
+            stuckCount = 0;
+            bb.clearRoute(carId);
+            bb.clearCarTarget(carId);
+            bb.setCarStatus(carId, CarStatus.IDLE);
+        } else {
+            bb.setCarStatus(carId, CarStatus.READY);
+        }
+    }
+
     private void executeStep(Point nextPos, int tick) {
+        stuckCount = 0;
         bb.popNextRouteStep(carId);
         bb.setCarPosition(carId, nextPos);
         illuminateAndHeat(nextPos, tick);
