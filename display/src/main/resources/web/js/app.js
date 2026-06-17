@@ -18,12 +18,15 @@
   // 常量
   // ═══════════════════════════════════════════════════════════
 
-  /** 每格像素尺寸——initCanvasSize()中根据地图和容器动态计算 */
+  /** 每格像素尺寸——finalizeCanvas()中根据地图和容器计算，之后不变 */
   var CELL_SIZE = 18;
 
   /** 默认地图宽/高 */
   var DEFAULT_GRID_W = 30;
   var DEFAULT_GRID_H = 30;
+
+  /** 画布尺寸是否已确定 */
+  var canvasReady = false;
 
   /** WebSocket 重连间隔（毫秒） */
   var RECONNECT_DELAY_MS = 3000;
@@ -152,8 +155,10 @@
     }
     liveData = msg;
     if (mode === 'live') {
-      initCanvasSize();
-      renderLive();
+      finalizeCanvas();
+      if (canvasReady) {
+        renderLive();
+      }
     }
   }
 
@@ -170,27 +175,45 @@
   // Canvas 尺寸初始化
   // ═══════════════════════════════════════════════════════════
 
-  function initCanvasSize() {
+  /** 仅首帧调用：根据地图尺寸+容器空间一次算出CELL_SIZE，之后不再变 */
+  function finalizeCanvas() {
+    if (canvasReady) { return; }
+    if (!liveData || !liveData.taskConfig) { return; }
+
     var mapArea = document.querySelector('.map-area');
     if (!mapArea) { return; }
     var availW = mapArea.clientWidth;
     var availH = mapArea.clientHeight;
     if (availW < 100 || availH < 100) { return; }
 
-    var w = (liveData && liveData.taskConfig)
-        ? parseInt(liveData.taskConfig.mapWidth, 10)  || DEFAULT_GRID_W
-        : DEFAULT_GRID_W;
-    var h = (liveData && liveData.taskConfig)
-        ? parseInt(liveData.taskConfig.mapHeight, 10) || DEFAULT_GRID_H
-        : DEFAULT_GRID_H;
+    var w = parseInt(liveData.taskConfig.mapWidth, 10)  || DEFAULT_GRID_W;
+    var h = parseInt(liveData.taskConfig.mapHeight, 10) || DEFAULT_GRID_H;
 
-    var maxCells = Math.max(w, h);
-    var canvasMax = Math.min(availW, availH);
-    CELL_SIZE = Math.floor(canvasMax / maxCells);
+    var cellW = Math.floor(availW / w);
+    var cellH = Math.floor(availH / h);
+    CELL_SIZE = Math.min(cellW, cellH);
     if (CELL_SIZE < 4) { CELL_SIZE = 4; }
 
     canvas.width  = w * CELL_SIZE;
     canvas.height = h * CELL_SIZE;
+    canvasReady = true;
+  }
+
+  function showLoading() {
+    var mapArea = document.querySelector('.map-area');
+    var w = mapArea ? mapArea.clientWidth  : 500;
+    var h = mapArea ? mapArea.clientHeight : 500;
+    canvas.width  = w;
+    canvas.height = h;
+    ctx.fillStyle = '#0f0f23';
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = '#8b949e';
+    var fs = Math.min(20, Math.floor(Math.min(w, h) / 20));
+    ctx.font = fs + 'px Consolas, monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('加载地图中...', w / 2, h / 2);
+    ctx.fillText('等待任务启动', w / 2, h / 2 + fs * 1.5);
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -350,9 +373,10 @@
     ctx.fillStyle = '#FFFFFF';
     ctx.fill();
 
-    // 编号文字（黑色，白色内圈上可读）
+    // 编号文字，字号随格子缩放
     ctx.fillStyle = '#000';
-    ctx.font = 'bold 9px Consolas, monospace';
+    var numFontSize = Math.max(8, Math.floor(CELL_SIZE * 0.45));
+    ctx.font = 'bold ' + numFontSize + 'px Consolas, monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(String(car.number), cx, cy);
@@ -508,17 +532,12 @@
     replayData = null;
     replay.currentTick = 0;
     replay.maxTick = 0;
-    initCanvasSize();
-    clearCanvas();
+    canvasReady = false;
+    showLoading();
   }
 
   function clearCanvas() {
-    var canvas = document.getElementById('map-canvas');
-    if (canvas) {
-      var ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#0f0f23';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-    }
+    showLoading();
     $carsPanel.innerHTML = '<div class="car-card placeholder"><p>等待车辆数据...</p></div>';
     $leaderboard.innerHTML = '';
     $rate.textContent = '探索率: 0%';
@@ -556,6 +575,17 @@
     replay.maxTick = msg.maxTick || 0;
     replay.currentTick = 0;
     replay.playing = false;
+
+    // canvas尺寸
+    var mapArea = document.querySelector('.map-area');
+    if (mapArea) {
+      var availW = mapArea.clientWidth, availH = mapArea.clientHeight;
+      var w = msg.mapWidth || 30, h = msg.mapHeight || 30;
+      CELL_SIZE = Math.max(4, Math.min(Math.floor(availW / w), Math.floor(availH / h)));
+      canvas.width  = w * CELL_SIZE;
+      canvas.height = h * CELL_SIZE;
+      canvasReady = true;
+    }
 
     // 构建每辆车的tick→位置索引（提升回放查表性能）
     replayData._carIndex = {};
@@ -847,11 +877,15 @@
   // 启动
   // ═══════════════════════════════════════════════════════════
 
-  initCanvasSize(); // 初始占位
+  showLoading(); // 初始占位
   window.addEventListener('resize', function () {
-    initCanvasSize();
-    if (mode === 'live' && liveData) { renderLive(); }
-    if (mode === 'replay' && replayData) { renderReplayFrame(); }
+    if (!liveData) { return; }
+    canvasReady = false;  // 强制重算
+    finalizeCanvas();
+    if (canvasReady) {
+      if (mode === 'live') { renderLive(); }
+      if (mode === 'replay' && replayData) { renderReplayFrame(); }
+    }
   });
   connectWebSocket();
 })();
