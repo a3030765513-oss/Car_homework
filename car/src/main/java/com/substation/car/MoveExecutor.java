@@ -39,29 +39,21 @@ import java.util.Optional;
 public class MoveExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(MoveExecutor.class);
-    private static final int DEFAULT_W = BlackboardClient.DEFAULT_WIDTH;
-    private static final int DEFAULT_H = BlackboardClient.DEFAULT_HEIGHT;
-
     private static final int MAX_RESERVE_RETRIES = 3;
 
     private final String carId;
     private final BlackboardClient bb;
     private final MessageBus mb;
     private final JedisPool pool;
-    private final int mapWidth;
-    private final int mapHeight;
     private int lastFailedX = -1;
     private int lastFailedY = -1;
     private int consecutiveReserveFailures;
 
-    public MoveExecutor(String carId, BlackboardClient bb, MessageBus mb,
-                        JedisPool pool, int mapWidth, int mapHeight) {
+    public MoveExecutor(String carId, BlackboardClient bb, MessageBus mb, JedisPool pool) {
         this.carId = carId;
         this.bb = bb;
         this.mb = mb;
         this.pool = pool;
-        this.mapWidth = mapWidth > 0 ? mapWidth : DEFAULT_W;
-        this.mapHeight = mapHeight > 0 ? mapHeight : DEFAULT_H;
     }
 
     /**
@@ -189,11 +181,13 @@ public class MoveExecutor {
     }
 
     private void illuminateAndHeat(Point center, int tick) {
+        int w = bb.getMapWidth();
+        int h = bb.getMapHeight();
         for (int dr = -1; dr <= 1; dr++) {
             for (int dc = -1; dc <= 1; dc++) {
                 int r = center.y() + dr;
                 int c = center.x() + dc;
-                if (r >= 0 && r < mapHeight && c >= 0 && c < mapWidth) {
+                if (r >= 0 && r < h && c >= 0 && c < w) {
                     bb.recordExploration(tick, r, c);
                     bb.incrementMapHeat(r, c);
                 }

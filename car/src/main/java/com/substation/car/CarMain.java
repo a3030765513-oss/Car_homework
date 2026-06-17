@@ -69,7 +69,7 @@ public class CarMain {
         mb.connect();
         mb.declareCarQueue(carId);
 
-        MoveExecutor moveExecutor = new MoveExecutor(carId, bb, mb, sharedPool, mapW, mapH);
+        MoveExecutor moveExecutor = new MoveExecutor(carId, bb, mb, sharedPool);
         CarAgent agent = new CarAgent(carId, bb, moveExecutor);
 
         mb.subscribe(QueueNames.carQueue(carId), agent::handleMessage);
