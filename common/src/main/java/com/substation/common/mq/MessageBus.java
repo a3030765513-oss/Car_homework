@@ -90,6 +90,18 @@ public class MessageBus implements AutoCloseable {
         channel.queueDeclare(QueueNames.CONTROLLER_CMD, true, false, false, null);
     }
 
+    /**
+     * 声明任意名称的持久化队列（测试或扩展模块用）。
+     */
+    public void declareQueue(String queueName) throws IOException {
+        channel.queueDeclare(queueName, true, false, false, null);
+    }
+
+    /** 清空指定队列中尚未消费的消息。 */
+    public void purgeQueue(String queueName) throws IOException {
+        channel.queuePurge(queueName);
+    }
+
     /** 声明策略监督器指令队列。 */
     public void declareStrategySupervisorQueue() throws IOException {
         channel.queueDeclare(QueueNames.STRATEGY_SUPERVISOR_CMD, true, false, false, null);

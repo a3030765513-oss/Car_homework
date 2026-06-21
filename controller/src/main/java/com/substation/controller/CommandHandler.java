@@ -40,6 +40,8 @@ public class CommandHandler {
                 case MessageTypes.TASK_READY -> {
                     System.out.println("[Controller] 收到 TASK_READY，启动调度");
                     dispatcher.onTaskReady();
+                    scheduler.stop();
+                    scheduler.resetPaused();
                     scheduler.start();
                 }
                 case MessageTypes.TARGET_ASSIGNED -> {
@@ -55,11 +57,35 @@ public class CommandHandler {
                 case MessageTypes.MOVED, MessageTypes.ROUTE_DONE -> {
                     if (carId != null) dispatcher.onMoveAcknowledged(carId);
                 }
-                case MessageTypes.BLOCKED, MessageTypes.ROUTE_OPTIMIZED ->
-                    {}
+                case MessageTypes.BLOCKED -> {
+                    if (carId != null) {
+                        dispatcher.onMoveAcknowledged(carId);
+                    }
+                }
+                case MessageTypes.ROUTE_OPTIMIZED -> {
+                    if (scheduler.isPaused() || !dispatcher.isActive()) {
+                        break;
+                    }
+                    if (carId == null) {
+                        break;
+                    }
+                    boolean overlapReassign = data != null
+                        && data.getBooleanValue("overlapReassign", false);
+                    if (overlapReassign) {
+                        dispatcher.onRouteOverlapReassign(carId);
+                    } else {
+                        if (data != null && data.getBooleanValue("optimized", false)) {
+                            dispatcher.markSupervised(carId);
+                        }
+                        dispatcher.onRouteSupervisionFinished(carId);
+                    }
+                }
                 case MessageTypes.SET_CONFIG -> {
                     if (data != null) {
+                        scheduler.stop();
+                        dispatcher.prepareForNewConfig();
                         dispatcher.forwardConfig(data);
+                        System.out.println("[Controller] 收到 SET_CONFIG，等待 TaskConfigurator 初始化...");
                     }
                 }
                 case MessageTypes.RESET -> {

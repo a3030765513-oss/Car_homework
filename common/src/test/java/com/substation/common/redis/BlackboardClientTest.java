@@ -184,4 +184,122 @@ class BlackboardClientTest {
         int rate = bb.getExplorationRate();
         assertTrue(rate >= 0);
     }
+
+    @Test
+    void explorationRate_excludesSealedCells() {
+        bb.initTaskConfig(Map.of("mapWidth", "5", "mapHeight", "5"));
+        boolean[][] obstacles = {
+            {false, false, false, false, false},
+            {false, true, true, true, false},
+            {false, true, false, true, false},
+            {false, true, true, true, false},
+            {false, false, false, false, false}
+        };
+        for (int row = 0; row < 5; row++) {
+            for (int col = 0; col < 5; col++) {
+                if (obstacles[row][col]) {
+                    bb.setBlock(row, col, true);
+                }
+            }
+        }
+        bb.writeSealedBitmap(new boolean[][]{
+            {false, false, false, false, false},
+            {false, false, false, false, false},
+            {false, false, true, false, false},
+            {false, false, false, false, false},
+            {false, false, false, false, false}
+        }, 5);
+
+        for (int row = 0; row < 5; row++) {
+            for (int col = 0; col < 5; col++) {
+                if (!obstacles[row][col] && !(row == 2 && col == 2)) {
+                    bb.setMapViewBit(row, col, true);
+                }
+            }
+        }
+
+        assertEquals(100, bb.getExplorationRate());
+        assertTrue(bb.isExplorationComplete());
+    }
+
+    @Test
+    void isExplorationComplete_requiresFullExplorableCoverage() {
+        bb.writeSealedBitmap(new boolean[30][30], 30);
+        for (int r = 0; r < 29; r++) {
+            for (int c = 0; c < 30; c++) {
+                bb.setMapViewBit(r, c, true);
+            }
+        }
+        assertTrue(bb.hasUnexploredExplorableCells());
+        assertFalse(bb.isExplorationComplete());
+        assertTrue(bb.getExplorationRate() < 100);
+
+        bb.setMapViewBit(29, 0, true);
+        for (int c = 1; c < 30; c++) {
+            bb.setMapViewBit(29, c, true);
+        }
+        assertFalse(bb.hasUnexploredExplorableCells());
+        assertEquals(100, bb.getExplorationRate());
+        assertTrue(bb.isExplorationComplete());
+    }
+
+    @Test
+    void isExplorationComplete_whenNoUnexploredCells() {
+        bb.writeSealedBitmap(new boolean[30][30], 30);
+        for (int r = 0; r < 30; r++) {
+            for (int c = 0; c < 30; c++) {
+                bb.setMapViewBit(r, c, true);
+            }
+        }
+        assertFalse(bb.hasUnexploredExplorableCells());
+        assertEquals(100, bb.getExplorationRate());
+        assertTrue(bb.isExplorationComplete());
+    }
+
+    @Test
+    void explorationRate_reaches100WhenAllReachableExplored_onLargeMap() {
+        int size = 100;
+        bb.initTaskConfig(Map.of("mapWidth", String.valueOf(size), "mapHeight", String.valueOf(size)));
+
+        boolean[][] obstacles = new boolean[size][size];
+        for (int row = 40; row < 60; row++) {
+            for (int col = 0; col < size; col++) {
+                obstacles[row][col] = true;
+                bb.setBlock(row, col, true);
+            }
+        }
+
+        List<Point> starts = List.of(new Point(1, 1), new Point(98, 98));
+        boolean[][] sealed = com.substation.common.map.ReachabilityAnalyzer
+            .findSealedFreeCells(obstacles, starts);
+        bb.writeSealedBitmap(sealed, size);
+
+        for (int row = 0; row < size; row++) {
+            for (int col = 0; col < size; col++) {
+                if (!obstacles[row][col] && !sealed[row][col]) {
+                    bb.setMapViewBit(row, col, true);
+                }
+            }
+        }
+
+        assertEquals(100, bb.getExplorationRate());
+        assertFalse(bb.hasUnexploredExplorableCells());
+        assertTrue(bb.isExplorationComplete());
+    }
+
+    @Test
+    void sealedBitmapRoundTrip_usesExplicitMapWidth() {
+        int size = 100;
+        bb.initTaskConfig(Map.of("mapWidth", String.valueOf(size), "mapHeight", String.valueOf(size)));
+
+        boolean[][] sealed = new boolean[size][size];
+        sealed[10][50] = true;
+        sealed[80][80] = true;
+        bb.writeSealedBitmap(sealed, size);
+
+        boolean[][] loaded = bb.loadSealedBitmap();
+        assertTrue(loaded[10][50]);
+        assertTrue(loaded[80][80]);
+        assertFalse(loaded[0][0]);
+    }
 }

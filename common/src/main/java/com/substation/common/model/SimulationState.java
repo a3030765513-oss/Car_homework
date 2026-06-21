@@ -16,7 +16,9 @@ public record SimulationState(
         /** 地图视野（已探索区域），true表示已探索 */
         boolean[][] mapView,
         /** 地图障碍物，true表示该格子不可通行 */
-        boolean[][] mapBlock) {
+        boolean[][] mapBlock,
+        /** 被障碍物包裹、小车不可达的格子，true表示密封区 */
+        boolean[][] mapSealed) {
 
     /** 单辆小车在某一tick的状态快照 */
     public record CarInfo(

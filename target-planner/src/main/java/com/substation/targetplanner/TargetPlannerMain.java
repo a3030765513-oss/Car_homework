@@ -21,7 +21,8 @@ import java.util.concurrent.TimeoutException;
 public class TargetPlannerMain {
 
     private static final Logger log = LoggerFactory.getLogger(TargetPlannerMain.class);
-    private static final int INITIAL_MAP_SIZE = 30;
+    private static final int INITIAL_W = BlackboardClient.DEFAULT_WIDTH;
+    private static final int INITIAL_H = BlackboardClient.DEFAULT_HEIGHT;
     private static final String MQ_USER = "guest";
     private static final String MQ_PASS = "guest";
 
@@ -47,7 +48,7 @@ public class TargetPlannerMain {
 
     /** 启动目标分配服务：连接中间件、声明队列、订阅 ASSIGN_TARGET。返回不阻塞 */
     public void start() throws IOException, TimeoutException {
-        bb = new BlackboardClient(redisHost, redisPort, INITIAL_MAP_SIZE, INITIAL_MAP_SIZE);
+        bb = new BlackboardClient(redisHost, redisPort, INITIAL_W, INITIAL_H);
         messageBus = new MessageBus(mqHost, mqPort, MQ_USER, MQ_PASS);
         messageBus.connect();
         messageBus.declareTargetPlannerQueue();
@@ -108,7 +109,7 @@ public class TargetPlannerMain {
         }
 
         Point currentPos = posOpt.get();
-        Optional<Point> target = allocator.allocate(currentPos, bb, allocatedTargets);
+        Optional<Point> target = allocator.allocate(carId, currentPos, bb, allocatedTargets);
 
         if (target.isPresent()) {
             bb.setCarTarget(carId, target.get());

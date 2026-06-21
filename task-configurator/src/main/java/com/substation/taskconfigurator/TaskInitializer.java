@@ -1,28 +1,29 @@
 package com.substation.taskconfigurator;
 
+import com.substation.common.map.ReachabilityAnalyzer;
+import com.substation.common.map.SpawnPositionSelector;
 import com.substation.common.model.CarStatus;
 import com.substation.common.model.Point;
 import com.substation.common.redis.BlackboardClient;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 
 final class TaskInitializer {
 
-    private static final int DEFAULT_MAP_WIDTH = 30;
-    private static final int DEFAULT_MAP_HEIGHT = 30;
+    private static final int DEFAULT_MAP_WIDTH = BlackboardClient.DEFAULT_WIDTH;
+    private static final int DEFAULT_MAP_HEIGHT = BlackboardClient.DEFAULT_HEIGHT;
     private static final int DEFAULT_CAR_COUNT = 5;
     private static final double DEFAULT_OBSTACLE_RATIO = 0.15;
     private static final String DEFAULT_ALGORITHM = "BFS";
-    private static final int DEFAULT_TICK_INTERVAL = 200;
+    private static final int DEFAULT_TICK_INTERVAL = 500;
     private static final int EDGE_MARGIN = 1;
-    private static final int ILLUMINATION_RADIUS = 1;
-    private static final int RANDOM_POSITION_MAX_ATTEMPTS = 200;
+    private static final int FIXED_SPAWN_LAYOUT_CAR_COUNT = 5;
     private static final int OBSTACLE_PLACEMENT_MULTIPLIER = 10;
 
     private static final String KEY_MAP_WIDTH = "mapWidth";
@@ -46,15 +47,15 @@ final class TaskInitializer {
         writeTaskConfig(bb, mapWidth, mapHeight, carCount, obstacleRatio, algorithm, tickInterval);
 
         List<String> carIds = generateCarIds(carCount);
-        List<Point> initialPositions = assignInitialPositions(carIds, mapWidth, mapHeight);
-        Set<Point> occupied = new HashSet<>(initialPositions);
-
-        placeObstacles(bb, mapWidth, mapHeight, obstacleRatio, occupied);
+        placeObstacles(bb, mapWidth, mapHeight, obstacleRatio, Set.of());
+        List<Point> initialPositions = assignInitialPositions(bb, carCount, mapWidth, mapHeight);
 
         for (int i = 0; i < carIds.size(); i++) {
             initSingleCar(bb, carIds.get(i), initialPositions.get(i));
             lightUpArea(bb, initialPositions.get(i), mapWidth, mapHeight);
         }
+
+        markSealedUnreachableCells(bb, mapWidth, mapHeight, initialPositions);
     }
 
     // ==================== 步骤实现 ====================
@@ -81,8 +82,18 @@ final class TaskInitializer {
         return ids;
     }
 
-    private List<Point> assignInitialPositions(List<String> carIds, int mapWidth, int mapHeight) {
-        Point[] corners = {
+    private List<Point> assignInitialPositions(BlackboardClient bb, int carCount,
+                                                int mapWidth, int mapHeight) {
+        boolean[][] obstacles = buildObstacleGrid(bb, mapWidth, mapHeight);
+        if (carCount <= FIXED_SPAWN_LAYOUT_CAR_COUNT) {
+            return assignCornerAndCenterPositions(carCount, mapWidth, mapHeight, obstacles);
+        }
+        return assignExplorationWeightedPositions(carCount, mapWidth, mapHeight, obstacles);
+    }
+
+    private List<Point> assignCornerAndCenterPositions(int carCount, int mapWidth, int mapHeight,
+                                                        boolean[][] obstacles) {
+        Point[] preferred = {
             new Point(EDGE_MARGIN, EDGE_MARGIN),
             new Point(mapWidth - 1 - EDGE_MARGIN, EDGE_MARGIN),
             new Point(EDGE_MARGIN, mapHeight - 1 - EDGE_MARGIN),
@@ -90,40 +101,60 @@ final class TaskInitializer {
             new Point(mapWidth / 2, mapHeight / 2)
         };
 
+        boolean[][] occupied = new boolean[mapHeight][mapWidth];
         List<Point> positions = new ArrayList<>();
-        Set<Point> used = new HashSet<>();
-        for (int i = 0; i < carIds.size(); i++) {
-            Point chosen = (i < corners.length)
-                ? corners[i]
-                : selectRandomPosition(mapWidth, mapHeight, used);
+        for (int i = 0; i < carCount; i++) {
+            Point chosen = resolvePreferredSpawn(preferred[i], obstacles, occupied, mapWidth, mapHeight)
+                .orElseGet(() -> pickFallbackSpawn(obstacles, occupied, mapWidth, mapHeight));
             positions.add(chosen);
-            used.add(chosen);
+            occupied[chosen.y()][chosen.x()] = true;
         }
         return positions;
     }
 
-    private Point selectRandomPosition(int width, int height, Set<Point> used) {
-        for (int attempt = 0; attempt < RANDOM_POSITION_MAX_ATTEMPTS; attempt++) {
-            int x = EDGE_MARGIN + random.nextInt(width - 2 * EDGE_MARGIN);
-            int y = EDGE_MARGIN + random.nextInt(height - 2 * EDGE_MARGIN);
-            Point candidate = new Point(x, y);
-            if (!used.contains(candidate)) {
-                return candidate;
-            }
+    private List<Point> assignExplorationWeightedPositions(int carCount, int mapWidth, int mapHeight,
+                                                            boolean[][] obstacles) {
+        boolean[][] explored = new boolean[mapHeight][mapWidth];
+        boolean[][] sealed = new boolean[mapHeight][mapWidth];
+        boolean[][] occupied = new boolean[mapHeight][mapWidth];
+
+        List<Point> positions = new ArrayList<>();
+        for (int i = 0; i < carCount; i++) {
+            Point chosen = SpawnPositionSelector.selectBest(
+                obstacles, explored, occupied, sealed, EDGE_MARGIN, random)
+                .orElse(new Point(EDGE_MARGIN, EDGE_MARGIN));
+            positions.add(chosen);
+            occupied[chosen.y()][chosen.x()] = true;
         }
-        return scanForEmpty(width, height, used);
+        return positions;
     }
 
-    private Point scanForEmpty(int width, int height, Set<Point> used) {
-        for (int r = EDGE_MARGIN; r < height - EDGE_MARGIN; r++) {
-            for (int c = EDGE_MARGIN; c < width - EDGE_MARGIN; c++) {
-                Point p = new Point(c, r);
-                if (!used.contains(p)) {
-                    return p;
-                }
-            }
+    private Optional<Point> resolvePreferredSpawn(Point preferred, boolean[][] obstacles,
+                                                   boolean[][] occupied, int mapWidth, int mapHeight) {
+        if (isSpawnable(preferred.x(), preferred.y(), obstacles, occupied, mapWidth, mapHeight)) {
+            return Optional.of(preferred);
         }
-        return new Point(EDGE_MARGIN, EDGE_MARGIN);
+        return Optional.empty();
+    }
+
+    private Point pickFallbackSpawn(boolean[][] obstacles, boolean[][] occupied,
+                                     int mapWidth, int mapHeight) {
+        boolean[][] explored = new boolean[mapHeight][mapWidth];
+        boolean[][] sealed = new boolean[mapHeight][mapWidth];
+        return SpawnPositionSelector.selectBest(
+            obstacles, explored, occupied, sealed, EDGE_MARGIN, random)
+            .orElse(new Point(EDGE_MARGIN, EDGE_MARGIN));
+    }
+
+    private boolean isSpawnable(int col, int row, boolean[][] obstacles, boolean[][] occupied,
+                                 int mapWidth, int mapHeight) {
+        if (row < EDGE_MARGIN || row >= mapHeight - EDGE_MARGIN) {
+            return false;
+        }
+        if (col < EDGE_MARGIN || col >= mapWidth - EDGE_MARGIN) {
+            return false;
+        }
+        return !obstacles[row][col] && !occupied[row][col];
     }
 
     private void placeObstacles(BlackboardClient bb, int width, int height,
@@ -152,16 +183,28 @@ final class TaskInitializer {
     }
 
     private void lightUpArea(BlackboardClient bb, Point center, int mapWidth, int mapHeight) {
-        int rStart = Math.max(0, center.y() - ILLUMINATION_RADIUS);
-        int rEnd = Math.min(mapHeight - 1, center.y() + ILLUMINATION_RADIUS);
-        int cStart = Math.max(0, center.x() - ILLUMINATION_RADIUS);
-        int cEnd = Math.min(mapWidth - 1, center.x() + ILLUMINATION_RADIUS);
+        int row = center.y();
+        int col = center.x();
+        if (row >= 0 && row < mapHeight && col >= 0 && col < mapWidth) {
+            bb.setMapViewBit(row, col, true);
+        }
+    }
 
-        for (int r = rStart; r <= rEnd; r++) {
-            for (int c = cStart; c <= cEnd; c++) {
-                bb.recordExploration(0, r, c);
+    private void markSealedUnreachableCells(BlackboardClient bb, int mapWidth, int mapHeight,
+                                             List<Point> carStartPositions) {
+        boolean[][] obstacles = buildObstacleGrid(bb, mapWidth, mapHeight);
+        boolean[][] sealed = ReachabilityAnalyzer.findSealedFreeCells(obstacles, carStartPositions);
+        bb.writeSealedBitmap(sealed, mapWidth);
+    }
+
+    private boolean[][] buildObstacleGrid(BlackboardClient bb, int mapWidth, int mapHeight) {
+        boolean[][] obstacles = new boolean[mapHeight][mapWidth];
+        for (int row = 0; row < mapHeight; row++) {
+            for (int col = 0; col < mapWidth; col++) {
+                obstacles[row][col] = bb.isBlocked(row, col);
             }
         }
+        return obstacles;
     }
 
     // ==================== 参数解析 ====================

@@ -19,7 +19,8 @@ import java.util.concurrent.TimeoutException;
 public class TaskConfiguratorMain {
 
     private static final Logger log = LoggerFactory.getLogger(TaskConfiguratorMain.class);
-    private static final int INITIAL_MAP_SIZE = 30;
+    private static final int INITIAL_W = BlackboardClient.DEFAULT_WIDTH;
+    private static final int INITIAL_H = BlackboardClient.DEFAULT_HEIGHT;
     private static final String MQ_USER = "guest";
     private static final String MQ_PASS = "guest";
 
@@ -40,7 +41,7 @@ public class TaskConfiguratorMain {
 
     /** 启动任务配置服务：连接中间件、声明队列、订阅 FORWARD_CONFIG/FORWARD_RESET。返回不阻塞 */
     public void start() throws IOException, TimeoutException {
-        bb = new BlackboardClient(redisHost, redisPort, INITIAL_MAP_SIZE, INITIAL_MAP_SIZE);
+        bb = new BlackboardClient(redisHost, redisPort, INITIAL_W, INITIAL_H);
         messageBus = new MessageBus(mqHost, mqPort, MQ_USER, MQ_PASS);
         messageBus.connect();
         messageBus.declareTaskConfigQueue();
@@ -95,7 +96,11 @@ public class TaskConfiguratorMain {
 
         String reply = MessageBuilder.build(MessageTypes.TASK_READY, tick);
         messageBus.publish(QueueNames.CONTROLLER_CMD, reply);
-        log.info("[TaskConfigurator] 已发送 TASK_READY");
+        log.info("[TaskConfigurator] 已发送 TASK_READY，车辆数={}", configCarCount(bb));
+    }
+
+    private int configCarCount(BlackboardClient client) {
+        return client.discoverCarIds().size();
     }
 
     private void handleReset(int tick) {

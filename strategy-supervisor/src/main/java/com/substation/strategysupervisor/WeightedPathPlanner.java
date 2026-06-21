@@ -19,7 +19,7 @@ final class WeightedPathPlanner implements Comparator<int[]> {
 
     @Override
     public int compare(int[] a, int[] b) {
-        return Integer.compare(a[2], b[2]); // 按总代价升序
+        return Integer.compare(a[2], b[2]);
     }
 
     List<Point> plan(Point start, Point target, BlackboardClient bb, List<Point> currentRoute) {
@@ -27,12 +27,21 @@ final class WeightedPathPlanner implements Comparator<int[]> {
         int height = bb.getMapHeight();
 
         if (isOutOfBounds(start, width, height) || isOutOfBounds(target, width, height)) {
-            return currentRoute; // 异常，维持原路
+            return currentRoute;
         }
 
-        boolean[][] blocked = readBlockedMap(bb, width, height);
+        boolean[][] blocked = bb.loadBlockedMapWithCars();
+        boolean[][] explored = bb.loadExploredBitmap();
+        return planOnBitmap(start, target, blocked, explored, width, height, currentRoute);
+    }
+
+    List<Point> planOnBitmap(Point start, Point target, boolean[][] blocked,
+                              boolean[][] explored, int width, int height,
+                              List<Point> currentRoute) {
         int[][] minCost = new int[height][width];
-        for (int[] row : minCost) Arrays.fill(row, Integer.MAX_VALUE);
+        for (int[] row : minCost) {
+            Arrays.fill(row, Integer.MAX_VALUE);
+        }
         Point[][] parent = new Point[height][width];
 
         PriorityQueue<int[]> openSet = new PriorityQueue<>(this);
@@ -41,7 +50,8 @@ final class WeightedPathPlanner implements Comparator<int[]> {
 
         while (!openSet.isEmpty()) {
             int[] cur = openSet.poll();
-            int cx = cur[0], cy = cur[1];
+            int cx = cur[0];
+            int cy = cur[1];
             Point current = new Point(cx, cy);
 
             if (current.equals(target)) {
@@ -49,10 +59,13 @@ final class WeightedPathPlanner implements Comparator<int[]> {
             }
 
             for (int[] dir : DIRECTIONS) {
-                int nx = cx + dir[0], ny = cy + dir[1];
-                if (!isInBounds(nx, ny, width, height) || blocked[ny][nx]) continue;
+                int nx = cx + dir[0];
+                int ny = cy + dir[1];
+                if (!isInBounds(nx, ny, width, height) || blocked[ny][nx]) {
+                    continue;
+                }
 
-                int stepCost = bb.getMapViewBit(ny, nx) ? EXPLORED_PENALTY : UNEXPLORED_COST;
+                int stepCost = explored[ny][nx] ? EXPLORED_PENALTY : UNEXPLORED_COST;
                 int newCost = minCost[cy][cx] + stepCost;
                 if (newCost < minCost[ny][nx]) {
                     minCost[ny][nx] = newCost;
@@ -61,17 +74,7 @@ final class WeightedPathPlanner implements Comparator<int[]> {
                 }
             }
         }
-        return currentRoute; // 无路径，维持原路
-    }
-
-    private boolean[][] readBlockedMap(BlackboardClient bb, int width, int height) {
-        boolean[][] blocked = new boolean[height][width];
-        for (int r = 0; r < height; r++)
-            for (int c = 0; c < width; c++)
-                if (bb.isBlocked(r, c)) blocked[r][c] = true;
-        for (String carId : bb.discoverCarIds())
-            bb.getCarPosition(carId).ifPresent(p -> blocked[p.y()][p.x()] = true);
-        return blocked;
+        return currentRoute;
     }
 
     private List<Point> reconstructPath(Point[][] parent, Point start, Point target) {

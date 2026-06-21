@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>变电站巡检仿真系统</title>
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=4">
 </head>
 <body>
 
@@ -33,6 +33,10 @@
     <span id="info-rate">探索率: 0%</span>
     <span id="info-elapsed">&#x23F1; 00:00</span>
     <span id="info-mode" class="mode-tag" hidden>&#x1F534; 回放中</span>
+    <span class="info-divider">|</span>
+    <span id="info-user">&#x1F464; 管理员</span>
+    <a href="dashboard.html" class="nav-link">← 返回</a>
+    <button id="btn-logout" class="btn-small">退出</button>
   </div>
 </header>
 
@@ -56,7 +60,7 @@
 
       <div class="form-row">
         <label for="cfg-carCount">小车数量</label>
-        <input type="number" id="cfg-carCount" value="3" min="1" max="10" readonly title="由启动脚本决定，运行中可通过添加按钮增加">
+        <input type="number" id="cfg-carCount" value="3" min="1" max="10" readonly>
       </div>
 
       <div class="form-row">
@@ -79,10 +83,9 @@
 
       <!-- 主控制按钮 -->
       <div class="btn-group">
-        <button id="btn-start"  class="btn primary">&#x25B6; 开始</button>
-        <button id="btn-pause" class="btn warning" disabled>&#x23EF; 暂停</button>
-        <button id="btn-reset" class="btn danger">&#x21BA; 重置</button>
-        <button id="btn-unity"  class="btn unity-btn">&#x1F3AE; 3D视图</button>
+        <button id="btn-start"  class="btn btn-primary">&#x25B6; 开始</button>
+        <button id="btn-pause" class="btn btn-warning" disabled>&#x23EF; 暂停</button>
+        <button id="btn-reset" class="btn btn-danger">&#x21BA; 重置</button>
       </div>
 
       <!-- 附加功能按钮 -->
@@ -135,12 +138,19 @@
     </section>
   </aside>
 
-  <!-- ════════════ 中央地图（2D / 3D 可切换） ════════════ -->
+  <!-- ════════════ 中央地图 ════════════ -->
   <main class="map-area">
-    <canvas id="map-canvas"></canvas>
-    <iframe id="unity-frame" src="unity/index.html"
-            style="display:none; width:100%; height:100%; border:none;"
-            allow="fullscreen"></iframe>
+    <div id="welcome-overlay" class="welcome-overlay">
+      <div class="welcome-box">
+        <div class="welcome-icon">⚡</div>
+        <h2>欢迎使用变电站巡检仿真系统</h2>
+        <p>请点击左侧 <strong>▶ 开始</strong> 按钮启动仿真任务</p>
+      </div>
+    </div>
+    <div class="map-stack" id="map-stack" style="display:none">
+      <canvas id="map-canvas"></canvas>
+      <canvas id="car-canvas"></canvas>
+    </div>
   </main>
 
   <!-- ════════════ 右侧栏：车辆状态卡 ════════════ -->
@@ -154,6 +164,23 @@
 
 </div>
 
+<!-- 修改密码弹窗 -->
+<div id="changepw-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:1000;justify-content:center;align-items:center;">
+  <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:12px;padding:24px;width:340px;">
+    <h3 style="margin-bottom:16px;color:#1E293B">修改密码</h3>
+    <input type="password" id="cpw-old" placeholder="旧密码" style="width:100%;height:36px;margin-bottom:10px;padding:0 10px;background:#F8FAFC;border:1px solid #CBD5E1;border-radius:6px;color:#1E293B;font-size:13px">
+    <input type="password" id="cpw-new" placeholder="新密码(至少6位)" style="width:100%;height:36px;margin-bottom:10px;padding:0 10px;background:#F8FAFC;border:1px solid #CBD5E1;border-radius:6px;color:#1E293B;font-size:13px">
+    <input type="password" id="cpw-confirm" placeholder="确认新密码" style="width:100%;height:36px;margin-bottom:10px;padding:0 10px;background:#F8FAFC;border:1px solid #CBD5E1;border-radius:6px;color:#1E293B;font-size:13px">
+    <p id="cpw-err" style="color:#EF4444;font-size:12px;min-height:18px"></p>
+    <div style="display:flex;gap:8px">
+      <button id="cpw-submit" class="btn btn-primary" style="flex:1">确认修改</button>
+      <button id="cpw-cancel" class="btn" style="flex:1;background:#F1F5F9;color:#64748B">取消</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/auth.js"></script>
 <script src="js/app.js"></script>
+
 </body>
 </html>

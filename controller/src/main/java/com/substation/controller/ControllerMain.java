@@ -7,10 +7,8 @@ import com.substation.common.redis.BlackboardClient;
 /** 控制器主入口，负责初始化所有组件并绑定消息监听 */
 public class ControllerMain {
 
-    /** 地图宽度（格子数） */
-    private static final int MAP_WIDTH = 30;
-    /** 地图高度（格子数） */
-    private static final int MAP_HEIGHT = 30;
+    private static final int MAP_W = BlackboardClient.DEFAULT_WIDTH;
+    private static final int MAP_H = BlackboardClient.DEFAULT_HEIGHT;
     /** RabbitMQ 用户名 */
     private static final String MQ_USER = "guest";
     /** RabbitMQ 密码 */
@@ -34,7 +32,7 @@ public class ControllerMain {
 
     /** 启动控制器：连接中间件、声明队列、绑定消息监听、注册关闭钩子 */
     public void start() throws Exception {
-        bb = new BlackboardClient(redisHost, redisPort, MAP_WIDTH, MAP_HEIGHT);
+        bb = new BlackboardClient(redisHost, redisPort, MAP_W, MAP_H);
         if (!bb.acquireControllerLock()) {
             System.err.println("[Controller] 已有实例在运行，退出");
             System.exit(1);
@@ -43,6 +41,7 @@ public class ControllerMain {
         bus = new MessageBus(mqHost, mqPort, MQ_USER, MQ_PASS);
         bus.connect();
         bus.declareControllerQueue();
+        bus.purgeQueue(QueueNames.CONTROLLER_CMD);
         bus.declareTargetPlannerQueue();
         bus.declareNavigatorQueue();
         bus.declareTaskConfigQueue();
@@ -69,5 +68,12 @@ public class ControllerMain {
     /** 独立运行入口（使用默认 localhost 参数） */
     public static void main(String[] args) throws Exception {
         new ControllerMain("localhost", 6379, "localhost", 5672).start();
+        synchronized (ControllerMain.class) {
+            try {
+                ControllerMain.class.wait();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 }

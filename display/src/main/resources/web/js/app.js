@@ -1,357 +1,482 @@
 /**
- * 变电站巡检仿真系统 — 前端核心逻辑。
- *
- * 职责：
- *   1. WebSocket 客户端（连接 / 重连 / 消息收发）
- *   2. Canvas 五层渲染（网格 → 探索 → 障碍 → 路径 → 小车）
- *   3. 车辆状态卡 + 步数排行榜 + 全局信息
- *   4. 控制面板交互（配置表单 + 开始/暂停/重置按钮）
- *   5. 路径回放模式（时间轴滑块 + 逐帧播放）
- *
- * 设计依据：开发计划.md §4.2（Canvas 分层渲染 + 暗色工业风配色）
+ * 变电站巡检仿真系统 — 前端核心逻辑 (双层canvas浅色主题版)
  */
-
 (function () {
   'use strict';
 
-  // ═══════════════════════════════════════════════════════════
-  // 常量
-  // ═══════════════════════════════════════════════════════════
-
-  /** 每格像素尺寸（30 格 × 27px = 810px 画布） */
-  var CELL_SIZE = 27;
-
-  /** 默认地图尺寸 */
-  var DEFAULT_GRID = 30;
-
-  /** WebSocket 重连间隔（毫秒） */
+  // ══════════════ 常量
+  var CELL_SIZE = 18;
+  var DEFAULT_GRID_W = 30;
+  var DEFAULT_GRID_H = 30;
   var RECONNECT_DELAY_MS = 3000;
-
-  /** 路径线最多绘制步数（避免 Canvas 被长路径拖慢） */
   var MAX_ROUTE_DRAW = 10;
-
-  /** 回放默认播放速度：每帧间隔（毫秒） */
   var REPLAY_FRAME_MS = 200;
 
-  // ═══════════════════════════════════════════════════════════
-  // 状态色映射（与 CarStatus 枚举保持一致）
-  // ═══════════════════════════════════════════════════════════
-
+  // ══════════════ 状态色
   var STATUS_COLORS = {
-    IDLE:           '#9E9E9E',
-    WAITING_ROUTE:  '#FF9800',
-    READY:          '#4CAF50',
-    MOVING:         '#2196F3',
-    BLOCKED:        '#F44336'
+    IDLE: '#9E9E9E', WAITING_ROUTE: '#FF9800', READY: '#4CAF50',
+    MOVING: '#2196F3', BLOCKED: '#F44336'
   };
-
   var STATUS_NAMES = {
-    IDLE:           '空闲',
-    WAITING_ROUTE:  '等待路径',
-    READY:          '就绪',
-    MOVING:         '移动中',
-    BLOCKED:        '受阻'
+    IDLE: '空闲', WAITING_ROUTE: '等待路径', READY: '就绪',
+    MOVING: '移动中', BLOCKED: '受阻'
   };
 
-  // ═══════════════════════════════════════════════════════════
-  // DOM 引用（一次性获取，避免重复 querySelector）
-  // ═══════════════════════════════════════════════════════════
+  // ══════════════ 每车固定颜色
+  var CAR_COLORS = ['#E74C3C','#3498DB','#2ECC71','#9B59B6','#F39C12','#1ABC9C','#E91E63','#00BCD4'];
 
-  var canvas   = document.getElementById('map-canvas');
-  var ctx      = canvas.getContext('2d');
+  // ══════════════ 浅色主题颜色
+  var LIGHT = {
+    gridBg: '#D0D0D0',
+    gridLine: '#94A3B8',
+    explored: '#B0C4DE',
+    obstacle: '#C0C0C0',
+    obstacleFill: '#A0A0A0',
+    sealedFill: '#E53935'
+  };
 
-  var $tick       = document.getElementById('info-tick');
-  var $rate       = document.getElementById('info-rate');
-  var $elapsed    = document.getElementById('info-elapsed');
-  var $modeTag    = document.getElementById('info-mode');
-  var $carsPanel  = document.getElementById('cars-panel');
+  // ══════════════ DOM
+  var $mapStack = document.getElementById('map-stack');
+  var $welcome  = document.getElementById('welcome-overlay');
+  var mapCanvas = document.getElementById('map-canvas');
+  var mapCtx    = mapCanvas.getContext('2d');
+  var carCanvas = document.getElementById('car-canvas');
+  var carCtx    = carCanvas.getContext('2d');
+
+  var $tick = document.getElementById('info-tick');
+  var $rate = document.getElementById('info-rate');
+  var $elapsed = document.getElementById('info-elapsed');
+  var $modeTag = document.getElementById('info-mode');
+  var $carsPanel = document.getElementById('cars-panel');
   var $leaderboard = document.getElementById('leaderboard');
 
-  var $btnStart   = document.getElementById('btn-start');
-  var $btnPause   = document.getElementById('btn-pause');
-  var $btnReset   = document.getElementById('btn-reset');
-  var $btnUnity   = document.getElementById('btn-unity');
-  var $btnAddCar  = document.getElementById('btn-addcar');
-  var $btnReplay  = document.getElementById('btn-replay');
-  var $btnLive    = document.getElementById('btn-live');
+  var $btnStart = document.getElementById('btn-start');
+  var $btnPause = document.getElementById('btn-pause');
+  var $btnReset = document.getElementById('btn-reset');
+  var $btnAddCar = document.getElementById('btn-addcar');
+  var $btnReplay = document.getElementById('btn-replay');
+  var $btnLive = document.getElementById('btn-live');
 
   var $replayControls = document.getElementById('replay-controls');
-  var $replaySlider   = document.getElementById('replay-slider');
-  var $replayTickLbl  = document.getElementById('replay-tick-label');
-  var $replayToggle   = document.getElementById('replay-toggle');
+  var $replaySlider = document.getElementById('replay-slider');
+  var $replayTickLbl = document.getElementById('replay-tick-label');
+  var $replayToggle = document.getElementById('replay-toggle');
 
-  var $cfgWidth        = document.getElementById('cfg-width');
-  var $cfgHeight       = document.getElementById('cfg-height');
-  var $cfgCarCount     = document.getElementById('cfg-carCount');
+  var $cfgWidth = document.getElementById('cfg-width');
+  var $cfgHeight = document.getElementById('cfg-height');
+  var $cfgCarCount = document.getElementById('cfg-carCount');
   var $cfgObstacleRatio = document.getElementById('cfg-obstacleRatio');
-  var $cfgAlgorithm    = document.getElementById('cfg-algorithm');
+  var $cfgAlgorithm = document.getElementById('cfg-algorithm');
   var $cfgTickInterval = document.getElementById('cfg-tickInterval');
-
   var $lblObstacleRatio = document.getElementById('lbl-obstacleRatio');
-  var $lblTickInterval  = document.getElementById('lbl-tickInterval');
+  var $lblTickInterval = document.getElementById('lbl-tickInterval');
 
-  // ═══════════════════════════════════════════════════════════
-  // 运行时状态
-  // ═══════════════════════════════════════════════════════════
+  var $pwdModal = document.getElementById('changepw-modal');
+  var $pwdOld = document.getElementById('cpw-old');
+  var $pwdNew = document.getElementById('cpw-new');
+  var $pwdErr = document.getElementById('cpw-err');
+  var $pwdSubmit = document.getElementById('cpw-submit');
+  var $pwdCancel = document.getElementById('cpw-cancel');
 
-  /** WebSocket 实例 */
+  // ══════════════ 状态
   var ws = null;
-
-  /** 最新收到的实时数据（SimulationState JSON 解析结果） */
   var liveData = null;
-
-  /** 当前模式：'live' | 'replay' */
   var mode = 'live';
+  var canvasReady = false;
+  var mapLayerDirty = true;
+  var cachedMapBlock = null;
+  var cachedMapSealed = null;
+  var renderedMapView = null;
+  var lastMapRenderTick = -1;
+  var MAP_RENDER_INTERVAL = 3;
 
-  /** 回放模式专用状态 */
-  var replay = {
-    currentTick: 0,
-    maxTick: 0,
-    playing: false,
-    timerId: null
-  };
-
-  /** 从Redis加载的回放数据（REQUEST_REPLAY响应） */
+  var replay = { currentTick: 0, maxTick: 0, playing: false, timerId: null };
   var replayData = null;
 
-  /** 耗时计时器 ID */
   var elapsedTimerId = null;
-
-  /** 任务开始时刻的本地时间戳（用于算耗时） */
   var startTimestamp = null;
+  var wasEverConnected = false;
+  var userRole = null;
 
-  // ═══════════════════════════════════════════════════════════
-  // WebSocket 连接管理
-  // ═══════════════════════════════════════════════════════════
+  var addCarPending = { active: false, carId: '', baselineCount: 0, timerId: null };
+  var ADD_CAR_TIMEOUT_MS = 30000;
+  var ADD_CAR_LABEL_DEFAULT = '+ 添加小车';
 
+  // ══════════════ WebSocket
   function connectWebSocket() {
     ws = new WebSocket('ws://localhost:8888');
-    ws.onopen  = onSocketOpen;
+    ws.onopen = onSocketOpen;
     ws.onmessage = onSocketMessage;
     ws.onclose = onSocketClose;
     ws.onerror = onSocketError;
   }
 
-  var wasEverConnected = false;
-
   function onSocketOpen() {
-    console.log('[app] WebSocket 已连接');
+    console.log('[app] WS connected');
     if (wasEverConnected) {
-      // 重连后自动重置，恢复系统状态
       ws.send(JSON.stringify({ type: 'RESET', data: {} }));
-      console.log('[app] 检测到重连，已发送 RESET');
     }
   }
 
   function onSocketMessage(event) {
     wasEverConnected = true;
     var msg = JSON.parse(event.data);
-    if (msg.type === 'REPLAY_DATA') {
-      receiveReplayData(msg);
-      return;
-    }
-    liveData = msg;
+    if (msg.type === 'REPLAY_DATA') { receiveReplayData(msg); return; }
+    if (msg.type === 'CAR_PENDING') { beginAddCarPending(msg.carId); return; }
+    if (msg.type === 'CAR_LAUNCH_FAILED') { failAddCarPending(msg.reason); return; }
+    liveData = normalizeMapPayload(msg);
     if (mode === 'live') {
-      initCanvasSize();
-      renderLive();
+      finalizeCanvas();
+      if (canvasReady) {
+        var tick = liveData.tick || 0;
+        if (shouldRepaintMapLayer(tick)) {
+          renderMapLayer();
+          lastMapRenderTick = tick;
+        } else if (liveData.mapView) {
+          paintIncrementalExplored(liveData.mapView);
+        }
+        renderCarsLayer();
+        renderCarsPanel(liveData);
+        renderLeaderboard(liveData);
+        updateGlobalInfo(liveData);
+        maybeCompleteAddCarPending(liveData);
+      }
     }
+  }
+
+  function beginAddCarPending(carId) {
+    if (!$btnAddCar) return;
+    clearAddCarPendingTimer();
+    addCarPending.active = true;
+    addCarPending.carId = carId || '';
+    addCarPending.baselineCount = (liveData && liveData.cars) ? liveData.cars.length : 0;
+    $btnAddCar.disabled = true;
+    $btnAddCar.textContent = addCarPending.carId
+      ? ('添加 ' + addCarPending.carId + '...')
+      : '添加中...';
+    addCarPending.timerId = setTimeout(function () {
+      failAddCarPending('超时：请查看 logs/car-' + (addCarPending.carId || 'CarXXX') + '.log');
+    }, ADD_CAR_TIMEOUT_MS);
+  }
+
+  function maybeCompleteAddCarPending(data) {
+    if (!addCarPending.active || !data.cars) return;
+    if (data.cars.length > addCarPending.baselineCount) {
+      clearAddCarPending(true);
+    }
+  }
+
+  function failAddCarPending(reason) {
+    clearAddCarPending(false);
+    if (reason) {
+      window.alert('添加小车失败：' + reason);
+    }
+  }
+
+  function clearAddCarPending(wasSuccessful) {
+    if (!$btnAddCar) return;
+    clearAddCarPendingTimer();
+    addCarPending.active = false;
+    addCarPending.carId = '';
+    addCarPending.baselineCount = 0;
+    $btnAddCar.disabled = false;
+    $btnAddCar.textContent = wasSuccessful ? '✓ 已添加' : ADD_CAR_LABEL_DEFAULT;
+    if (wasSuccessful) {
+      setTimeout(function () {
+        if ($btnAddCar && $btnAddCar.textContent === '✓ 已添加') {
+          $btnAddCar.textContent = ADD_CAR_LABEL_DEFAULT;
+        }
+      }, 1500);
+    }
+  }
+
+  function clearAddCarPendingTimer() {
+    if (addCarPending.timerId) {
+      clearTimeout(addCarPending.timerId);
+      addCarPending.timerId = null;
+    }
+  }
+
+  function clearMapCaches() {
+    cachedMapBlock = null;
+    cachedMapSealed = null;
+    renderedMapView = null;
+    lastMapRenderTick = -1;
+    mapLayerDirty = true;
+  }
+
+  function paintIncrementalExplored(mapView) {
+    if (!canvasReady || !mapView) return;
+    var gridW = getGridW(liveData);
+    var gridH = getGridH(liveData);
+    if (!renderedMapView) {
+      renderedMapView = createEmptyView(gridW, gridH);
+    }
+    var ctx = mapCtx;
+    var cs = CELL_SIZE;
+    ctx.fillStyle = LIGHT.explored;
+    for (var r = 0; r < gridH; r++) {
+      if (!mapView[r]) continue;
+      for (var c = 0; c < gridW; c++) {
+        if (mapView[r][c] && !renderedMapView[r][c]) {
+          ctx.fillRect(c * cs, r * cs, cs, cs);
+          renderedMapView[r][c] = true;
+        }
+      }
+    }
+  }
+
+  function syncRenderedMapView(mapView, gridW, gridH) {
+    renderedMapView = mapView ? cloneView(mapView) : createEmptyView(gridW, gridH);
+  }
+
+  function shouldRepaintMapLayer(tick) {
+    if (mapLayerDirty) return true;
+    if (tick <= 1) return true;
+    if ((liveData.explorationRate || 0) >= 100) return true;
+    return tick - lastMapRenderTick >= MAP_RENDER_INTERVAL;
+  }
+
+  function normalizeMapPayload(data) {
+    var w = getGridW(data);
+    var h = getGridH(data);
+    if (data.mapViewB64) {
+      data.mapView = decodeBitmapB64(data.mapViewB64, w, h);
+    }
+    if (data.mapBlockB64) {
+      cachedMapBlock = decodeBitmapB64(data.mapBlockB64, w, h);
+    }
+    if (cachedMapBlock) {
+      data.mapBlock = cachedMapBlock;
+    }
+    if (data.mapSealedB64) {
+      cachedMapSealed = decodeBitmapB64(data.mapSealedB64, w, h);
+    }
+    if (cachedMapSealed) {
+      data.mapSealed = cachedMapSealed;
+    }
+    return data;
+  }
+
+  function decodeBitmapB64(b64, width, height) {
+    var binary = atob(b64);
+    var bitmap = [];
+    for (var row = 0; row < height; row++) {
+      var rowBits = [];
+      for (var col = 0; col < width; col++) {
+        var offset = row * width + col;
+        var byteIdx = (offset / 8) | 0;
+        var bitIdx = 7 - (offset % 8);
+        var byteVal = byteIdx < binary.length ? binary.charCodeAt(byteIdx) : 0;
+        rowBits.push(((byteVal >> bitIdx) & 1) === 1);
+      }
+      bitmap.push(rowBits);
+    }
+    return bitmap;
   }
 
   function onSocketClose() {
-    console.log('[app] WebSocket 断开，' + (RECONNECT_DELAY_MS / 1000) + 's 后重连');
+    console.log('[app] WS closed, reconnecting in ' + (RECONNECT_DELAY_MS / 1000) + 's');
     setTimeout(connectWebSocket, RECONNECT_DELAY_MS);
   }
 
-  function onSocketError(err) {
-    console.error('[app] WebSocket 错误', err);
+  function onSocketError(err) { console.error('[app] WS error', err); }
+
+  // ══════════════ Canvas 尺寸
+  function finalizeCanvas() {
+    if (canvasReady) return;
+    if (!liveData || !liveData.taskConfig) return;
+    var mapArea = document.querySelector('.map-area');
+    if (!mapArea) return;
+    var availW = mapArea.clientWidth - 20;
+    var availH = mapArea.clientHeight - 20;
+    if (availW < 100 || availH < 100) return;
+
+    var w = parseInt(liveData.taskConfig.mapWidth, 10) || DEFAULT_GRID_W;
+    var h = parseInt(liveData.taskConfig.mapHeight, 10) || DEFAULT_GRID_H;
+    var cellW = Math.floor(availW / w);
+    var cellH = Math.floor(availH / h);
+    CELL_SIZE = Math.max(4, Math.min(cellW, cellH));
+
+    var cw = w * CELL_SIZE, ch = h * CELL_SIZE;
+    mapCanvas.width = cw; mapCanvas.height = ch;
+    carCanvas.width = cw; carCanvas.height = ch;
+
+    canvasReady = true;
+    mapLayerDirty = true;
+    if ($welcome) $welcome.style.display = 'none';
+    if ($mapStack) $mapStack.style.display = 'block';
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // Canvas 尺寸初始化
-  // ═══════════════════════════════════════════════════════════
-
-  function initCanvasSize() {
-    if (!liveData || !liveData.taskConfig) { return; }
-    var w = parseInt(liveData.taskConfig.mapWidth, 10)  || DEFAULT_GRID;
-    var h = parseInt(liveData.taskConfig.mapHeight, 10) || DEFAULT_GRID;
-    var size = Math.max(w, h);
-    canvas.width  = size * CELL_SIZE;
-    canvas.height = size * CELL_SIZE;
-  }
-
-  // ═══════════════════════════════════════════════════════════
-  // 实时渲染入口
-  // ═══════════════════════════════════════════════════════════
-
-  function renderLive() {
+  // ══════════════ 地图层（静态：网格+探索+障碍物）
+  function renderMapLayer() {
+    if (!liveData || !canvasReady) return;
     var data = liveData;
-    if (!data) { return; }
-    renderGrid(data);
-    renderExplored(data);
-    renderObstacles(data);
-    renderRoutes(data);
-    renderCars(data);
-    renderCarsPanel(data);
-    renderLeaderboard(data);
-    updateGlobalInfo(data);
-  }
+    var gridW = getGridW(data), gridH = getGridH(data);
+    var ctx = mapCtx, cs = CELL_SIZE;
 
-  // ═══════════════════════════════════════════════════════════
-  // Canvas 分层渲染 L1-L5
-  // ═══════════════════════════════════════════════════════════
+    // 清空
+    ctx.clearRect(0, 0, mapCanvas.width, mapCanvas.height);
 
-  /** L1: 网格背景。先清空画布，再画 30×30 网格线 */
-  function renderGrid(data) {
-    var gridW = getGridW(data);
-    var gridH = getGridH(data);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // 网格背景
+    ctx.fillStyle = LIGHT.gridBg;
+    ctx.fillRect(0, 0, gridW * cs, gridH * cs);
 
-    // 未探索区域底色
-    ctx.fillStyle = '#0f0f23';
-    ctx.fillRect(0, 0, gridW * CELL_SIZE, gridH * CELL_SIZE);
+    // 已探索
+    if (data.mapView) {
+      ctx.fillStyle = LIGHT.explored;
+      for (var r = 0; r < gridH; r++) {
+        if (!data.mapView[r]) continue;
+        for (var c = 0; c < gridW; c++) {
+          if (data.mapView[r][c]) ctx.fillRect(c * cs, r * cs, cs, cs);
+        }
+      }
+    }
 
-    // 网格线
-    ctx.strokeStyle = '#2a2a4a';
+    // 障碍物（跳过有车格子）
+    if (data.mapBlock) {
+      var occupied = {};
+      if (data.cars) {
+        for (var i = 0; i < data.cars.length; i++) {
+          var p = data.cars[i].position;
+          if (p) occupied[p.x + ',' + p.y] = true;
+        }
+      }
+      ctx.fillStyle = LIGHT.obstacleFill;
+      for (var rr = 0; rr < gridH; rr++) {
+        if (!data.mapBlock[rr]) continue;
+        for (var cc = 0; cc < gridW; cc++) {
+          if (data.mapBlock[rr][cc] && !occupied[cc + ',' + rr]) {
+            ctx.fillRect(cc * cs, rr * cs, cs, cs);
+          }
+        }
+      }
+    }
+
+    // 任务完成时，密封不可达区域红色填充
+    if ((data.explorationRate || 0) >= 100 && data.mapSealed) {
+      ctx.fillStyle = LIGHT.sealedFill;
+      for (var sr = 0; sr < gridH; sr++) {
+        if (!data.mapSealed[sr]) continue;
+        for (var sc = 0; sc < gridW; sc++) {
+          if (data.mapSealed[sr][sc]) {
+            ctx.fillRect(sc * cs, sr * cs, cs, cs);
+          }
+        }
+      }
+    }
+
+    // 网格线（最上层，所有格子都有描边）
+    ctx.strokeStyle = LIGHT.gridLine;
     ctx.lineWidth = 0.5;
     for (var i = 0; i <= gridW; i++) {
-      var x = i * CELL_SIZE;
-      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, gridH * CELL_SIZE); ctx.stroke();
+      var x = i * cs; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, gridH * cs); ctx.stroke();
     }
     for (var j = 0; j <= gridH; j++) {
-      var y = j * CELL_SIZE;
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(gridW * CELL_SIZE, y); ctx.stroke();
+      var y = j * cs; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(gridW * cs, y); ctx.stroke();
     }
+    syncRenderedMapView(data.mapView, gridW, gridH);
+    mapLayerDirty = false;
   }
 
-  /** L2: 已探索区域。遍历 mapView bitmap，点亮已探索格 */
-  function renderExplored(data) {
-    if (!data.mapView) { return; }
-    var gridW = getGridW(data);
-    var gridH = getGridH(data);
-    ctx.fillStyle = '#16213e';
-    for (var r = 0; r < gridH; r++) {
-      if (!data.mapView[r]) { continue; }
-      for (var c = 0; c < gridW; c++) {
-        if (data.mapView[r][c]) {
-          ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-        }
-      }
-    }
-  }
+  // ══════════════ 小车层（动态：路线+小车）
+  function renderCarsLayer() {
+    if (!liveData || !canvasReady) return;
+    var data = liveData;
+    var ctx = carCtx, cs = CELL_SIZE;
+    ctx.clearRect(0, 0, carCanvas.width, carCanvas.height);
 
-  /** L3: 障碍物。跳过有车格子，避免小车背上红色方块 */
-  function renderObstacles(data) {
-    if (!data.mapBlock) { return; }
-
-    var occupied = {};
+    // 路线
     if (data.cars) {
-      for (var i = 0; i < data.cars.length; i++) {
-        var p = data.cars[i].position;
-        occupied[p.x + ',' + p.y] = true;
-      }
+      for (var i = 0; i < data.cars.length; i++) drawRoute(data.cars[i], ctx, cs);
     }
-
-    var gridW = getGridW(data);
-    var gridH = getGridH(data);
-    ctx.fillStyle = '#e94560';
-    for (var r = 0; r < gridH; r++) {
-      if (!data.mapBlock[r]) { continue; }
-      for (var c = 0; c < gridW; c++) {
-        if (data.mapBlock[r][c] && !occupied[c + ',' + r]) {
-          ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-        }
-      }
+    // 小车
+    if (data.cars) {
+      for (var i = 0; i < data.cars.length; i++) drawCar(data.cars[i], ctx, cs);
     }
   }
 
-  /** L4: 规划路径。半透明蓝色折线，每车最多画 10 步 */
-  function renderRoutes(data) {
-    if (!data.cars) { return; }
-    for (var i = 0; i < data.cars.length; i++) {
-      drawRouteForCar(data.cars[i]);
-    }
+  function shouldDrawRoute(car) {
+    if (!car.routeList || car.routeList.length === 0) return false;
+    return car.status === 'READY' || car.status === 'MOVING' || car.status === 'BLOCKED';
   }
 
-  function drawRouteForCar(car) {
-    if (!car.position || !car.routeList || car.routeList.length === 0) { return; }
-
-    ctx.strokeStyle = 'rgba(100, 200, 255, 0.6)';
-    ctx.lineWidth = 2;
+  function drawRoute(car, ctx, cs) {
+    if (!car.position || !shouldDrawRoute(car)) return;
+    var routeList = car.routeList;
+    var carColor = CAR_COLORS[(car.number - 1) % CAR_COLORS.length] || '#3498DB';
+    ctx.strokeStyle = carColor + '80';
+    ctx.lineWidth = Math.max(2, cs * 0.1);
     ctx.lineCap = 'round';
-
-    // 起点：小车当前格子中心
-    var prevGx = car.position.x;
-    var prevGy = car.position.y;
-    var prevPx = prevGx * CELL_SIZE + CELL_SIZE / 2;
-    var prevPy = prevGy * CELL_SIZE + CELL_SIZE / 2;
-
-    var steps = Math.min(car.routeList.length, MAX_ROUTE_DRAW);
+    var px = car.position.x * cs + cs / 2;
+    var py = car.position.y * cs + cs / 2;
+    var drawFrom = findRouteDrawStart(car.position, routeList);
+    var steps = Math.min(routeList.length - drawFrom, MAX_ROUTE_DRAW);
+    var prevX = car.position.x;
+    var prevY = car.position.y;
     for (var i = 0; i < steps; i++) {
-      var gx = car.routeList[i].x;
-      var gy = car.routeList[i].y;
+      var point = routeList[drawFrom + i];
+      var gx = point.x;
+      var gy = point.y;
+      if (gx === prevX && gy === prevY) continue;
+      if (Math.abs(gx - prevX) + Math.abs(gy - prevY) !== 1) continue;
+      var nx = gx * cs + cs / 2;
+      var ny = gy * cs + cs / 2;
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(nx, ny);
+      ctx.stroke();
+      px = nx;
+      py = ny;
+      prevX = gx;
+      prevY = gy;
+    }
+  }
 
-      // 仅当曼哈顿距离 = 1（四方向相邻）时画线段，防止跨格斜线
-      var manhattan = Math.abs(gx - prevGx) + Math.abs(gy - prevGy);
-      if (manhattan === 1) {
-        var px = gx * CELL_SIZE + CELL_SIZE / 2;
-        var py = gy * CELL_SIZE + CELL_SIZE / 2;
-        ctx.beginPath();
-        ctx.moveTo(prevPx, prevPy);
-        ctx.lineTo(px, py);
-        ctx.stroke();
+  function findRouteDrawStart(position, routeList) {
+    for (var i = 0; i < routeList.length; i++) {
+      var gx = routeList[i].x;
+      var gy = routeList[i].y;
+      if (gx === position.x && gy === position.y) {
+        return i + 1 < routeList.length ? i + 1 : i;
       }
-
-      prevGx = gx;
-      prevGy = gy;
-      prevPx = prevGx * CELL_SIZE + CELL_SIZE / 2;
-      prevPy = prevGy * CELL_SIZE + CELL_SIZE / 2;
+      if (Math.abs(gx - position.x) + Math.abs(gy - position.y) === 1) {
+        return i;
+      }
     }
+    return 0;
   }
 
-  /** L5: 小车。圆形 + 状态颜色 + 编号文字 */
-  function renderCars(data) {
-    if (!data.cars) { return; }
-    for (var i = 0; i < data.cars.length; i++) {
-      drawCar(data.cars[i]);
-    }
-  }
+  function drawCar(car, ctx, cs) {
+    if (!car.position) return;
+    var cx = car.position.x * cs + cs / 2;
+    var cy = car.position.y * cs + cs / 2;
+    var color = CAR_COLORS[(car.number - 1) % CAR_COLORS.length] || '#9E9E9E';
+    var outerR = cs / 2 - 1;
 
-  function drawCar(car) {
-    if (!car.position) { return; }
-    var cx = car.position.x * CELL_SIZE + CELL_SIZE / 2;
-    var cy = car.position.y * CELL_SIZE + CELL_SIZE / 2;
-    var color = STATUS_COLORS[car.status] || '#9E9E9E';
-    var outerR = CELL_SIZE / 2 - 1;   // 外圈（状态色），半径与格子留 1px 间距
-    var innerR = outerR - 3;           // 内圈（白色），与外圈差 3px
-
-    // 外圈 —— 状态颜色环
     ctx.beginPath();
     ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
     ctx.fillStyle = color;
     ctx.fill();
 
-    // 内圈 —— 白色填充，与外圈形成对比
+    var innerR = Math.max(3, outerR - 2);
     ctx.beginPath();
     ctx.arc(cx, cy, innerR, 0, Math.PI * 2);
     ctx.fillStyle = '#FFFFFF';
     ctx.fill();
 
-    // 编号文字（黑色，白色内圈上可读）
     ctx.fillStyle = '#000';
-    ctx.font = 'bold 9px Consolas, monospace';
+    var fs = Math.max(7, Math.floor(cs * 0.4));
+    ctx.font = 'bold ' + fs + 'px Consolas, monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(String(car.number), cx, cy);
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 右侧栏：车辆状态卡
-  // ═══════════════════════════════════════════════════════════
-
+  // ══════════════ 右侧面板
   function renderCarsPanel(data) {
     if (!data.cars || data.cars.length === 0) {
-      $carsPanel.innerHTML = '<div class="car-card placeholder">' +
-        '<p>等待车辆数据...</p></div>';
+      $carsPanel.innerHTML = '<div class="car-card placeholder"><p>等待车辆数据...</p></div>';
       return;
     }
     var html = '';
@@ -363,40 +488,25 @@
 
   function buildCarCard(car) {
     var statusName = STATUS_NAMES[car.status] || car.status;
-    var color     = STATUS_COLORS[car.status] || '#9E9E9E';
-    var posStr    = car.position ? '(' + car.position.x + ', ' + car.position.y + ')' : 'N/A';
-    var targetStr = car.target   ? '(' + car.target.x   + ', ' + car.target.y   + ')' : '无';
-    var stepsPct  = Math.min(100, car.steps);
-
+    var color = STATUS_COLORS[car.status] || '#9E9E9E';
+    var posStr = car.position ? '(' + car.position.x + ', ' + car.position.y + ')' : 'N/A';
+    var targetStr = car.target ? '(' + car.target.x + ', ' + car.target.y + ')' : '无';
+    var stepsPct = Math.min(100, car.steps);
     return '<div class="car-card">' +
       '<div class="car-header">' +
         '<span class="car-number">Car ' + car.number + '</span>' +
-        '<span class="car-status-tag" style="background:' + color + '">' +
-          statusName + '</span>' +
-      '</div>' +
-      '<div class="car-detail">' +
+        '<span class="car-status-tag" style="background:' + color + '">' + statusName + '</span>' +
+      '</div><div class="car-detail">' +
         '<div>位置: ' + posStr + '</div>' +
         '<div>目标: ' + targetStr + '</div>' +
         '<div>步数: ' + car.steps + '</div>' +
-        '<div class="steps-bar-wrap">' +
-          '<div class="steps-bar-fill" style="width:' + stepsPct + '%"></div>' +
-        '</div>' +
-      '</div>' +
-    '</div>';
+        '<div class="steps-bar-wrap"><div class="steps-bar-fill" style="width:' + stepsPct + '%"></div></div>' +
+      '</div></div>';
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 左侧栏：步数排行榜
-  // ═══════════════════════════════════════════════════════════
-
   function renderLeaderboard(data) {
-    if (!data.cars || data.cars.length === 0) {
-      $leaderboard.innerHTML = '';
-      return;
-    }
-    var sorted = data.cars.slice().sort(function (a, b) {
-      return b.steps - a.steps;
-    });
+    if (!data.cars || data.cars.length === 0) { $leaderboard.innerHTML = ''; return; }
+    var sorted = data.cars.slice().sort(function (a, b) { return b.steps - a.steps; });
     var html = '';
     for (var i = 0; i < sorted.length; i++) {
       html += '<li>Car ' + sorted[i].number + ': ' + sorted[i].steps + ' 步</li>';
@@ -404,27 +514,21 @@
     $leaderboard.innerHTML = html;
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 顶栏：全局信息
-  // ═══════════════════════════════════════════════════════════
-
   function updateGlobalInfo(data) {
     $tick.textContent = '节拍: ' + (data.tick || 0);
     $rate.textContent = '探索率: ' + (data.explorationRate || 0) + '%';
-    // 动态更新车辆数量显示
     if (data.cars) { $cfgCarCount.value = data.cars.length; }
-
-    // 第一个有效 tick 时启动耗时计时器
     if (data.tick === 1 && !startTimestamp) {
-      startTimestamp = Date.now();
-      startElapsedTimer();
+      startTimestamp = Date.now(); startElapsedTimer();
     }
-    // 探索完成时停止计时并显示完成提示
-    if (data.explorationRate >= 99) {
+    if (data.explorationRate >= 100) {
       $rate.textContent = '探索率: ' + (data.explorationRate || 0) + '% ✓ 任务完成';
       $modeTag.textContent = '✓ 任务完成';
       $modeTag.hidden = false;
-      if (elapsedTimerId) { stopElapsedTimer(); }
+      if (elapsedTimerId) stopElapsedTimer();
+      $btnStart.disabled = false;
+      $btnPause.disabled = true;
+      $btnPause.textContent = '⏯ 暂停';
     }
   }
 
@@ -437,40 +541,35 @@
     }, 1000);
   }
 
-  function stopElapsedTimer() {
-    clearInterval(elapsedTimerId);
-    elapsedTimerId = null;
-  }
+  function stopElapsedTimer() { clearInterval(elapsedTimerId); elapsedTimerId = null; }
 
-  // ═══════════════════════════════════════════════════════════
-  // 控制面板交互
-  // ═══════════════════════════════════════════════════════════
-
+  // ══════════════ 控制面板
   function sendCommand(msg) {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify(msg));
-    }
+    if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
   }
 
   function onStartClick() {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      alert('WebSocket 未连接，请确认 Display 模块已启动并刷新页面');
+      return;
+    }
     startTimestamp = null;
-    if (elapsedTimerId) { stopElapsedTimer(); }
-
+    if (elapsedTimerId) stopElapsedTimer();
+    clearMapCaches();
+    mapLayerDirty = true;
+    $modeTag.hidden = true;
     var config = {
       type: 'SET_CONFIG',
       data: {
-        mapWidth:      String($cfgWidth.value),
-        mapHeight:     String($cfgHeight.value),
-        carCount:      String($cfgCarCount.value),
-        obstacleRatio: String($cfgObstacleRatio.value),
-        algorithm:     $cfgAlgorithm.value,
-        tickInterval:  String($cfgTickInterval.value),
-        active:        'true'
+        mapWidth: String($cfgWidth.value), mapHeight: String($cfgHeight.value),
+        carCount: String($cfgCarCount.value), obstacleRatio: String($cfgObstacleRatio.value),
+        algorithm: $cfgAlgorithm.value, tickInterval: String($cfgTickInterval.value), active: 'true'
       }
     };
     sendCommand(config);
     $btnStart.disabled = true;
     $btnPause.disabled = false;
+    $btnPause.textContent = '⏯ 暂停';
   }
 
   function onPauseClick() {
@@ -481,30 +580,27 @@
 
   function onResetClick() {
     sendCommand({ type: 'RESET' });
-    $btnStart.disabled  = false;
-    $btnPause.disabled  = true;
+    clearMapCaches();
+    canvasReady = false;
+    $btnStart.disabled = false;
+    $btnPause.disabled = true;
     $btnPause.textContent = '⏯ 暂停';
-    if (elapsedTimerId) { stopElapsedTimer(); }
+    if (elapsedTimerId) stopElapsedTimer();
     startTimestamp = null;
     $elapsed.textContent = '⏱ 00:00';
-    // 如果正在回放，返回实时
-    if (mode === 'replay') { exitReplay(); }
-    // 清空地图数据，等待下一次开始
+    if (mode === 'replay') exitReplay();
     liveData = null;
     replayData = null;
     replay.currentTick = 0;
     replay.maxTick = 0;
-    initCanvasSize();
-    clearCanvas();
+    canvasReady = false;
+    mapLayerDirty = true;
+    resetCanvas();
   }
 
-  function clearCanvas() {
-    var canvas = document.getElementById('map-canvas');
-    if (canvas) {
-      var ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#0f0f23';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-    }
+  function resetCanvas() {
+    if ($welcome) $welcome.style.display = 'flex';
+    if ($mapStack) $mapStack.style.display = 'none';
     $carsPanel.innerHTML = '<div class="car-card placeholder"><p>等待车辆数据...</p></div>';
     $leaderboard.innerHTML = '';
     $rate.textContent = '探索率: 0%';
@@ -513,42 +609,49 @@
   }
 
   function onAddCarClick() {
+    if (!$btnAddCar || $btnAddCar.disabled || addCarPending.active) return;
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      window.alert('WebSocket 未连接，无法添加小车');
+      return;
+    }
+    $btnAddCar.disabled = true;
+    $btnAddCar.textContent = '请求中...';
     sendCommand({ type: 'ADD_CAR' });
   }
 
-  // ────────── 滑块实时反馈 ──────────
-
-  function onObstacleRatioInput() {
-    $lblObstacleRatio.textContent = Math.round($cfgObstacleRatio.value * 100) + '%';
-  }
-
-  function onTickIntervalInput() {
-    $lblTickInterval.textContent = $cfgTickInterval.value + 'ms';
-  }
-
+  function onObstacleRatioInput() { $lblObstacleRatio.textContent = Math.round($cfgObstacleRatio.value * 100) + '%'; }
+  function onTickIntervalInput() { $lblTickInterval.textContent = $cfgTickInterval.value + 'ms'; }
   function onTickIntervalChange() {
-    sendCommand({
-      type: 'SET_TICK_INTERVAL',
-      data: { interval: parseInt($cfgTickInterval.value, 10) }
-    });
+    sendCommand({ type: 'SET_TICK_INTERVAL', data: { interval: parseInt($cfgTickInterval.value, 10) } });
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 路径回放（基于Redis存储的完整历史数据）
-  // ═══════════════════════════════════════════════════════════
-
+  // ══════════════ 回放
   function receiveReplayData(msg) {
     replayData = msg;
     replay.maxTick = msg.maxTick || 0;
     replay.currentTick = 0;
     replay.playing = false;
 
-    // 构建每辆车的tick→位置索引（提升回放查表性能）
+    // 定尺寸
+    var mapArea = document.querySelector('.map-area');
+    if (mapArea) {
+      var availW = mapArea.clientWidth - 20, availH = mapArea.clientHeight - 20;
+      var w = msg.mapWidth || 30, h = msg.mapHeight || 30;
+      CELL_SIZE = Math.max(4, Math.min(Math.floor(availW / w), Math.floor(availH / h)));
+      var cw = w * CELL_SIZE, ch = h * CELL_SIZE;
+      mapCanvas.width = cw; mapCanvas.height = ch;
+      carCanvas.width = cw; carCanvas.height = ch;
+      canvasReady = true;
+    }
+    if ($welcome) $welcome.style.display = 'none';
+    if ($mapStack) $mapStack.style.display = 'block';
+
+    // 车位置索引
     replayData._carIndex = {};
     var histories = msg.carHistories || {};
     for (var carId in histories) {
       var arr = histories[carId];
-      if (!Array.isArray(arr)) { arr = []; }
+      if (!Array.isArray(arr)) arr = [];
       var parsed = [];
       for (var i = 0; i < arr.length; i++) {
         var e = (typeof arr[i] === 'string') ? JSON.parse(arr[i]) : arr[i];
@@ -557,42 +660,36 @@
       replayData._carIndex[carId] = parsed;
     }
 
-    // 构建tick→mapView索引：从explorationEvents按tick累积
+    // tick→mapView
     var events = msg.explorationEvents || [];
-    if (!Array.isArray(events)) { events = []; }
-    var w = msg.mapWidth || 30;
-    var h = msg.mapHeight || 30;
+    if (!Array.isArray(events)) events = [];
     replayData._tickViews = [];
     var currentView = createEmptyView(w, h);
     replayData._tickViews[0] = cloneView(currentView);
     var eventIdx = 0;
-    // 对tick排序（event格式："tick,row,col"）
     var parsedEvents = [];
-    for (var i = 0; i < events.length; i++) {
-      var parts = (typeof events[i] === 'string') ? events[i].split(',') : [events[i].tick, events[i].row, events[i].col];
+    for (var i2 = 0; i2 < events.length; i2++) {
+      var parts = (typeof events[i2] === 'string') ? events[i2].split(',') : [events[i2].tick, events[i2].row, events[i2].col];
       parsedEvents.push({ tick: parseInt(parts[0], 10), row: parseInt(parts[1], 10), col: parseInt(parts[2], 10) });
     }
-    parsedEvents.sort(function(a, b) { return a.tick - b.tick; });
-
-    for (var tick = 1; tick <= replay.maxTick; tick++) {
-      while (eventIdx < parsedEvents.length && parsedEvents[eventIdx].tick <= tick) {
+    parsedEvents.sort(function (a, b) { return a.tick - b.tick; });
+    for (var tick2 = 1; tick2 <= replay.maxTick; tick2++) {
+      while (eventIdx < parsedEvents.length && parsedEvents[eventIdx].tick <= tick2) {
         var ev = parsedEvents[eventIdx];
-        if (ev.row >= 0 && ev.row < h && ev.col >= 0 && ev.col < w) {
-          currentView[ev.row][ev.col] = true;
-        }
+        if (ev.row >= 0 && ev.row < h && ev.col >= 0 && ev.col < w) currentView[ev.row][ev.col] = true;
         eventIdx++;
       }
-      replayData._tickViews[tick] = cloneView(currentView);
+      replayData._tickViews[tick2] = cloneView(currentView);
     }
     replayData._mapBlock = msg.mapBlock || [];
+    replayData._mapSealed = msg.mapSealed || [];
 
     mode = 'replay';
-    replay.playing = false;
     $btnReplay.hidden = true;
     $btnLive.hidden = false;
     $replayControls.hidden = false;
     $modeTag.hidden = false;
-    $modeTag.textContent = '回放';
+    $modeTag.textContent = '◀ 回放中';
     $replaySlider.min = 0;
     $replaySlider.max = replay.maxTick;
     $replaySlider.value = 0;
@@ -600,70 +697,41 @@
     renderReplayFrame();
   }
 
-  function createEmptyView(w, h) {
-    var view = [];
-    for (var r = 0; r < h; r++) {
-      view[r] = [];
-      for (var c = 0; c < w; c++) {
-        view[r][c] = false;
-      }
-    }
-    return view;
-  }
-
-  function cloneView(view) {
-    return view.map(function(row) { return row.slice(); });
-  }
+  function createEmptyView(w, h) { var v = []; for (var r = 0; r < h; r++) { v[r] = []; for (var c = 0; c < w; c++) v[r][c] = false; } return v; }
+  function cloneView(v) { return v.map(function (r) { return r.slice(); }); }
 
   function enterReplay() {
     if (replayData && replayData.maxTick > 0) {
-      // 已有数据，直接进入回放
-      replay.currentTick = 0;
-      replay.playing = false;
+      replay.currentTick = 0; replay.playing = false;
       mode = 'replay';
-      $btnReplay.hidden = true;
-      $btnLive.hidden = false;
-      $replayControls.hidden = false;
-      $modeTag.hidden = false;
-      $modeTag.textContent = '回放';
-      $replaySlider.min = 0;
-      $replaySlider.max = replay.maxTick;
-      $replaySlider.value = 0;
-      updateReplayLabel();
-      renderReplayFrame();
+      $btnReplay.hidden = true; $btnLive.hidden = false; $replayControls.hidden = false;
+      $modeTag.hidden = false; $modeTag.textContent = '◀ 回放中';
+      $replaySlider.min = 0; $replaySlider.max = replay.maxTick; $replaySlider.value = 0;
+      updateReplayLabel(); renderReplayFrame();
       return;
     }
-    // 向服务器请求回放数据
-    $modeTag.hidden = false;
-    $modeTag.textContent = '加载回放数据...';
+    $modeTag.hidden = false; $modeTag.textContent = '加载回放数据...';
     ws.send(JSON.stringify({ type: 'REQUEST_REPLAY' }));
   }
 
   function exitReplay() {
-    mode = 'replay';
-    stopReplayTimer();
-    mode = 'live';
-
-    $btnReplay.hidden = false;
-    $btnLive.hidden   = true;
-    $replayControls.hidden = true;
-    $modeTag.hidden = true;
-
-    if (liveData) { renderLive(); }
+    mode = 'replay'; stopReplayTimer(); mode = 'live';
+    $btnReplay.hidden = false; $btnLive.hidden = true; $replayControls.hidden = true; $modeTag.hidden = true;
+    mapLayerDirty = true;
+    if (liveData) { renderMapLayer(); renderCarsLayer(); }
   }
 
   function renderReplayFrame() {
-    if (!replayData) { return; }
+    if (!replayData) return;
     var tick = replay.currentTick;
-    var mapView = (replayData._tickViews && replayData._tickViews[tick]) || replayData._tickViews[0] || createEmptyView(replayData.mapWidth || 30, replayData.mapHeight || 30);
+    var w2 = replayData.mapWidth || 30, h2 = replayData.mapHeight || 30;
+    var mapView = (replayData._tickViews && replayData._tickViews[tick]) || replayData._tickViews[0] || createEmptyView(w2, h2);
 
     var frame = {
-      tick: tick,
-      explorationRate: 0,
-      taskConfig: { mapWidth: String(replayData.mapWidth || 30), mapHeight: String(replayData.mapHeight || 30) },
-      mapView: mapView,
-      mapBlock: replayData._mapBlock || [],
-      cars: []
+      tick: tick, explorationRate: tick >= replay.maxTick ? 100 : 0,
+      taskConfig: { mapWidth: String(w2), mapHeight: String(h2) },
+      mapView: mapView, mapBlock: replayData._mapBlock || [],
+      mapSealed: replayData._mapSealed || [], cars: []
     };
 
     var index = replayData._carIndex || {};
@@ -671,190 +739,121 @@
       var pos = lookupReplayPosition(carId, tick);
       if (pos) {
         var num = carId.replace('Car', '');
-        frame.cars.push({
-          carId: carId,
-          number: parseInt(num, 10) || 0,
-          position: pos,
-          target: null,
-          routeList: [],
-          status: 'MOVING',
-          steps: 0
-        });
+        frame.cars.push({ carId: carId, number: parseInt(num, 10) || 0, position: pos, target: null, routeList: [], status: 'MOVING', steps: 0 });
       }
     }
 
-    renderGrid(frame);
-    renderExplored(frame);
-    renderObstacles(frame);
-    renderCars(frame);
-    renderCarsPanel(frame);
+    // 渲染到地图层
+    liveData = frame;
+    renderMapLayer();
+    // 渲染车到小车层
+    var ctx2 = carCtx, cs2 = CELL_SIZE;
+    ctx2.clearRect(0, 0, carCanvas.width, carCanvas.height);
+    for (var i = 0; i < frame.cars.length; i++) drawCar(frame.cars[i], ctx2, cs2);
     updateReplayLabel();
+    liveData = null;
   }
 
   function lookupReplayPosition(carId, tick) {
     var arr = replayData && replayData._carIndex && replayData._carIndex[carId];
-    if (!arr || arr.length === 0) { return null; }
+    if (!arr || arr.length === 0) return null;
     var best = null;
     for (var i = 0; i < arr.length; i++) {
-      if (arr[i].tick <= tick) {
-        best = arr[i];
-      } else {
-        break;
-      }
+      if (arr[i].tick <= tick) best = arr[i]; else break;
     }
     return best ? { x: best.x, y: best.y } : null;
   }
 
   function updateReplayLabel() {
-    $replayTickLbl.textContent =
-      'Tick ' + replay.currentTick + ' / ' + replay.maxTick;
+    $replayTickLbl.textContent = 'Tick ' + replay.currentTick + ' / ' + replay.maxTick;
     $replaySlider.value = replay.currentTick;
   }
 
   function startReplayTimer() {
-    stopReplayTimer();
-    replay.playing = true;
-    $replayToggle.textContent = '⏸';
+    stopReplayTimer(); replay.playing = true; $replayToggle.textContent = '⏸';
     replay.timerId = setInterval(replayTickForward, REPLAY_FRAME_MS);
   }
-
   function stopReplayTimer() {
-    replay.playing = false;
-    $replayToggle.textContent = '▶';
-    if (replay.timerId) {
-      clearInterval(replay.timerId);
-      replay.timerId = null;
-    }
+    replay.playing = false; $replayToggle.textContent = '▶';
+    if (replay.timerId) { clearInterval(replay.timerId); replay.timerId = null; }
   }
-
   function replayTickForward() {
-    if (replay.currentTick < replay.maxTick) {
-      replay.currentTick++;
-      $replaySlider.value = replay.currentTick;
-      renderReplayFrame();
-    } else {
-      stopReplayTimer();
-    }
+    if (replay.currentTick < replay.maxTick) { replay.currentTick++; $replaySlider.value = replay.currentTick; renderReplayFrame(); }
+    else stopReplayTimer();
   }
 
-  // ────────── 回放按钮事件 ──────────
-
-  function onReplayClick() {
-    enterReplay();
-  }
-
-  function onLiveClick() {
-    exitReplay();
-  }
-
-  function onReplaySliderInput() {
-    replay.currentTick = parseInt($replaySlider.value, 10);
-    renderReplayFrame();
-  }
-
-  function onReplayToggleClick() {
-    if (replay.playing) {
-      stopReplayTimer();
-    } else {
-      startReplayTimer();
-    }
-  }
-
-  function onReplayStepPrev() {
-    replay.currentTick = Math.max(replay.minTick, replay.currentTick - 1);
-    renderReplayFrame();
-  }
-
-  function onReplayStepNext() {
-    replay.currentTick = Math.min(replay.maxTick, replay.currentTick + 1);
-    renderReplayFrame();
-  }
-
-  // ═══════════════════════════════════════════════════════════
-  // 工具函数
-  // ═══════════════════════════════════════════════════════════
-
-  // ═══════════════════════════════════════════════════════════════
-  // Canvas 右键：手动切换障碍物（运行时可增删）
-  // ═══════════════════════════════════════════════════════════════
-
+  // ══════════════ 工具
   function onCanvasContextMenu(e) {
     e.preventDefault();
-    if (!liveData) { return; }
-
-    var rect = canvas.getBoundingClientRect();
-    var scaleX = canvas.width / rect.width;
-    var scaleY = canvas.height / rect.height;
+    if (!liveData || !canvasReady) return;
+    var rect = carCanvas.getBoundingClientRect();
+    var scaleX = carCanvas.width / rect.width, scaleY = carCanvas.height / rect.height;
     var col = Math.floor((e.clientX - rect.left) * scaleX / CELL_SIZE);
-    var row = Math.floor((e.clientY - rect.top)  * scaleY / CELL_SIZE);
+    var row = Math.floor((e.clientY - rect.top) * scaleY / CELL_SIZE);
+    var gridW = getGridW(liveData), gridH = getGridH(liveData);
+    if (row < 0 || row >= gridH || col < 0 || col >= gridW) return;
+    sendCommand({ type: 'TOGGLE_OBSTACLE', data: { row: row, col: col } });
+    mapLayerDirty = true;
+  }
 
-    var gridW = getGridW(liveData);
-    var gridH = getGridH(liveData);
-    if (row < 0 || row >= gridH || col < 0 || col >= gridW) { return; }
+  function getGridW(data) { return (data.taskConfig && parseInt(data.taskConfig.mapWidth, 10)) || DEFAULT_GRID_W; }
+  function getGridH(data) { return (data.taskConfig && parseInt(data.taskConfig.mapHeight, 10)) || DEFAULT_GRID_H; }
 
-    sendCommand({
-      type: 'TOGGLE_OBSTACLE',
-      data: { row: row, col: col }
+  // ══════════════ 改密
+  function onPwdSubmit() {
+    $pwdErr.textContent = '';
+    var oldP = $pwdOld.value.trim(), newP = $pwdNew.value.trim();
+    if (!oldP || !newP) { $pwdErr.textContent = '请输入新旧密码'; return; }
+    if (newP.length < 3) { $pwdErr.textContent = '新密码至少3位'; return; }
+    fetch('/api/auth/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('token') || '') },
+      body: JSON.stringify({ oldPassword: oldP, newPassword: newP })
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      if (d.success) { $pwdModal.style.display = 'none'; $pwdOld.value = ''; $pwdNew.value = ''; alert('密码修改成功'); }
+      else $pwdErr.textContent = d.error || '修改失败';
     });
   }
 
-  function getGridW(data) {
-    return (data.taskConfig && parseInt(data.taskConfig.mapWidth, 10)) || DEFAULT_GRID;
-  }
-
-  function getGridH(data) {
-    return (data.taskConfig && parseInt(data.taskConfig.mapHeight, 10)) || DEFAULT_GRID;
-  }
-
-  // ═══════════════════════════════════════════════════════════
-  // 事件绑定
-  // ═══════════════════════════════════════════════════════════
-
+  // ══════════════ 事件绑定
   $btnStart.addEventListener('click', onStartClick);
   $btnPause.addEventListener('click', onPauseClick);
   $btnReset.addEventListener('click', onResetClick);
-  $btnUnity.addEventListener('click', onUnityClick);
-  if ($btnAddCar) {
-    $btnAddCar.addEventListener('click', onAddCarClick);
-  }
-  canvas.addEventListener('contextmenu', onCanvasContextMenu);
-  $btnReplay.addEventListener('click', onReplayClick);
-  $btnLive.addEventListener('click', onLiveClick);
-
+  if ($btnAddCar) $btnAddCar.addEventListener('click', onAddCarClick);
+  carCanvas.addEventListener('contextmenu', onCanvasContextMenu);
+  $btnReplay.addEventListener('click', enterReplay);
+  $btnLive.addEventListener('click', exitReplay);
   $cfgObstacleRatio.addEventListener('input', onObstacleRatioInput);
   $cfgTickInterval.addEventListener('input', onTickIntervalInput);
   $cfgTickInterval.addEventListener('change', onTickIntervalChange);
-
   $replaySlider.addEventListener('input', onReplaySliderInput);
   $replayToggle.addEventListener('click', onReplayToggleClick);
   document.getElementById('replay-step-prev').addEventListener('click', onReplayStepPrev);
   document.getElementById('replay-step-next').addEventListener('click', onReplayStepNext);
-
-  // ═══════════════════════════════════════════════════════════
-  // 启动
-  // ═══════════════════════════════════════════════════════════
-
-  connectWebSocket();
-
-  // ═══════════════════════════════════════════════════════════
-  // Unity 3D 视图切换
-  // ═══════════════════════════════════════════════════════════
-
-  function onUnityClick() {
-    var canvas  = document.getElementById('map-canvas');
-    var iframe  = document.getElementById('unity-frame');
-    var is3D    = iframe.style.display !== 'none';
-
-    if (is3D) {
-      // 切回 2D
-      iframe.style.display = 'none';
-      canvas.style.display = '';
-      $btnUnity.textContent = '🎮 3D视图';
-    } else {
-      // 切到 3D
-      canvas.style.display = 'none';
-      iframe.style.display = '';
-      $btnUnity.textContent = '📐 2D视图';
-    }
+  if ($pwdSubmit) $pwdSubmit.addEventListener('click', onPwdSubmit);
+  if ($pwdCancel) $pwdCancel.addEventListener('click', function () { $pwdModal.style.display = 'none'; });
+  if (document.getElementById('btn-change-pwd')) {
+    document.getElementById('btn-change-pwd').addEventListener('click', function () { $pwdModal.style.display = 'flex'; });
   }
+
+  function onReplaySliderInput() { replay.currentTick = parseInt($replaySlider.value, 10); renderReplayFrame(); }
+  function onReplayToggleClick() { if (replay.playing) stopReplayTimer(); else startReplayTimer(); }
+  function onReplayStepPrev() { replay.currentTick = Math.max(0, replay.currentTick - 1); renderReplayFrame(); }
+  function onReplayStepNext() { replay.currentTick = Math.min(replay.maxTick, replay.currentTick + 1); renderReplayFrame(); }
+
+  // ══════════════ 启动
+  resetCanvas();
+  if (window.Auth) {
+    Auth.checkAuth().then(function (user) {
+      if (!user || !user.success) return;
+      Auth.renderNavBar(user);
+      Auth.applyPermissions(user.role);
+    });
+  }
+  window.addEventListener('resize', function () {
+    if (!liveData) return;
+    canvasReady = false; finalizeCanvas();
+    if (canvasReady) { mapLayerDirty = true; renderMapLayer(); renderCarsLayer(); }
+  });
+  connectWebSocket();
 })();

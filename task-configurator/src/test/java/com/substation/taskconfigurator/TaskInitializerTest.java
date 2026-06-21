@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -83,8 +84,8 @@ class TaskInitializerTest {
     }
 
     @Test
-    void carsPlacedAtCornersAndCenter() {
-        initializer.initialize(bb, Map.of());
+    void carsPlacedAtCornersAndCenterWhenCountAtMostFive() {
+        initializer.initialize(bb, Map.of("obstacleRatio", 0));
 
         Point[] expected = {
             new Point(1, 1),
@@ -120,7 +121,7 @@ class TaskInitializerTest {
 
         int blockedCount = countBlockedCells();
         int interiorCells = (MAP_SIZE - 2) * (MAP_SIZE - 2); // 28*28 = 784
-        int expected = (int) (interiorCells * DEFAULT_OBSTACLE_RATIO) + DEFAULT_CAR_COUNT; // ≈ 117+5
+        int expected = (int) (interiorCells * DEFAULT_OBSTACLE_RATIO);
 
         // 允许 ±20% 偏差（随机性）
         double tolerance = expected * 0.20;
@@ -128,27 +129,30 @@ class TaskInitializerTest {
     }
 
     @Test
-    void carPositionsMarkedInMapBlock() {
+    void carSpawnCellsAreExploredNotObstacles() {
         initializer.initialize(bb, Map.of());
 
         for (int i = 1; i <= DEFAULT_CAR_COUNT; i++) {
             String carId = String.format("Car%03d", i);
             Point pos = bb.getCarPosition(carId).orElseThrow();
-            assertTrue(bb.isBlocked(pos.y(), pos.x()),
-                carId + " 初始位置(" + pos.x() + "," + pos.y() + ") 应写入 mapBlock 避免其他车经过");
+            assertTrue(bb.getMapViewBit(pos.y(), pos.x()),
+                carId + " 出生格应为已探索");
+            assertFalse(bb.isBlocked(pos.y(), pos.x()),
+                carId + " 出生格不应写入 mapBlock");
         }
     }
 
     @Test
-    void areaAroundCarsIsIlluminated() {
+    void carSpawnCellIsIlluminated() {
         initializer.initialize(bb, Map.of());
 
-        // Car001 在 (1,1)，周围 3×3 应全部点亮（边界裁剪后 2×2）
-        assertTrue(bb.getMapViewBit(0, 0));
-        assertTrue(bb.getMapViewBit(0, 1));
-        assertTrue(bb.getMapViewBit(1, 0));
-        assertTrue(bb.getMapViewBit(1, 1));
-        // 边界外的坐标不存在于遍历中，以下验证越界不会点亮
+        Point pos = bb.getCarPosition("Car001").orElseThrow();
+        assertTrue(bb.getMapViewBit(pos.y(), pos.x()),
+            "初始车位应单格点亮");
+        if (pos.x() + 1 < MAP_SIZE) {
+            assertFalse(bb.getMapViewBit(pos.y(), pos.x() + 1),
+                "相邻格不应被点亮");
+        }
     }
 
     @Test
@@ -185,6 +189,21 @@ class TaskInitializerTest {
     }
 
     @Test
+    void tenByTenMapKeepsCarsInsideBounds() {
+        initializer.initialize(bb, Map.of("mapWidth", 10, "mapHeight", 10, "carCount", 3));
+
+        Map<String, String> config = bb.getTaskConfig();
+        assertEquals("10", config.get("mapWidth"));
+        assertEquals("10", config.get("mapHeight"));
+
+        for (int i = 1; i <= 3; i++) {
+            Point pos = bb.getCarPosition(String.format("Car%03d", i)).orElseThrow();
+            assertTrue(pos.x() >= 0 && pos.x() < 10, "x 越界: " + pos);
+            assertTrue(pos.y() >= 0 && pos.y() < 10, "y 越界: " + pos);
+        }
+    }
+
+    @Test
     void customMapSizeRespected() {
         initializer.initialize(bb, Map.of("mapWidth", 20, "mapHeight", 20));
 
@@ -204,9 +223,30 @@ class TaskInitializerTest {
     void zeroObstacleRatioPlacesNoExtraObstacles() {
         initializer.initialize(bb, Map.of("obstacleRatio", 0.0));
 
-        // 车位本身占 5 个 mapBlock，不应有额外的随机障碍物
-        assertEquals(DEFAULT_CAR_COUNT, countBlockedCells(),
-            "比例 0 时只有车位写入 mapBlock(5个)，不应有额外障碍物");
+        // 比例 0 时不应有随机障碍物（车位也不再写入 mapBlock）
+        assertEquals(0, countBlockedCells(),
+            "比例 0 时不应有 mapBlock 障碍物");
+    }
+
+    @Test
+    void sealedBitmapWrittenOnInit() {
+        initializer.initialize(bb, Map.of());
+
+        boolean[][] sealed = bb.loadSealedBitmap();
+        assertEquals(MAP_SIZE, sealed.length);
+        assertEquals(MAP_SIZE, sealed[0].length);
+    }
+
+    @Test
+    void carSpawnCellsAreNeverSealed() {
+        initializer.initialize(bb, Map.of());
+
+        for (int i = 1; i <= DEFAULT_CAR_COUNT; i++) {
+            String carId = String.format("Car%03d", i);
+            Point pos = bb.getCarPosition(carId).orElseThrow();
+            boolean[][] sealed = bb.loadSealedBitmap();
+            assertFalse(sealed[pos.y()][pos.x()], carId + " 出生格不应为密封区");
+        }
     }
 
     // ==================== 辅助方法 ====================

@@ -22,7 +22,7 @@ final class BfsPathFinder implements PathPlanner {
             return List.of();
         }
 
-        boolean[][] visited = readBlockedMap(bb, width, height);
+        boolean[][] visited = bb.loadBlockedMapWithCars();
         Point[][] parent = new Point[height][width];
         Queue<Point> queue = new ArrayDeque<>();
 
@@ -39,17 +39,6 @@ final class BfsPathFinder implements PathPlanner {
             expandNeighbors(current, visited, parent, queue, width, height);
         }
         return List.of();
-    }
-
-    /** 读障碍物 + 车占位，合并为 visited 矩阵 */
-    private boolean[][] readBlockedMap(BlackboardClient bb, int width, int height) {
-        boolean[][] blocked = new boolean[height][width];
-        for (int r = 0; r < height; r++)
-            for (int c = 0; c < width; c++)
-                if (bb.isBlocked(r, c)) blocked[r][c] = true;
-        for (String carId : bb.discoverCarIds())
-            bb.getCarPosition(carId).ifPresent(p -> blocked[p.y()][p.x()] = true);
-        return blocked;
     }
 
     private void expandNeighbors(Point current, boolean[][] visited, Point[][] parent,

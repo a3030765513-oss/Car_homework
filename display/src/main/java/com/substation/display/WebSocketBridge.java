@@ -14,8 +14,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.Base64;
 
 /**
  * WebSocket 桥接器 —— Display 模块的核心。
@@ -44,9 +46,12 @@ public class WebSocketBridge extends WebSocketServer {
     private static final Logger LOG = LoggerFactory.getLogger(WebSocketBridge.class);
 
     /** 地图默认尺寸（TaskConfig 未设置时回退） */
-    private static final int DEFAULT_MAP_SIZE = 30;
+    private static final int DEFAULT_W = BlackboardClient.DEFAULT_WIDTH;
+    private static final int DEFAULT_H = BlackboardClient.DEFAULT_HEIGHT;
     /** 车辆 ID 前缀长度，"Car" 占 3 个字符 */
     private static final int CAR_PREFIX_LENGTH = 3;
+    /** 超过此格数时改用 Base64 位图推送，避免 boolean[][] JSON 过大 */
+    private static final int COMPACT_MAP_CELL_THRESHOLD = 2500;
 
     // ────────────────── 依赖 ──────────────────
 
@@ -105,8 +110,12 @@ public class WebSocketBridge extends WebSocketServer {
      * @param conn    发送消息的浏览器连接
      * @param message 原始 JSON 字符串
      */
-    /** 当前动态添加的车辆计数（初始值 = 首次启动的车辆数） */
-    private int carCount = 3;
+    /** 操作日志存储（SQL Server，可选） */
+    private com.substation.common.sql.OperationLogStore operationLogStore;
+
+    public void setOperationLogStore(com.substation.common.sql.OperationLogStore store) {
+        this.operationLogStore = store;
+    }
 
     @Override
     public void onMessage(WebSocket conn, String message) {
@@ -115,11 +124,7 @@ public class WebSocketBridge extends WebSocketServer {
             String type = msg.getString("type");
 
             if ("ADD_CAR".equals(type)) {
-                carCount++;
-                String carId = String.format("Car%03d", carCount);
-                String cmd = ".\\mvnw.cmd exec:java -pl car -Dexec.mainClass=com.substation.car.CarMain -Dexec.args=" + carId;
-                Runtime.getRuntime().exec(cmd, null, new java.io.File("."));
-                LOG.info("动态添加小车: {} (命令: {})", carId, cmd);
+                handleAddCar();
             } else if ("REQUEST_REPLAY".equals(type)) {
                 sendReplayData(conn);
             } else {
@@ -128,6 +133,46 @@ public class WebSocketBridge extends WebSocketServer {
         } catch (Exception e) {
             LOG.warn("消息处理失败: {}", message, e);
         }
+    }
+
+    private void handleAddCar() {
+        String carId = resolveNextCarId();
+        Path projectRoot = Path.of(".").toAbsolutePath().normalize();
+
+        broadcastEvent("CAR_PENDING", Map.of("carId", carId));
+
+        if (!DynamicCarLauncher.isJarAvailable(projectRoot)) {
+            String reason = "未找到 car JAR，请先执行: .\\mvnw.cmd package -pl car -am -DskipTests";
+            LOG.error("动态添加小车失败 {}: {}", carId, reason);
+            broadcastEvent("CAR_LAUNCH_FAILED", Map.of("carId", carId, "reason", reason));
+            return;
+        }
+
+        try {
+            DynamicCarLauncher.launchAsync(carId, projectRoot);
+            LOG.info("动态添加小车: {} 地图={}×{}", carId,
+                blackboard.getMapWidth(), blackboard.getMapHeight());
+        } catch (IllegalStateException e) {
+            LOG.warn("动态添加小车失败: {}", carId, e);
+            broadcastEvent("CAR_LAUNCH_FAILED", Map.of(
+                "carId", carId,
+                "reason", e.getMessage() != null ? e.getMessage() : "启动失败"));
+        }
+    }
+
+    private void broadcastEvent(String eventType, Map<String, String> payload) {
+        JSONObject json = new JSONObject();
+        json.put("type", eventType);
+        payload.forEach(json::put);
+        broadcast(json.toJSONString());
+    }
+
+    private String resolveNextCarId() {
+        int maxNumber = 0;
+        for (String existingId : blackboard.discoverCarIds()) {
+            maxNumber = Math.max(maxNumber, extractCarNumber(existingId));
+        }
+        return String.format("Car%03d", maxNumber + 1);
     }
 
     /** WebSocket 异常 */
@@ -164,38 +209,39 @@ public class WebSocketBridge extends WebSocketServer {
         if (tick % 20 == 0 || tick == 1) {
             LOG.info("pushState tick={} rate={}%", tick, explorationRate);
         }
-        SimulationState state = buildSimulationState(tick, explorationRate);
-        broadcast(JSON.toJSONString(state));
+        broadcast(serializeState(tick, explorationRate));
     }
 
-    /**
-     * 从 Redis 黑板读取所有数据，组装为一个不可变的快照对象。
-     *
-     * <p>读取的内容包括：
-     * <ul>
-     *   <li>mapView bitmap → boolean[][]</li>
-     *   <li>mapBlock bitmap → boolean[][]</li>
-     *   <li>TaskConfig hash → Map</li>
-     *   <li>每个车的 Position / Target / RouteList / Status / Steps</li>
-     * </ul>
-     */
-    private SimulationState buildSimulationState(int tick, int explorationRate) {
+    private String serializeState(int tick, int explorationRate) {
         Map<String, String> config = blackboard.getTaskConfig();
-        int mapWidth = parseIntOrDefault(config.get("mapWidth"), DEFAULT_MAP_SIZE);
-        int mapHeight = parseIntOrDefault(config.get("mapHeight"), DEFAULT_MAP_SIZE);
-
-        boolean[][] mapView = readViewBitmap(mapWidth, mapHeight);
-        boolean[][] mapBlock = readBlockBitmap(mapWidth, mapHeight);
+        int mapWidth = parseIntOrDefault(config.get("mapWidth"), DEFAULT_W);
+        int mapHeight = parseIntOrDefault(config.get("mapHeight"), DEFAULT_H);
         List<SimulationState.CarInfo> cars = buildCarInfoList();
 
-        return new SimulationState(tick, explorationRate, config, cars, mapView, mapBlock);
+        if (mapWidth * mapHeight <= COMPACT_MAP_CELL_THRESHOLD) {
+            SimulationState state = new SimulationState(
+                tick, explorationRate, config, cars,
+                readViewBitmap(mapWidth, mapHeight),
+                readBlockBitmap(mapWidth, mapHeight),
+                readSealedBitmap(mapWidth, mapHeight));
+            return JSON.toJSONString(state);
+        }
+
+        JSONObject json = new JSONObject();
+        json.put("tick", tick);
+        json.put("explorationRate", explorationRate);
+        json.put("taskConfig", config);
+        json.put("cars", cars);
+        json.put("mapViewB64", Base64.getEncoder().encodeToString(blackboard.getMapViewBytes()));
+        if (tick <= 1) {
+            json.put("mapBlockB64", Base64.getEncoder().encodeToString(blackboard.getMapBlockBytes()));
+            json.put("mapSealedB64", Base64.getEncoder().encodeToString(blackboard.getMapSealedBytes()));
+        }
+        return json.toJSONString();
     }
 
     /**
-     * 从 Redis mapView bitmap 逐格读取，构建二维 boolean 数组。
-     *
-     * <p>30×30 地图共 900 格，每格一次 Redis GETBIT 调用。
-     * 通过连接池复用连接，900 次调用在局域网中耗时约 10-20ms。</p>
+     * 从 Redis mapView bitmap 构建二维 boolean 数组（小地图 JSON 模式使用）。
      */
     private boolean[][] readViewBitmap(int mapWidth, int mapHeight) {
         return BlackboardClient.bytesToBitmap(
@@ -207,19 +253,25 @@ public class WebSocketBridge extends WebSocketServer {
             blackboard.getMapBlockBytes(), mapWidth, mapHeight);
     }
 
+    private boolean[][] readSealedBitmap(int mapWidth, int mapHeight) {
+        return BlackboardClient.bytesToBitmap(
+            blackboard.getMapSealedBytes(), mapWidth, mapHeight);
+    }
+
     // ────────────────── 回放数据构建 ──────────────────
 
     /** 从Redis读取全部回放数据并推送给指定客户端 */
     private void sendReplayData(WebSocket conn) {
         Map<String, String> config = blackboard.getTaskConfig();
-        int mapWidth = parseIntOrDefault(config.get("mapWidth"), DEFAULT_MAP_SIZE);
-        int mapHeight = parseIntOrDefault(config.get("mapHeight"), DEFAULT_MAP_SIZE);
+        int mapWidth = parseIntOrDefault(config.get("mapWidth"), DEFAULT_W);
+        int mapHeight = parseIntOrDefault(config.get("mapHeight"), DEFAULT_H);
 
         JSONObject replayData = new JSONObject();
         replayData.put("type", "REPLAY_DATA");
         replayData.put("mapWidth", mapWidth);
         replayData.put("mapHeight", mapHeight);
         replayData.put("mapBlock", readBlockBitmap(mapWidth, mapHeight));
+        replayData.put("mapSealed", readSealedBitmap(mapWidth, mapHeight));
         replayData.put("carHistories", buildHistoryMap());
         replayData.put("explorationEvents", blackboard.getExplorationEvents());
 

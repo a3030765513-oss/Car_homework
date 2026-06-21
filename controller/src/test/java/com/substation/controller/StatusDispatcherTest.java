@@ -65,12 +65,17 @@ class StatusDispatcherTest {
         bb.setBlockedTick("Car002", 0);
         dispatcher.onTaskReady();
 
-        // tick 1: 1-0=1 < 2, blocked too recent
         dispatcher.dispatch();
         assertEquals(CarStatus.BLOCKED, bb.getCarStatus("Car002").orElseThrow());
 
-        // tick 2: 2-0=2 >= 2, timeout triggers
-        dispatcher.dispatch();
+        // 随机超时阈值在 [2, 5] tick，循环直到触发或超过上限
+        int maxExtraTicks = 6;
+        for (int i = 0; i < maxExtraTicks; i++) {
+            if (bb.getCarStatus("Car002").orElse(null) == CarStatus.IDLE) {
+                break;
+            }
+            dispatcher.dispatch();
+        }
         assertEquals(CarStatus.IDLE, bb.getCarStatus("Car002").orElseThrow());
         assertEquals(-1, bb.getBlockedTick("Car002"));
     }
@@ -109,7 +114,6 @@ class StatusDispatcherTest {
 
     @Test
     void taskCompleteWhenExplorationReachesThreshold() {
-        // Set almost all cells as explored
         for (int r = 0; r < MAP_SIZE; r++) {
             for (int c = 0; c < MAP_SIZE; c++) {
                 bb.setMapViewBit(r, c, true);
@@ -119,8 +123,10 @@ class StatusDispatcherTest {
         dispatcher.onTaskReady();
         dispatcher.dispatch();
 
-        // After completion, task should be inactive
-        assertTrue(bb.getExplorationRate() >= 99);
+        assertTrue(bb.isExplorationComplete());
+        assertFalse(dispatcher.isActive(), "探索完成后应停止调度");
+        assertEquals(CarStatus.IDLE, bb.getCarStatus("Car006").orElseThrow());
+        assertTrue(bb.getCarRoute("Car006").isEmpty());
     }
 
     private void registerCar(String carId, Point pos, CarStatus status) {

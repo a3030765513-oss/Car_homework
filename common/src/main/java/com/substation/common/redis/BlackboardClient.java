@@ -17,10 +17,16 @@ import java.util.*;
  */
 public class BlackboardClient implements AutoCloseable {
 
+    /** 地图默认宽/高，所有模块引用此常量而非各自硬编码 */
+    public static final int DEFAULT_WIDTH = 30;
+    public static final int DEFAULT_HEIGHT = 30;
+
     /** Redis key: 地图探索状态（位图） */
     private static final String KEY_MAP_VIEW = "mapView";
     /** Redis key: 地图障碍物状态（位图） */
     private static final String KEY_MAP_BLOCK = "mapBlock";
+    /** Redis key: 被障碍物包裹、小车不可达的格子（位图） */
+    private static final String KEY_MAP_SEALED = "mapSealed";
     /** Redis key: 地图热力图（Hash） */
     private static final String KEY_MAP_HEAT = "mapHeat";
     /** Redis key: 任务配置（Hash） */
@@ -52,14 +58,10 @@ public class BlackboardClient implements AutoCloseable {
 
     /** Redis连接池 */
     private final JedisPool pool;
-    /** 地图宽度（列数）——构造函数默认值 */
+    /** 地图宽度（列数）——构造函数默认值，仅在TaskConfig未设置时回退 */
     private final int mapWidth;
-    /** 地图高度（行数）——构造函数默认值 */
+    /** 地图高度（行数）——构造函数默认值，仅在TaskConfig未设置时回退 */
     private final int mapHeight;
-    /** 从TaskConfig读取的有效宽度缓存，-1表示未初始化 */
-    private volatile int cachedTaskWidth = -1;
-    /** 从TaskConfig读取的有效高度缓存，-1表示未初始化 */
-    private volatile int cachedTaskHeight = -1;
 
     /**
      * 构造黑板客户端，创建Redis连接池。
@@ -80,31 +82,25 @@ public class BlackboardClient implements AutoCloseable {
      * 优先使用TaskConfig中的地图宽度，未配置时回退到构造函数默认值。
      */
     private long bitmapOffset(int row, int col) {
-        return (long) row * effectiveWidth() + col;
+        return bitmapOffset(row, col, effectiveWidth());
     }
 
-    /** 获取有效地图宽度：优先TaskConfig，回退构造函数默认值 */
+    /** 按指定地图宽度计算位图偏移（写入密封区时必须与读取宽度一致） */
+    static long bitmapOffset(int row, int col, int mapWidth) {
+        return (long) row * mapWidth + col;
+    }
+
+    /** 获取有效地图宽度：每次从TaskConfig读取，保证FLUSHDB后不残留旧值 */
     private int effectiveWidth() {
-        int w = cachedTaskWidth;
-        if (w > 0) return w;
-        w = getMapWidth();
-        if (w > 0) {
-            cachedTaskWidth = w;
-            return w;
-        }
-        return mapWidth;
+        int w = getMapWidth();
+        return w > 0 ? w : mapWidth;
     }
 
-    /** 获取有效地图高度：优先TaskConfig，回退构造函数默认值 */
+    /** 获取有效地图高度：每次从TaskConfig读取 */
     private int effectiveHeight() {
-        int h = cachedTaskHeight;
-        if (h > 0) return h;
-        h = getMapHeight();
-        if (h > 0) {
-            cachedTaskHeight = h;
-            return h;
-        }
-        return mapHeight;
+        int h = getMapHeight();
+        int result = h > 0 ? h : mapHeight;
+        return result;
     }
 
     // ==================== mapView ====================
@@ -151,6 +147,14 @@ public class BlackboardClient implements AutoCloseable {
         }
     }
 
+    /** 一次GET读取整个mapSealed位图的字节数组 */
+    public byte[] getMapSealedBytes() {
+        try (Jedis jedis = pool.getResource()) {
+            byte[] bytes = jedis.get(KEY_MAP_SEALED.getBytes());
+            return bytes != null ? bytes : new byte[0];
+        }
+    }
+
     /** 从字节数组构建boolean二维数组 */
     public static boolean[][] bytesToBitmap(byte[] bytes, int width, int height) {
         boolean[][] bitmap = new boolean[height][width];
@@ -167,24 +171,144 @@ public class BlackboardClient implements AutoCloseable {
         return bitmap;
     }
 
+    /** 一次 Redis 读取构建探索位图（行=row，列=col） */
+    public boolean[][] loadExploredBitmap() {
+        int width = getMapWidth();
+        int height = getMapHeight();
+        return bytesToBitmap(getMapViewBytes(), width, height);
+    }
+
+    /** 一次 Redis 读取构建障碍位图（不含车辆占位） */
+    public boolean[][] loadObstacleBitmap() {
+        int width = getMapWidth();
+        int height = getMapHeight();
+        return bytesToBitmap(getMapBlockBytes(), width, height);
+    }
+
+    /** 障碍位图 + 所有车当前位置视为不可通行 */
+    public boolean[][] loadBlockedMapWithCars() {
+        boolean[][] blocked = loadObstacleBitmap();
+        markCarPositionsOnMap(blocked);
+        return blocked;
+    }
+
+    /** 一次 Redis 读取构建密封区（不可达空格）位图 */
+    public boolean[][] loadSealedBitmap() {
+        int width = getMapWidth();
+        int height = getMapHeight();
+        return bytesToBitmap(getMapSealedBytes(), width, height);
+    }
+
+    /** 写入密封区位图（初始化地图时调用，mapWidth 必须与 TaskConfig 一致） */
+    public void writeSealedBitmap(boolean[][] sealed, int mapWidth) {
+        try (Jedis jedis = pool.getResource()) {
+            jedis.del(KEY_MAP_SEALED);
+            for (int row = 0; row < sealed.length; row++) {
+                for (int col = 0; col < sealed[row].length; col++) {
+                    if (sealed[row][col]) {
+                        jedis.setbit(KEY_MAP_SEALED, bitmapOffset(row, col, mapWidth), true);
+                    }
+                }
+            }
+        }
+    }
+
+    private void markCarPositionsOnMap(boolean[][] blocked) {
+        for (String carId : discoverCarIds()) {
+            getCarPosition(carId).ifPresent(pos -> blocked[pos.y()][pos.x()] = true);
+        }
+    }
+
     /**
-     * 计算地图探索率（百分比），排除障碍物格子。
+     * 计算地图探索率（百分比）。
+     * 分母 = 总格子 − 障碍 − 被障碍物包裹的不可达空格。
      *
      * @return 探索率 0-100
      */
     public int getExplorationRate() {
-        try (Jedis jedis = pool.getResource()) {
-            int w = readMapWidth(jedis);
-            int h = readMapHeight(jedis);
-            long total = (long) w * h;
-            long blocked = jedis.bitcount(KEY_MAP_BLOCK);
-            long explorable = total - blocked;
-            if (explorable <= 0) {
-                return 100;
-            }
-            long explored = jedis.bitcount(KEY_MAP_VIEW);
-            return (int) (explored * 100 / explorable);
+        long[] progress = countExplorationProgress();
+        long explorable = progress[0];
+        long exploredOnExplorable = progress[1];
+        if (explorable <= 0) {
+            return 100;
         }
+        return (int) (exploredOnExplorable * 100 / explorable);
+    }
+
+    /** 是否仍存在可探索且未探索的格子（不含障碍与密封区） */
+    public boolean hasUnexploredExplorableCells() {
+        int width = getMapWidth();
+        int height = getMapHeight();
+        boolean[][] explored = bytesToBitmap(getMapViewBytes(), width, height);
+        boolean[][] obstacles = bytesToBitmap(getMapBlockBytes(), width, height);
+        boolean[][] sealed = bytesToBitmap(getMapSealedBytes(), width, height);
+        for (int row = 0; row < height; row++) {
+            for (int col = 0; col < width; col++) {
+                if (isExplorableCell(obstacles, sealed, row, col)
+                        && !explored[row][col]) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /** 探索是否已结束：所有可探索区域均已探索（探索率 100%） */
+    public boolean isExplorationComplete() {
+        return getExplorationRate() >= 100 && !hasUnexploredExplorableCells();
+    }
+
+    /** 返回详细探索统计：{width, height, total, blocked, sealed, explorable, explored, rate} */
+    public long[] getExplorationStats() {
+        int width = getMapWidth();
+        int height = getMapHeight();
+        long total = (long) width * height;
+        long blocked = countTrueCells(loadObstacleBitmap());
+        long sealed = countTrueCells(loadSealedBitmap());
+        long[] progress = countExplorationProgress();
+        long explorable = progress[0];
+        long exploredOnExplorable = progress[1];
+        long rate = explorable <= 0 ? 100 : exploredOnExplorable * 100 / explorable;
+        return new long[]{width, height, total, blocked, sealed, explorable, exploredOnExplorable, rate};
+    }
+
+    private long[] countExplorationProgress() {
+        int width = getMapWidth();
+        int height = getMapHeight();
+        boolean[][] explored = bytesToBitmap(getMapViewBytes(), width, height);
+        boolean[][] obstacles = bytesToBitmap(getMapBlockBytes(), width, height);
+        boolean[][] sealed = bytesToBitmap(getMapSealedBytes(), width, height);
+        long explorable = 0;
+        long exploredOnExplorable = 0;
+        for (int row = 0; row < height; row++) {
+            for (int col = 0; col < width; col++) {
+                if (!isExplorableCell(obstacles, sealed, row, col)) {
+                    continue;
+                }
+                explorable++;
+                if (explored[row][col]) {
+                    exploredOnExplorable++;
+                }
+            }
+        }
+        return new long[]{explorable, exploredOnExplorable};
+    }
+
+    private static boolean isExplorableCell(boolean[][] obstacles, boolean[][] sealed,
+                                             int row, int col) {
+        return !obstacles[row][col] && !sealed[row][col];
+    }
+
+    private static long countTrueCells(boolean[][] bitmap) {
+        long count = 0;
+        for (boolean[] row : bitmap) {
+            for (boolean cell : row) {
+                if (cell) {
+                    count++;
+                }
+            }
+        }
+        return count;
     }
 
     private int readMapWidth(Jedis jedis) {
@@ -246,10 +370,9 @@ public class BlackboardClient implements AutoCloseable {
      */
     public Optional<Point> getCarPosition(String carId) {
         try (Jedis jedis = pool.getResource()) {
-            String key = carId + ":Position";
-            String sx = jedis.hget(key, FIELD_X);
-            if (sx == null) return Optional.empty();
-            return Optional.of(new Point(Integer.parseInt(sx), Integer.parseInt(jedis.hget(key, FIELD_Y))));
+            java.util.List<String> vals = jedis.hmget(carId + ":Position", FIELD_X, FIELD_Y);
+            if (vals.get(0) == null) return Optional.empty();
+            return Optional.of(new Point(Integer.parseInt(vals.get(0)), Integer.parseInt(vals.get(1))));
         }
     }
 
@@ -261,9 +384,9 @@ public class BlackboardClient implements AutoCloseable {
      */
     public void setCarPosition(String carId, Point pos) {
         try (Jedis jedis = pool.getResource()) {
-            String key = carId + ":Position";
-            jedis.hset(key, FIELD_X, String.valueOf(pos.x()));
-            jedis.hset(key, FIELD_Y, String.valueOf(pos.y()));
+            jedis.hset(carId + ":Position",
+                Map.of(FIELD_X, String.valueOf(pos.x()),
+                       FIELD_Y, String.valueOf(pos.y())));
         }
     }
 
@@ -284,10 +407,9 @@ public class BlackboardClient implements AutoCloseable {
      */
     public Optional<Point> getCarTarget(String carId) {
         try (Jedis jedis = pool.getResource()) {
-            String key = carId + ":Target";
-            String sx = jedis.hget(key, FIELD_X);
-            if (sx == null) return Optional.empty();
-            return Optional.of(new Point(Integer.parseInt(sx), Integer.parseInt(jedis.hget(key, FIELD_Y))));
+            java.util.List<String> vals = jedis.hmget(carId + ":Target", FIELD_X, FIELD_Y);
+            if (vals.get(0) == null) return Optional.empty();
+            return Optional.of(new Point(Integer.parseInt(vals.get(0)), Integer.parseInt(vals.get(1))));
         }
     }
 
@@ -299,9 +421,9 @@ public class BlackboardClient implements AutoCloseable {
      */
     public void setCarTarget(String carId, Point target) {
         try (Jedis jedis = pool.getResource()) {
-            String key = carId + ":Target";
-            jedis.hset(key, FIELD_X, String.valueOf(target.x()));
-            jedis.hset(key, FIELD_Y, String.valueOf(target.y()));
+            jedis.hset(carId + ":Target",
+                Map.of(FIELD_X, String.valueOf(target.x()),
+                       FIELD_Y, String.valueOf(target.y())));
         }
     }
 
@@ -378,10 +500,13 @@ public class BlackboardClient implements AutoCloseable {
     public void pushRoute(String carId, List<Point> route) {
         try (Jedis jedis = pool.getResource()) {
             String key = carId + ":RouteList";
-            // 逆序 LPUSH：终点先推，起点最后推，保证索引 0 是第一步
+            java.util.List<String> args = new java.util.ArrayList<>(route.size());
             for (int i = route.size() - 1; i >= 0; i--) {
-                jedis.lpush(key, route.get(i).toJson());
+                args.add(route.get(i).toJson());
             }
+            jedis.eval(
+                "redis.call('DEL',KEYS[1]) for i=1,#ARGV do redis.call('LPUSH',KEYS[1],ARGV[i]) end",
+                java.util.Collections.singletonList(key), args);
         }
     }
 
@@ -527,10 +652,13 @@ public class BlackboardClient implements AutoCloseable {
      */
     public boolean recordExploration(int tick, int row, int col) {
         try (Jedis jedis = pool.getResource()) {
-            boolean wasExplored = jedis.setbit(KEY_MAP_VIEW, bitmapOffset(row, col), true);
+            long offset = bitmapOffset(row, col);
+            if (jedis.getbit(KEY_MAP_BLOCK, offset)) {
+                return false; // 障碍物不计入探索
+            }
+            boolean wasExplored = jedis.setbit(KEY_MAP_VIEW, offset, true);
             if (!wasExplored) {
-                String event = tick + "," + row + "," + col;
-                jedis.rpush(KEY_EXPLORATION_EVENTS, event);
+                jedis.rpush(KEY_EXPLORATION_EVENTS, tick + "," + row + "," + col);
             }
             return !wasExplored;
         }
@@ -628,25 +756,31 @@ public class BlackboardClient implements AutoCloseable {
     /**
      * 从任务配置中读取地图宽度。
      *
-     * @return 地图宽度，不存在返回0
+     * @return 地图宽度，TaskConfig 未设置时回退构造函数默认值
      */
     public int getMapWidth() {
         try (Jedis jedis = pool.getResource()) {
             String val = jedis.hget(KEY_TASK_CONFIG, FIELD_MAP_WIDTH);
-            return val != null ? Integer.parseInt(val) : 0;
+            if (val != null) {
+                return Integer.parseInt(val);
+            }
         }
+        return mapWidth;
     }
 
     /**
      * 从任务配置中读取地图高度。
      *
-     * @return 地图高度，不存在返回0
+     * @return 地图高度，TaskConfig 未设置时回退构造函数默认值
      */
     public int getMapHeight() {
         try (Jedis jedis = pool.getResource()) {
             String val = jedis.hget(KEY_TASK_CONFIG, FIELD_MAP_HEIGHT);
-            return val != null ? Integer.parseInt(val) : 0;
+            if (val != null) {
+                return Integer.parseInt(val);
+            }
         }
+        return mapHeight;
     }
 
     /**
