@@ -22,10 +22,13 @@
     MOVING: '移动中', BLOCKED: '受阻'
   };
 
+  // ══════════════ 每车固定颜色
+  var CAR_COLORS = ['#E74C3C','#3498DB','#2ECC71','#9B59B6','#F39C12','#1ABC9C','#E91E63','#00BCD4'];
+
   // ══════════════ 浅色主题颜色
   var LIGHT = {
     gridBg: '#D0D0D0',
-    gridLine: '#B0B0B0',
+    gridLine: '#94A3B8',
     explored: '#B0C4DE',
     obstacle: '#C0C0C0',
     obstacleFill: '#A0A0A0'
@@ -169,16 +172,6 @@
     ctx.fillStyle = LIGHT.gridBg;
     ctx.fillRect(0, 0, gridW * cs, gridH * cs);
 
-    // 网格线
-    ctx.strokeStyle = LIGHT.gridLine;
-    ctx.lineWidth = 0.5;
-    for (var i = 0; i <= gridW; i++) {
-      var x = i * cs; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, gridH * cs); ctx.stroke();
-    }
-    for (var j = 0; j <= gridH; j++) {
-      var y = j * cs; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(gridW * cs, y); ctx.stroke();
-    }
-
     // 已探索
     if (data.mapView) {
       ctx.fillStyle = LIGHT.explored;
@@ -209,6 +202,16 @@
         }
       }
     }
+
+    // 网格线（最上层，所有格子都有描边）
+    ctx.strokeStyle = LIGHT.gridLine;
+    ctx.lineWidth = 0.5;
+    for (var i = 0; i <= gridW; i++) {
+      var x = i * cs; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, gridH * cs); ctx.stroke();
+    }
+    for (var j = 0; j <= gridH; j++) {
+      var y = j * cs; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(gridW * cs, y); ctx.stroke();
+    }
     mapLayerDirty = false;
   }
 
@@ -231,18 +234,23 @@
 
   function drawRoute(car, ctx, cs) {
     if (!car.position || !car.routeList || car.routeList.length === 0) return;
-    ctx.strokeStyle = 'rgba(59,130,246,0.5)';
-    ctx.lineWidth = Math.max(2, cs * 0.08);
+    var carColor = CAR_COLORS[(car.number - 1) % CAR_COLORS.length] || '#3498DB';
+    ctx.strokeStyle = carColor + '80';
+    ctx.lineWidth = Math.max(2, cs * 0.1);
     ctx.lineCap = 'round';
     var px = car.position.x * cs + cs / 2;
     var py = car.position.y * cs + cs / 2;
+    var prevX = car.position.x;
+    var prevY = car.position.y;
     var steps = Math.min(car.routeList.length, MAX_ROUTE_DRAW);
     for (var i = 0; i < steps; i++) {
       var gx = car.routeList[i].x, gy = car.routeList[i].y;
-      if (Math.abs(gx - car.position.x) + Math.abs(gy - car.position.y) !== i + 1) break;
+      if (gx === prevX && gy === prevY) continue;
+      if (Math.abs(gx - prevX) + Math.abs(gy - prevY) !== 1) break;
       var nx = gx * cs + cs / 2, ny = gy * cs + cs / 2;
       ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(nx, ny); ctx.stroke();
       px = nx; py = ny;
+      prevX = gx; prevY = gy;
     }
   }
 
@@ -250,7 +258,7 @@
     if (!car.position) return;
     var cx = car.position.x * cs + cs / 2;
     var cy = car.position.y * cs + cs / 2;
-    var color = STATUS_COLORS[car.status] || '#9E9E9E';
+    var color = CAR_COLORS[(car.number - 1) % CAR_COLORS.length] || '#9E9E9E';
     var outerR = cs / 2 - 1;
 
     ctx.beginPath();

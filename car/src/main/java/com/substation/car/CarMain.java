@@ -36,6 +36,8 @@ public class CarMain {
     private static final int FALLBACK_W = BlackboardClient.DEFAULT_WIDTH;
     private static final int FALLBACK_H = BlackboardClient.DEFAULT_HEIGHT;
     private static final int MAX_INIT_ATTEMPTS = 1000;
+    private static final int REGISTER_WAIT_MS = 200;
+    private static final int REGISTER_WAIT_ATTEMPTS = 25;
 
     private final String carId;
     private final String redisHost;
@@ -136,13 +138,14 @@ public class CarMain {
 
     static void selfRegister(BlackboardClient bb, String carId,
                               int mapWidth, int mapHeight) {
-        Optional<CarStatus> existing = bb.getCarStatus(carId);
-        if (existing.isPresent()) {
-            log.info("[{}] 已在黑板注册，当前状态: {}", carId, existing.get().chineseName());
+        if (awaitTaskConfiguratorRegistration(bb, carId)) {
+            CarStatus status = bb.getCarStatus(carId).orElse(CarStatus.IDLE);
+            log.info("[{}] 已由 TaskConfigurator 注册，状态: {}", carId, status.chineseName());
             return;
         }
 
-        log.info("[{}] 未注册，正在自初始化...", carId);
+        log.info("[{}] 未在黑板注册（等待 {}ms 后仍无记录），执行自初始化...", carId,
+            REGISTER_WAIT_MS * REGISTER_WAIT_ATTEMPTS);
         Random rng = new Random();
         for (int attempt = 0; attempt < MAX_INIT_ATTEMPTS; attempt++) {
             int x = rng.nextInt(mapWidth);
@@ -162,17 +165,27 @@ public class CarMain {
                 carId, mapWidth, mapHeight, MAX_INIT_ATTEMPTS);
     }
 
+    private static boolean awaitTaskConfiguratorRegistration(BlackboardClient bb, String carId) {
+        for (int attempt = 0; attempt < REGISTER_WAIT_ATTEMPTS; attempt++) {
+            if (bb.getCarStatus(carId).isPresent()) {
+                return true;
+            }
+            try {
+                Thread.sleep(REGISTER_WAIT_MS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return bb.getCarStatus(carId).isPresent();
+            }
+        }
+        return bb.getCarStatus(carId).isPresent();
+    }
+
     static void illuminateAndHeat(BlackboardClient bb, Point center,
                                    int mapWidth, int mapHeight) {
-        for (int dr = -1; dr <= 1; dr++) {
-            for (int dc = -1; dc <= 1; dc++) {
-                int r = center.y() + dr;
-                int c = center.x() + dc;
-                if (r >= 0 && r < mapHeight && c >= 0 && c < mapWidth) {
-                    bb.setMapViewBit(r, c, true);
-                    bb.incrementMapHeat(r, c);
-                }
-            }
+        int r = center.y(), c = center.x();
+        if (r >= 0 && r < mapHeight && c >= 0 && c < mapWidth) {
+            bb.setMapViewBit(r, c, true);
+            bb.incrementMapHeat(r, c);
         }
     }
 

@@ -120,7 +120,7 @@ class TaskInitializerTest {
 
         int blockedCount = countBlockedCells();
         int interiorCells = (MAP_SIZE - 2) * (MAP_SIZE - 2); // 28*28 = 784
-        int expected = (int) (interiorCells * DEFAULT_OBSTACLE_RATIO) + DEFAULT_CAR_COUNT; // ≈ 117+5
+        int expected = (int) (interiorCells * DEFAULT_OBSTACLE_RATIO);
 
         // 允许 ±20% 偏差（随机性）
         double tolerance = expected * 0.20;
@@ -128,27 +128,30 @@ class TaskInitializerTest {
     }
 
     @Test
-    void carPositionsMarkedInMapBlock() {
+    void carSpawnCellsAreExploredNotObstacles() {
         initializer.initialize(bb, Map.of());
 
         for (int i = 1; i <= DEFAULT_CAR_COUNT; i++) {
             String carId = String.format("Car%03d", i);
             Point pos = bb.getCarPosition(carId).orElseThrow();
-            assertTrue(bb.isBlocked(pos.y(), pos.x()),
-                carId + " 初始位置(" + pos.x() + "," + pos.y() + ") 应写入 mapBlock 避免其他车经过");
+            assertTrue(bb.getMapViewBit(pos.y(), pos.x()),
+                carId + " 出生格应为已探索");
+            assertFalse(bb.isBlocked(pos.y(), pos.x()),
+                carId + " 出生格不应写入 mapBlock");
         }
     }
 
     @Test
-    void areaAroundCarsIsIlluminated() {
+    void carSpawnCellIsIlluminated() {
         initializer.initialize(bb, Map.of());
 
-        // Car001 在 (1,1)，周围 3×3 应全部点亮（边界裁剪后 2×2）
-        assertTrue(bb.getMapViewBit(0, 0));
-        assertTrue(bb.getMapViewBit(0, 1));
-        assertTrue(bb.getMapViewBit(1, 0));
-        assertTrue(bb.getMapViewBit(1, 1));
-        // 边界外的坐标不存在于遍历中，以下验证越界不会点亮
+        Point pos = bb.getCarPosition("Car001").orElseThrow();
+        assertTrue(bb.getMapViewBit(pos.y(), pos.x()),
+            "初始车位应单格点亮");
+        if (pos.x() + 1 < MAP_SIZE) {
+            assertFalse(bb.getMapViewBit(pos.y(), pos.x() + 1),
+                "相邻格不应被点亮");
+        }
     }
 
     @Test
@@ -204,9 +207,9 @@ class TaskInitializerTest {
     void zeroObstacleRatioPlacesNoExtraObstacles() {
         initializer.initialize(bb, Map.of("obstacleRatio", 0.0));
 
-        // 车位本身占 5 个 mapBlock，不应有额外的随机障碍物
-        assertEquals(DEFAULT_CAR_COUNT, countBlockedCells(),
-            "比例 0 时只有车位写入 mapBlock(5个)，不应有额外障碍物");
+        // 比例 0 时不应有随机障碍物（车位也不再写入 mapBlock）
+        assertEquals(0, countBlockedCells(),
+            "比例 0 时不应有 mapBlock 障碍物");
     }
 
     // ==================== 辅助方法 ====================

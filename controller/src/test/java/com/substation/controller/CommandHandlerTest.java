@@ -102,6 +102,25 @@ class CommandHandlerTest {
     }
 
     @Test
+    void handleRouteOverlapReassign() {
+        AtomicReference<String> carIdRef = new AtomicReference<>();
+        StubStatusDispatcher dispatcher = new StubStatusDispatcher() {
+            @Override
+            public void onRouteOverlapReassign(String carId) {
+                carIdRef.set(carId);
+            }
+        };
+
+        CommandHandler handler = new CommandHandler(null, dispatcher, new StubTickScheduler());
+        JSONObject data = new JSONObject();
+        data.put("overlapReassign", true);
+        String msg = MessageBuilder.build(MessageTypes.ROUTE_OPTIMIZED, 5, "Car001", data);
+        handler.handle(msg);
+
+        assertEquals("Car001", carIdRef.get());
+    }
+
+    @Test
     void handleReset() {
         AtomicBoolean reset = new AtomicBoolean();
         StubStatusDispatcher dispatcher = new StubStatusDispatcher() {
@@ -120,6 +139,11 @@ class CommandHandlerTest {
     private static class StubStatusDispatcher extends StatusDispatcher {
         StubStatusDispatcher() {
             super(null, null);
+        }
+
+        @Override
+        public boolean isActive() {
+            return true;
         }
     }
 

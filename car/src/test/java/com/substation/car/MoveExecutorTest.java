@@ -87,10 +87,6 @@ class MoveExecutorTest {
 
         // 步数递增
         assertEquals(4, bb.getCarSteps(TEST_CAR));
-
-        // mapBlock：旧位置清除，新位置标记
-        assertFalse(bb.isBlocked(10, 5));
-        assertTrue(bb.isBlocked(11, 5));
     }
 
     @Test
@@ -125,6 +121,27 @@ class MoveExecutorTest {
 
         assertEquals(CarStatus.BLOCKED, bb.getCarStatus(TEST_CAR).orElseThrow());
         assertEquals(1, bb.getBlockedTick(TEST_CAR));
+        assertTrue(bb.getCarRoute(TEST_CAR).isEmpty());
+    }
+
+    // ==================== 碰撞 / 占据 ====================
+
+    @Test
+    void blockedAfterRepeatedOccupiedCollision() {
+        bb.setCarPosition("CarOther", new Point(15, 29));
+        bb.setCarStatus("CarOther", CarStatus.IDLE);
+        bb.setCarPosition(TEST_CAR, new Point(14, 29));
+        bb.setCarStatus(TEST_CAR, CarStatus.READY);
+        bb.pushRoute(TEST_CAR, List.of(new Point(15, 29), new Point(16, 29)));
+
+        executor.executeMove(1);
+        assertEquals(CarStatus.READY, bb.getCarStatus(TEST_CAR).orElseThrow());
+
+        executor.executeMove(2);
+        assertEquals(CarStatus.READY, bb.getCarStatus(TEST_CAR).orElseThrow());
+
+        executor.executeMove(3);
+        assertEquals(CarStatus.BLOCKED, bb.getCarStatus(TEST_CAR).orElseThrow());
         assertTrue(bb.getCarRoute(TEST_CAR).isEmpty());
     }
 
@@ -226,21 +243,20 @@ class MoveExecutorTest {
         bb.releaseReservePosition(0, 1, "CarOther");
     }
 
-    // ==================== 点亮 3×3 ====================
+    // ==================== 点亮当前格 ====================
 
     @Test
-    void illuminate3x3_onMove() {
+    void illuminateSingleCell_onMove() {
         bb.setCarPosition(TEST_CAR, new Point(2, 2));
         bb.setCarStatus(TEST_CAR, CarStatus.READY);
         bb.pushRoute(TEST_CAR, List.of(new Point(3, 2)));
 
         executor.executeMove(1);
 
-        // 新位置 (3,2) 周围 3×3 被点亮
-        assertTrue(bb.getMapViewBit(1, 2));
-        assertTrue(bb.getMapViewBit(2, 3));
-        assertTrue(bb.getMapViewBit(3, 3));
-        assertTrue(bb.getMapViewBit(2, 2));
+        assertTrue(bb.getMapViewBit(2, 3), "仅移动落点 (3,2) 应被点亮");
+        assertFalse(bb.getMapViewBit(2, 2));
+        assertFalse(bb.getMapViewBit(1, 3));
+        assertFalse(bb.getMapViewBit(3, 3));
     }
 
     @Test
@@ -251,10 +267,8 @@ class MoveExecutorTest {
 
         executor.executeMove(1);
 
-        // 新位置 (1,0) 在边界，不应越界
-        assertTrue(bb.getMapViewBit(0, 0));
         assertTrue(bb.getMapViewBit(0, 1));
-        assertTrue(bb.getMapViewBit(0, 2));
+        assertFalse(bb.getMapViewBit(0, 0));
     }
 
     // ==================== History 路径记录 ====================

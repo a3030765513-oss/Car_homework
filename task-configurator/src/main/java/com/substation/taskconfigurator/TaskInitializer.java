@@ -19,7 +19,7 @@ final class TaskInitializer {
     private static final int DEFAULT_CAR_COUNT = 5;
     private static final double DEFAULT_OBSTACLE_RATIO = 0.15;
     private static final String DEFAULT_ALGORITHM = "BFS";
-    private static final int DEFAULT_TICK_INTERVAL = 200;
+    private static final int DEFAULT_TICK_INTERVAL = 500;
     private static final int EDGE_MARGIN = 1;
     private static final int ILLUMINATION_RADIUS = 1;
     private static final int RANDOM_POSITION_MAX_ATTEMPTS = 200;
@@ -152,15 +152,10 @@ final class TaskInitializer {
     }
 
     private void lightUpArea(BlackboardClient bb, Point center, int mapWidth, int mapHeight) {
-        int rStart = Math.max(0, center.y() - ILLUMINATION_RADIUS);
-        int rEnd = Math.min(mapHeight - 1, center.y() + ILLUMINATION_RADIUS);
-        int cStart = Math.max(0, center.x() - ILLUMINATION_RADIUS);
-        int cEnd = Math.min(mapWidth - 1, center.x() + ILLUMINATION_RADIUS);
-
-        for (int r = rStart; r <= rEnd; r++) {
-            for (int c = cStart; c <= cEnd; c++) {
-                bb.recordExploration(0, r, c);
-            }
+        int row = center.y();
+        int col = center.x();
+        if (row >= 0 && row < mapHeight && col >= 0 && col < mapWidth) {
+            bb.setMapViewBit(row, col, true);
         }
     }
 

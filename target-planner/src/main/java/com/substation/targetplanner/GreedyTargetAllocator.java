@@ -38,11 +38,13 @@ final class GreedyTargetAllocator {
     // ==================== 候选收集 ====================
 
     private List<Point> collectUnexploredCells(BlackboardClient bb, int width, int height) {
+        boolean[][] explored = bb.loadExploredBitmap();
+        boolean[][] obstacles = bb.loadObstacleBitmap();
         List<Point> cells = new ArrayList<>();
-        for (int r = 0; r < height; r++) {
-            for (int c = 0; c < width; c++) {
-                if (!bb.getMapViewBit(r, c) && !bb.isBlocked(r, c)) {
-                    cells.add(new Point(c, r));
+        for (int row = 0; row < height; row++) {
+            for (int col = 0; col < width; col++) {
+                if (!explored[row][col] && !obstacles[row][col]) {
+                    cells.add(new Point(col, row));
                 }
             }
         }

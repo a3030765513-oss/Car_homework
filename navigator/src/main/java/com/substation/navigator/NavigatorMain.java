@@ -63,12 +63,13 @@ public class NavigatorMain {
             String carId = msg.getString("carId");
             JSONObject data = msg.getJSONObject("data");
             String algorithm = extractAlgorithm(data);
+            boolean supervised = data != null && data.getBooleanValue("supervised", false);
 
-            log.info("[Navigator] 收到 PLAN_ROUTE carId={} algorithm={} tick={}",
-                carId, algorithm, tick);
+            log.info("[Navigator] 收到 PLAN_ROUTE carId={} algorithm={} tick={}{}",
+                carId, algorithm, tick, supervised ? " 经过监督器优化" : "");
 
             try {
-                handlePlanRoute(bb, messageBus, carId, algorithm, tick);
+                handlePlanRoute(bb, messageBus, carId, algorithm, supervised, tick);
             } catch (Exception e) {
                 log.error("[Navigator] 规划失败 carId={}", carId, e);
                 sendRoutePlanned(messageBus, carId, false, 0, tick);
@@ -93,7 +94,7 @@ public class NavigatorMain {
     // ==================== 消息处理 ====================
 
     private static void handlePlanRoute(BlackboardClient bb, MessageBus messageBus,
-                                         String carId, String algorithm, int tick)
+                                         String carId, String algorithm, boolean supervised, int tick)
             throws IOException {
         Optional<Point> posOpt = bb.getCarPosition(carId);
         Optional<Point> targetOpt = bb.getCarTarget(carId);
@@ -116,9 +117,17 @@ public class NavigatorMain {
             return;
         }
 
-        bb.clearRoute(carId);
+        // 写前复查位置：车若已移动则起点不准，放弃本次规划
+        Point nowPos = bb.getCarPosition(carId).orElse(null);
+        if (nowPos == null || !nowPos.equals(start)) {
+            log.warn("[Navigator] carId={} 规划期间车已移动 start=({},{}) now=({},{}) 放弃",
+                carId, start.x(), start.y(), nowPos != null ? nowPos.x() : -1, nowPos != null ? nowPos.y() : -1);
+            sendRoutePlanned(messageBus, carId, false, 0, tick);
+            return;
+        }
         bb.pushRoute(carId, route);
-        log.info("[Navigator] carId={} 路径规划成功 长度={}", carId, route.size());
+        log.info("[Navigator] carId={} 路径规划成功 长度={}{}",
+            carId, route.size(), supervised ? " 经过监督器优化" : "");
         sendRoutePlanned(messageBus, carId, true, route.size(), tick);
     }
 

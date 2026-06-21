@@ -65,12 +65,17 @@ class StatusDispatcherTest {
         bb.setBlockedTick("Car002", 0);
         dispatcher.onTaskReady();
 
-        // tick 1: 1-0=1 < 2, blocked too recent
         dispatcher.dispatch();
         assertEquals(CarStatus.BLOCKED, bb.getCarStatus("Car002").orElseThrow());
 
-        // tick 2: 2-0=2 >= 2, timeout triggers
-        dispatcher.dispatch();
+        // 随机超时阈值在 [2, 5] tick，循环直到触发或超过上限
+        int maxExtraTicks = 6;
+        for (int i = 0; i < maxExtraTicks; i++) {
+            if (bb.getCarStatus("Car002").orElse(null) == CarStatus.IDLE) {
+                break;
+            }
+            dispatcher.dispatch();
+        }
         assertEquals(CarStatus.IDLE, bb.getCarStatus("Car002").orElseThrow());
         assertEquals(-1, bb.getBlockedTick("Car002"));
     }

@@ -41,6 +41,7 @@ public class ControllerMain {
         bus = new MessageBus(mqHost, mqPort, MQ_USER, MQ_PASS);
         bus.connect();
         bus.declareControllerQueue();
+        bus.purgeQueue(QueueNames.CONTROLLER_CMD);
         bus.declareTargetPlannerQueue();
         bus.declareNavigatorQueue();
         bus.declareTaskConfigQueue();
@@ -67,5 +68,12 @@ public class ControllerMain {
     /** 独立运行入口（使用默认 localhost 参数） */
     public static void main(String[] args) throws Exception {
         new ControllerMain("localhost", 6379, "localhost", 5672).start();
+        synchronized (ControllerMain.class) {
+            try {
+                ControllerMain.class.wait();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 }

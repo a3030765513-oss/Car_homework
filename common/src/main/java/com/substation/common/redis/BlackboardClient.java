@@ -92,7 +92,8 @@ public class BlackboardClient implements AutoCloseable {
     /** 获取有效地图高度：每次从TaskConfig读取 */
     private int effectiveHeight() {
         int h = getMapHeight();
-        return h > 0 ? h : mapHeight;
+        int result = h > 0 ? h : mapHeight;
+        return result;
     }
 
     // ==================== mapView ====================
@@ -153,6 +154,33 @@ public class BlackboardClient implements AutoCloseable {
             }
         }
         return bitmap;
+    }
+
+    /** 一次 Redis 读取构建探索位图（行=row，列=col） */
+    public boolean[][] loadExploredBitmap() {
+        int width = getMapWidth();
+        int height = getMapHeight();
+        return bytesToBitmap(getMapViewBytes(), width, height);
+    }
+
+    /** 一次 Redis 读取构建障碍位图（不含车辆占位） */
+    public boolean[][] loadObstacleBitmap() {
+        int width = getMapWidth();
+        int height = getMapHeight();
+        return bytesToBitmap(getMapBlockBytes(), width, height);
+    }
+
+    /** 障碍位图 + 所有车当前位置视为不可通行 */
+    public boolean[][] loadBlockedMapWithCars() {
+        boolean[][] blocked = loadObstacleBitmap();
+        markCarPositionsOnMap(blocked);
+        return blocked;
+    }
+
+    private void markCarPositionsOnMap(boolean[][] blocked) {
+        for (String carId : discoverCarIds()) {
+            getCarPosition(carId).ifPresent(pos -> blocked[pos.y()][pos.x()] = true);
+        }
     }
 
     /**
@@ -248,10 +276,9 @@ public class BlackboardClient implements AutoCloseable {
      */
     public Optional<Point> getCarPosition(String carId) {
         try (Jedis jedis = pool.getResource()) {
-            String key = carId + ":Position";
-            String sx = jedis.hget(key, FIELD_X);
-            if (sx == null) return Optional.empty();
-            return Optional.of(new Point(Integer.parseInt(sx), Integer.parseInt(jedis.hget(key, FIELD_Y))));
+            java.util.List<String> vals = jedis.hmget(carId + ":Position", FIELD_X, FIELD_Y);
+            if (vals.get(0) == null) return Optional.empty();
+            return Optional.of(new Point(Integer.parseInt(vals.get(0)), Integer.parseInt(vals.get(1))));
         }
     }
 
@@ -286,10 +313,9 @@ public class BlackboardClient implements AutoCloseable {
      */
     public Optional<Point> getCarTarget(String carId) {
         try (Jedis jedis = pool.getResource()) {
-            String key = carId + ":Target";
-            String sx = jedis.hget(key, FIELD_X);
-            if (sx == null) return Optional.empty();
-            return Optional.of(new Point(Integer.parseInt(sx), Integer.parseInt(jedis.hget(key, FIELD_Y))));
+            java.util.List<String> vals = jedis.hmget(carId + ":Target", FIELD_X, FIELD_Y);
+            if (vals.get(0) == null) return Optional.empty();
+            return Optional.of(new Point(Integer.parseInt(vals.get(0)), Integer.parseInt(vals.get(1))));
         }
     }
 
@@ -380,10 +406,13 @@ public class BlackboardClient implements AutoCloseable {
     public void pushRoute(String carId, List<Point> route) {
         try (Jedis jedis = pool.getResource()) {
             String key = carId + ":RouteList";
-            // 逆序 LPUSH：终点先推，起点最后推，保证索引 0 是第一步
+            java.util.List<String> args = new java.util.ArrayList<>(route.size());
             for (int i = route.size() - 1; i >= 0; i--) {
-                jedis.lpush(key, route.get(i).toJson());
+                args.add(route.get(i).toJson());
             }
+            jedis.eval(
+                "redis.call('DEL',KEYS[1]) for i=1,#ARGV do redis.call('LPUSH',KEYS[1],ARGV[i]) end",
+                java.util.Collections.singletonList(key), args);
         }
     }
 
@@ -633,25 +662,31 @@ public class BlackboardClient implements AutoCloseable {
     /**
      * 从任务配置中读取地图宽度。
      *
-     * @return 地图宽度，不存在返回0
+     * @return 地图宽度，TaskConfig 未设置时回退构造函数默认值
      */
     public int getMapWidth() {
         try (Jedis jedis = pool.getResource()) {
             String val = jedis.hget(KEY_TASK_CONFIG, FIELD_MAP_WIDTH);
-            return val != null ? Integer.parseInt(val) : 0;
+            if (val != null) {
+                return Integer.parseInt(val);
+            }
         }
+        return mapWidth;
     }
 
     /**
      * 从任务配置中读取地图高度。
      *
-     * @return 地图高度，不存在返回0
+     * @return 地图高度，TaskConfig 未设置时回退构造函数默认值
      */
     public int getMapHeight() {
         try (Jedis jedis = pool.getResource()) {
             String val = jedis.hget(KEY_TASK_CONFIG, FIELD_MAP_HEIGHT);
-            return val != null ? Integer.parseInt(val) : 0;
+            if (val != null) {
+                return Integer.parseInt(val);
+            }
         }
+        return mapHeight;
     }
 
     /**
