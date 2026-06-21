@@ -109,7 +109,7 @@ public class TargetPlannerMain {
         }
 
         Point currentPos = posOpt.get();
-        Optional<Point> target = allocator.allocate(currentPos, bb, allocatedTargets);
+        Optional<Point> target = allocator.allocate(carId, currentPos, bb, allocatedTargets);
 
         if (target.isPresent()) {
             bb.setCarTarget(carId, target.get());

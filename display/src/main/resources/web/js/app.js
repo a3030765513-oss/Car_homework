@@ -31,7 +31,8 @@
     gridLine: '#94A3B8',
     explored: '#B0C4DE',
     obstacle: '#C0C0C0',
-    obstacleFill: '#A0A0A0'
+    obstacleFill: '#A0A0A0',
+    sealedFill: '#E53935'
   };
 
   // ══════════════ DOM
@@ -83,6 +84,11 @@
   var mode = 'live';
   var canvasReady = false;
   var mapLayerDirty = true;
+  var cachedMapBlock = null;
+  var cachedMapSealed = null;
+  var renderedMapView = null;
+  var lastMapRenderTick = -1;
+  var MAP_RENDER_INTERVAL = 3;
 
   var replay = { currentTick: 0, maxTick: 0, playing: false, timerId: null };
   var replayData = null;
@@ -91,6 +97,10 @@
   var startTimestamp = null;
   var wasEverConnected = false;
   var userRole = null;
+
+  var addCarPending = { active: false, carId: '', baselineCount: 0, timerId: null };
+  var ADD_CAR_TIMEOUT_MS = 30000;
+  var ADD_CAR_LABEL_DEFAULT = '+ 添加小车';
 
   // ══════════════ WebSocket
   function connectWebSocket() {
@@ -112,17 +122,157 @@
     wasEverConnected = true;
     var msg = JSON.parse(event.data);
     if (msg.type === 'REPLAY_DATA') { receiveReplayData(msg); return; }
-    liveData = msg;
+    if (msg.type === 'CAR_PENDING') { beginAddCarPending(msg.carId); return; }
+    if (msg.type === 'CAR_LAUNCH_FAILED') { failAddCarPending(msg.reason); return; }
+    liveData = normalizeMapPayload(msg);
     if (mode === 'live') {
       finalizeCanvas();
       if (canvasReady) {
-        renderMapLayer();
+        var tick = liveData.tick || 0;
+        if (shouldRepaintMapLayer(tick)) {
+          renderMapLayer();
+          lastMapRenderTick = tick;
+        } else if (liveData.mapView) {
+          paintIncrementalExplored(liveData.mapView);
+        }
         renderCarsLayer();
         renderCarsPanel(liveData);
         renderLeaderboard(liveData);
         updateGlobalInfo(liveData);
+        maybeCompleteAddCarPending(liveData);
       }
     }
+  }
+
+  function beginAddCarPending(carId) {
+    if (!$btnAddCar) return;
+    clearAddCarPendingTimer();
+    addCarPending.active = true;
+    addCarPending.carId = carId || '';
+    addCarPending.baselineCount = (liveData && liveData.cars) ? liveData.cars.length : 0;
+    $btnAddCar.disabled = true;
+    $btnAddCar.textContent = addCarPending.carId
+      ? ('添加 ' + addCarPending.carId + '...')
+      : '添加中...';
+    addCarPending.timerId = setTimeout(function () {
+      failAddCarPending('超时：请查看 logs/car-' + (addCarPending.carId || 'CarXXX') + '.log');
+    }, ADD_CAR_TIMEOUT_MS);
+  }
+
+  function maybeCompleteAddCarPending(data) {
+    if (!addCarPending.active || !data.cars) return;
+    if (data.cars.length > addCarPending.baselineCount) {
+      clearAddCarPending(true);
+    }
+  }
+
+  function failAddCarPending(reason) {
+    clearAddCarPending(false);
+    if (reason) {
+      window.alert('添加小车失败：' + reason);
+    }
+  }
+
+  function clearAddCarPending(wasSuccessful) {
+    if (!$btnAddCar) return;
+    clearAddCarPendingTimer();
+    addCarPending.active = false;
+    addCarPending.carId = '';
+    addCarPending.baselineCount = 0;
+    $btnAddCar.disabled = false;
+    $btnAddCar.textContent = wasSuccessful ? '✓ 已添加' : ADD_CAR_LABEL_DEFAULT;
+    if (wasSuccessful) {
+      setTimeout(function () {
+        if ($btnAddCar && $btnAddCar.textContent === '✓ 已添加') {
+          $btnAddCar.textContent = ADD_CAR_LABEL_DEFAULT;
+        }
+      }, 1500);
+    }
+  }
+
+  function clearAddCarPendingTimer() {
+    if (addCarPending.timerId) {
+      clearTimeout(addCarPending.timerId);
+      addCarPending.timerId = null;
+    }
+  }
+
+  function clearMapCaches() {
+    cachedMapBlock = null;
+    cachedMapSealed = null;
+    renderedMapView = null;
+    lastMapRenderTick = -1;
+    mapLayerDirty = true;
+  }
+
+  function paintIncrementalExplored(mapView) {
+    if (!canvasReady || !mapView) return;
+    var gridW = getGridW(liveData);
+    var gridH = getGridH(liveData);
+    if (!renderedMapView) {
+      renderedMapView = createEmptyView(gridW, gridH);
+    }
+    var ctx = mapCtx;
+    var cs = CELL_SIZE;
+    ctx.fillStyle = LIGHT.explored;
+    for (var r = 0; r < gridH; r++) {
+      if (!mapView[r]) continue;
+      for (var c = 0; c < gridW; c++) {
+        if (mapView[r][c] && !renderedMapView[r][c]) {
+          ctx.fillRect(c * cs, r * cs, cs, cs);
+          renderedMapView[r][c] = true;
+        }
+      }
+    }
+  }
+
+  function syncRenderedMapView(mapView, gridW, gridH) {
+    renderedMapView = mapView ? cloneView(mapView) : createEmptyView(gridW, gridH);
+  }
+
+  function shouldRepaintMapLayer(tick) {
+    if (mapLayerDirty) return true;
+    if (tick <= 1) return true;
+    if ((liveData.explorationRate || 0) >= 100) return true;
+    return tick - lastMapRenderTick >= MAP_RENDER_INTERVAL;
+  }
+
+  function normalizeMapPayload(data) {
+    var w = getGridW(data);
+    var h = getGridH(data);
+    if (data.mapViewB64) {
+      data.mapView = decodeBitmapB64(data.mapViewB64, w, h);
+    }
+    if (data.mapBlockB64) {
+      cachedMapBlock = decodeBitmapB64(data.mapBlockB64, w, h);
+    }
+    if (cachedMapBlock) {
+      data.mapBlock = cachedMapBlock;
+    }
+    if (data.mapSealedB64) {
+      cachedMapSealed = decodeBitmapB64(data.mapSealedB64, w, h);
+    }
+    if (cachedMapSealed) {
+      data.mapSealed = cachedMapSealed;
+    }
+    return data;
+  }
+
+  function decodeBitmapB64(b64, width, height) {
+    var binary = atob(b64);
+    var bitmap = [];
+    for (var row = 0; row < height; row++) {
+      var rowBits = [];
+      for (var col = 0; col < width; col++) {
+        var offset = row * width + col;
+        var byteIdx = (offset / 8) | 0;
+        var bitIdx = 7 - (offset % 8);
+        var byteVal = byteIdx < binary.length ? binary.charCodeAt(byteIdx) : 0;
+        rowBits.push(((byteVal >> bitIdx) & 1) === 1);
+      }
+      bitmap.push(rowBits);
+    }
+    return bitmap;
   }
 
   function onSocketClose() {
@@ -203,6 +353,19 @@
       }
     }
 
+    // 任务完成时，密封不可达区域红色填充
+    if ((data.explorationRate || 0) >= 100 && data.mapSealed) {
+      ctx.fillStyle = LIGHT.sealedFill;
+      for (var sr = 0; sr < gridH; sr++) {
+        if (!data.mapSealed[sr]) continue;
+        for (var sc = 0; sc < gridW; sc++) {
+          if (data.mapSealed[sr][sc]) {
+            ctx.fillRect(sc * cs, sr * cs, cs, cs);
+          }
+        }
+      }
+    }
+
     // 网格线（最上层，所有格子都有描边）
     ctx.strokeStyle = LIGHT.gridLine;
     ctx.lineWidth = 0.5;
@@ -212,6 +375,7 @@
     for (var j = 0; j <= gridH; j++) {
       var y = j * cs; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(gridW * cs, y); ctx.stroke();
     }
+    syncRenderedMapView(data.mapView, gridW, gridH);
     mapLayerDirty = false;
   }
 
@@ -232,26 +396,55 @@
     }
   }
 
+  function shouldDrawRoute(car) {
+    if (!car.routeList || car.routeList.length === 0) return false;
+    return car.status === 'READY' || car.status === 'MOVING' || car.status === 'BLOCKED';
+  }
+
   function drawRoute(car, ctx, cs) {
-    if (!car.position || !car.routeList || car.routeList.length === 0) return;
+    if (!car.position || !shouldDrawRoute(car)) return;
+    var routeList = car.routeList;
     var carColor = CAR_COLORS[(car.number - 1) % CAR_COLORS.length] || '#3498DB';
     ctx.strokeStyle = carColor + '80';
     ctx.lineWidth = Math.max(2, cs * 0.1);
     ctx.lineCap = 'round';
     var px = car.position.x * cs + cs / 2;
     var py = car.position.y * cs + cs / 2;
+    var drawFrom = findRouteDrawStart(car.position, routeList);
+    var steps = Math.min(routeList.length - drawFrom, MAX_ROUTE_DRAW);
     var prevX = car.position.x;
     var prevY = car.position.y;
-    var steps = Math.min(car.routeList.length, MAX_ROUTE_DRAW);
     for (var i = 0; i < steps; i++) {
-      var gx = car.routeList[i].x, gy = car.routeList[i].y;
+      var point = routeList[drawFrom + i];
+      var gx = point.x;
+      var gy = point.y;
       if (gx === prevX && gy === prevY) continue;
-      if (Math.abs(gx - prevX) + Math.abs(gy - prevY) !== 1) break;
-      var nx = gx * cs + cs / 2, ny = gy * cs + cs / 2;
-      ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(nx, ny); ctx.stroke();
-      px = nx; py = ny;
-      prevX = gx; prevY = gy;
+      if (Math.abs(gx - prevX) + Math.abs(gy - prevY) !== 1) continue;
+      var nx = gx * cs + cs / 2;
+      var ny = gy * cs + cs / 2;
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(nx, ny);
+      ctx.stroke();
+      px = nx;
+      py = ny;
+      prevX = gx;
+      prevY = gy;
     }
+  }
+
+  function findRouteDrawStart(position, routeList) {
+    for (var i = 0; i < routeList.length; i++) {
+      var gx = routeList[i].x;
+      var gy = routeList[i].y;
+      if (gx === position.x && gy === position.y) {
+        return i + 1 < routeList.length ? i + 1 : i;
+      }
+      if (Math.abs(gx - position.x) + Math.abs(gy - position.y) === 1) {
+        return i;
+      }
+    }
+    return 0;
   }
 
   function drawCar(car, ctx, cs) {
@@ -328,11 +521,14 @@
     if (data.tick === 1 && !startTimestamp) {
       startTimestamp = Date.now(); startElapsedTimer();
     }
-    if (data.explorationRate >= 99) {
+    if (data.explorationRate >= 100) {
       $rate.textContent = '探索率: ' + (data.explorationRate || 0) + '% ✓ 任务完成';
       $modeTag.textContent = '✓ 任务完成';
       $modeTag.hidden = false;
       if (elapsedTimerId) stopElapsedTimer();
+      $btnStart.disabled = false;
+      $btnPause.disabled = true;
+      $btnPause.textContent = '⏯ 暂停';
     }
   }
 
@@ -353,8 +549,13 @@
   }
 
   function onStartClick() {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      alert('WebSocket 未连接，请确认 Display 模块已启动并刷新页面');
+      return;
+    }
     startTimestamp = null;
     if (elapsedTimerId) stopElapsedTimer();
+    clearMapCaches();
     mapLayerDirty = true;
     $modeTag.hidden = true;
     var config = {
@@ -368,6 +569,7 @@
     sendCommand(config);
     $btnStart.disabled = true;
     $btnPause.disabled = false;
+    $btnPause.textContent = '⏯ 暂停';
   }
 
   function onPauseClick() {
@@ -378,6 +580,8 @@
 
   function onResetClick() {
     sendCommand({ type: 'RESET' });
+    clearMapCaches();
+    canvasReady = false;
     $btnStart.disabled = false;
     $btnPause.disabled = true;
     $btnPause.textContent = '⏯ 暂停';
@@ -404,7 +608,16 @@
     $modeTag.hidden = true;
   }
 
-  function onAddCarClick() { sendCommand({ type: 'ADD_CAR' }); }
+  function onAddCarClick() {
+    if (!$btnAddCar || $btnAddCar.disabled || addCarPending.active) return;
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      window.alert('WebSocket 未连接，无法添加小车');
+      return;
+    }
+    $btnAddCar.disabled = true;
+    $btnAddCar.textContent = '请求中...';
+    sendCommand({ type: 'ADD_CAR' });
+  }
 
   function onObstacleRatioInput() { $lblObstacleRatio.textContent = Math.round($cfgObstacleRatio.value * 100) + '%'; }
   function onTickIntervalInput() { $lblTickInterval.textContent = $cfgTickInterval.value + 'ms'; }
@@ -469,6 +682,7 @@
       replayData._tickViews[tick2] = cloneView(currentView);
     }
     replayData._mapBlock = msg.mapBlock || [];
+    replayData._mapSealed = msg.mapSealed || [];
 
     mode = 'replay';
     $btnReplay.hidden = true;
@@ -514,9 +728,10 @@
     var mapView = (replayData._tickViews && replayData._tickViews[tick]) || replayData._tickViews[0] || createEmptyView(w2, h2);
 
     var frame = {
-      tick: tick, explorationRate: 0,
+      tick: tick, explorationRate: tick >= replay.maxTick ? 100 : 0,
       taskConfig: { mapWidth: String(w2), mapHeight: String(h2) },
-      mapView: mapView, mapBlock: replayData._mapBlock || [], cars: []
+      mapView: mapView, mapBlock: replayData._mapBlock || [],
+      mapSealed: replayData._mapSealed || [], cars: []
     };
 
     var index = replayData._carIndex || {};
@@ -628,6 +843,13 @@
 
   // ══════════════ 启动
   resetCanvas();
+  if (window.Auth) {
+    Auth.checkAuth().then(function (user) {
+      if (!user || !user.success) return;
+      Auth.renderNavBar(user);
+      Auth.applyPermissions(user.role);
+    });
+  }
   window.addEventListener('resize', function () {
     if (!liveData) return;
     canvasReady = false; finalizeCanvas();

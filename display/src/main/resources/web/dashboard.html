@@ -92,7 +92,8 @@
       if (!user || !user.success) { localStorage.removeItem('auth_token'); window.location.href = '/login.html'; return; }
 
       var roleNames = { admin: '管理员', simulator: '仿真员', analyst: '统计分析员' };
-      document.getElementById('dash-role').textContent = roleNames[user.role] || user.role;
+      document.getElementById('dash-role').textContent =
+        user.displayName || roleNames[user.role] || user.role;
 
       var btns = '', html = '';
       if (user.role === 'admin') {

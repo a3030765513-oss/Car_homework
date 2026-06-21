@@ -148,8 +148,8 @@
   function renderNavBar(user) {
     var userEl = document.getElementById('info-user');
     if (userEl && user) {
-      var roleName = ROLE_NAMES[user.role] || user.role;
-      userEl.textContent = roleName + '(' + user.username + ')';
+      var label = user.displayName || ROLE_NAMES[user.role] || user.username || '用户';
+      userEl.textContent = '\uD83D\uDC64 ' + label;
     }
     var logoutBtn = document.getElementById('btn-logout');
     if (logoutBtn) {

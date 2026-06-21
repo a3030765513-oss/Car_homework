@@ -114,7 +114,6 @@ class StatusDispatcherTest {
 
     @Test
     void taskCompleteWhenExplorationReachesThreshold() {
-        // Set almost all cells as explored
         for (int r = 0; r < MAP_SIZE; r++) {
             for (int c = 0; c < MAP_SIZE; c++) {
                 bb.setMapViewBit(r, c, true);
@@ -124,8 +123,10 @@ class StatusDispatcherTest {
         dispatcher.onTaskReady();
         dispatcher.dispatch();
 
-        // After completion, task should be inactive
-        assertTrue(bb.getExplorationRate() >= 99);
+        assertTrue(bb.isExplorationComplete());
+        assertFalse(dispatcher.isActive(), "探索完成后应停止调度");
+        assertEquals(CarStatus.IDLE, bb.getCarStatus("Car006").orElseThrow());
+        assertTrue(bb.getCarRoute("Car006").isEmpty());
     }
 
     private void registerCar(String carId, Point pos, CarStatus status) {

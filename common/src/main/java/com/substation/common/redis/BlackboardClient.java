@@ -25,6 +25,8 @@ public class BlackboardClient implements AutoCloseable {
     private static final String KEY_MAP_VIEW = "mapView";
     /** Redis key: 地图障碍物状态（位图） */
     private static final String KEY_MAP_BLOCK = "mapBlock";
+    /** Redis key: 被障碍物包裹、小车不可达的格子（位图） */
+    private static final String KEY_MAP_SEALED = "mapSealed";
     /** Redis key: 地图热力图（Hash） */
     private static final String KEY_MAP_HEAT = "mapHeat";
     /** Redis key: 任务配置（Hash） */
@@ -80,7 +82,12 @@ public class BlackboardClient implements AutoCloseable {
      * 优先使用TaskConfig中的地图宽度，未配置时回退到构造函数默认值。
      */
     private long bitmapOffset(int row, int col) {
-        return (long) row * effectiveWidth() + col;
+        return bitmapOffset(row, col, effectiveWidth());
+    }
+
+    /** 按指定地图宽度计算位图偏移（写入密封区时必须与读取宽度一致） */
+    static long bitmapOffset(int row, int col, int mapWidth) {
+        return (long) row * mapWidth + col;
     }
 
     /** 获取有效地图宽度：每次从TaskConfig读取，保证FLUSHDB后不残留旧值 */
@@ -140,6 +147,14 @@ public class BlackboardClient implements AutoCloseable {
         }
     }
 
+    /** 一次GET读取整个mapSealed位图的字节数组 */
+    public byte[] getMapSealedBytes() {
+        try (Jedis jedis = pool.getResource()) {
+            byte[] bytes = jedis.get(KEY_MAP_SEALED.getBytes());
+            return bytes != null ? bytes : new byte[0];
+        }
+    }
+
     /** 从字节数组构建boolean二维数组 */
     public static boolean[][] bytesToBitmap(byte[] bytes, int width, int height) {
         boolean[][] bitmap = new boolean[height][width];
@@ -177,6 +192,27 @@ public class BlackboardClient implements AutoCloseable {
         return blocked;
     }
 
+    /** 一次 Redis 读取构建密封区（不可达空格）位图 */
+    public boolean[][] loadSealedBitmap() {
+        int width = getMapWidth();
+        int height = getMapHeight();
+        return bytesToBitmap(getMapSealedBytes(), width, height);
+    }
+
+    /** 写入密封区位图（初始化地图时调用，mapWidth 必须与 TaskConfig 一致） */
+    public void writeSealedBitmap(boolean[][] sealed, int mapWidth) {
+        try (Jedis jedis = pool.getResource()) {
+            jedis.del(KEY_MAP_SEALED);
+            for (int row = 0; row < sealed.length; row++) {
+                for (int col = 0; col < sealed[row].length; col++) {
+                    if (sealed[row][col]) {
+                        jedis.setbit(KEY_MAP_SEALED, bitmapOffset(row, col, mapWidth), true);
+                    }
+                }
+            }
+        }
+    }
+
     private void markCarPositionsOnMap(boolean[][] blocked) {
         for (String carId : discoverCarIds()) {
             getCarPosition(carId).ifPresent(pos -> blocked[pos.y()][pos.x()] = true);
@@ -184,37 +220,95 @@ public class BlackboardClient implements AutoCloseable {
     }
 
     /**
-     * 计算地图探索率（百分比），排除障碍物格子。
+     * 计算地图探索率（百分比）。
+     * 分母 = 总格子 − 障碍 − 被障碍物包裹的不可达空格。
      *
      * @return 探索率 0-100
      */
     public int getExplorationRate() {
-        try (Jedis jedis = pool.getResource()) {
-            int w = readMapWidth(jedis);
-            int h = readMapHeight(jedis);
-            long total = (long) w * h;
-            long blocked = jedis.bitcount(KEY_MAP_BLOCK);
-            long explorable = total - blocked;
-            if (explorable <= 0) {
-                return 100;
-            }
-            long explored = jedis.bitcount(KEY_MAP_VIEW);
-            return (int) (explored * 100 / explorable);
+        long[] progress = countExplorationProgress();
+        long explorable = progress[0];
+        long exploredOnExplorable = progress[1];
+        if (explorable <= 0) {
+            return 100;
         }
+        return (int) (exploredOnExplorable * 100 / explorable);
     }
 
-    /** 返回详细探索统计：{total, blocked, explorable, explored, rate} */
-    public long[] getExplorationStats() {
-        try (Jedis jedis = pool.getResource()) {
-            int w = readMapWidth(jedis);
-            int h = readMapHeight(jedis);
-            long total = (long) w * h;
-            long blocked = jedis.bitcount(KEY_MAP_BLOCK);
-            long explorable = total - blocked;
-            long explored = jedis.bitcount(KEY_MAP_VIEW);
-            long rate = explorable <= 0 ? 100 : explored * 100 / explorable;
-            return new long[]{w, h, total, blocked, explorable, explored, rate};
+    /** 是否仍存在可探索且未探索的格子（不含障碍与密封区） */
+    public boolean hasUnexploredExplorableCells() {
+        int width = getMapWidth();
+        int height = getMapHeight();
+        boolean[][] explored = bytesToBitmap(getMapViewBytes(), width, height);
+        boolean[][] obstacles = bytesToBitmap(getMapBlockBytes(), width, height);
+        boolean[][] sealed = bytesToBitmap(getMapSealedBytes(), width, height);
+        for (int row = 0; row < height; row++) {
+            for (int col = 0; col < width; col++) {
+                if (isExplorableCell(obstacles, sealed, row, col)
+                        && !explored[row][col]) {
+                    return true;
+                }
+            }
         }
+        return false;
+    }
+
+    /** 探索是否已结束：所有可探索区域均已探索（探索率 100%） */
+    public boolean isExplorationComplete() {
+        return getExplorationRate() >= 100 && !hasUnexploredExplorableCells();
+    }
+
+    /** 返回详细探索统计：{width, height, total, blocked, sealed, explorable, explored, rate} */
+    public long[] getExplorationStats() {
+        int width = getMapWidth();
+        int height = getMapHeight();
+        long total = (long) width * height;
+        long blocked = countTrueCells(loadObstacleBitmap());
+        long sealed = countTrueCells(loadSealedBitmap());
+        long[] progress = countExplorationProgress();
+        long explorable = progress[0];
+        long exploredOnExplorable = progress[1];
+        long rate = explorable <= 0 ? 100 : exploredOnExplorable * 100 / explorable;
+        return new long[]{width, height, total, blocked, sealed, explorable, exploredOnExplorable, rate};
+    }
+
+    private long[] countExplorationProgress() {
+        int width = getMapWidth();
+        int height = getMapHeight();
+        boolean[][] explored = bytesToBitmap(getMapViewBytes(), width, height);
+        boolean[][] obstacles = bytesToBitmap(getMapBlockBytes(), width, height);
+        boolean[][] sealed = bytesToBitmap(getMapSealedBytes(), width, height);
+        long explorable = 0;
+        long exploredOnExplorable = 0;
+        for (int row = 0; row < height; row++) {
+            for (int col = 0; col < width; col++) {
+                if (!isExplorableCell(obstacles, sealed, row, col)) {
+                    continue;
+                }
+                explorable++;
+                if (explored[row][col]) {
+                    exploredOnExplorable++;
+                }
+            }
+        }
+        return new long[]{explorable, exploredOnExplorable};
+    }
+
+    private static boolean isExplorableCell(boolean[][] obstacles, boolean[][] sealed,
+                                             int row, int col) {
+        return !obstacles[row][col] && !sealed[row][col];
+    }
+
+    private static long countTrueCells(boolean[][] bitmap) {
+        long count = 0;
+        for (boolean[] row : bitmap) {
+            for (boolean cell : row) {
+                if (cell) {
+                    count++;
+                }
+            }
+        }
+        return count;
     }
 
     private int readMapWidth(Jedis jedis) {

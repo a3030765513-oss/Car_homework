@@ -95,7 +95,6 @@ public class TaskConfiguratorMain {
         log.info("[TaskConfigurator] 初始化完成");
 
         String reply = MessageBuilder.build(MessageTypes.TASK_READY, tick);
-        messageBus.purgeQueue(QueueNames.CONTROLLER_CMD);
         messageBus.publish(QueueNames.CONTROLLER_CMD, reply);
         log.info("[TaskConfigurator] 已发送 TASK_READY，车辆数={}", configCarCount(bb));
     }

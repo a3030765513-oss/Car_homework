@@ -73,15 +73,19 @@ public class CommandHandler {
                         && data.getBooleanValue("overlapReassign", false);
                     if (overlapReassign) {
                         dispatcher.onRouteOverlapReassign(carId);
-                    } else if (data != null && data.getBooleanValue("optimized", false)) {
-                        dispatcher.markSupervised(carId);
+                    } else {
+                        if (data != null && data.getBooleanValue("optimized", false)) {
+                            dispatcher.markSupervised(carId);
+                        }
+                        dispatcher.onRouteSupervisionFinished(carId);
                     }
                 }
                 case MessageTypes.SET_CONFIG -> {
                     if (data != null) {
                         scheduler.stop();
-                        dispatcher.clearPendingState();
+                        dispatcher.prepareForNewConfig();
                         dispatcher.forwardConfig(data);
+                        System.out.println("[Controller] 收到 SET_CONFIG，等待 TaskConfigurator 初始化...");
                     }
                 }
                 case MessageTypes.RESET -> {
