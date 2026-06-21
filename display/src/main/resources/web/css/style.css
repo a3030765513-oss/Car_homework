@@ -340,6 +340,12 @@ body {
 }
 .btn.info:hover:not(:disabled) { background: #388bfd; }
 
+.btn.unity-btn {
+  background: #6e40c9;
+  color: #c9d1d9;
+}
+.btn.unity-btn:hover:not(:disabled) { background: #855ee0; }
+
 /* ────────── Replay Controls ────────── */
 
 .replay-bar {

@@ -70,6 +70,7 @@
   var $btnStart   = document.getElementById('btn-start');
   var $btnPause   = document.getElementById('btn-pause');
   var $btnReset   = document.getElementById('btn-reset');
+  var $btnUnity   = document.getElementById('btn-unity');
   var $btnAddCar  = document.getElementById('btn-addcar');
   var $btnReplay  = document.getElementById('btn-replay');
   var $btnLive    = document.getElementById('btn-live');
@@ -812,6 +813,7 @@
   $btnStart.addEventListener('click', onStartClick);
   $btnPause.addEventListener('click', onPauseClick);
   $btnReset.addEventListener('click', onResetClick);
+  $btnUnity.addEventListener('click', onUnityClick);
   if ($btnAddCar) {
     $btnAddCar.addEventListener('click', onAddCarClick);
   }
@@ -833,4 +835,26 @@
   // ═══════════════════════════════════════════════════════════
 
   connectWebSocket();
+
+  // ═══════════════════════════════════════════════════════════
+  // Unity 3D 视图切换
+  // ═══════════════════════════════════════════════════════════
+
+  function onUnityClick() {
+    var canvas  = document.getElementById('map-canvas');
+    var iframe  = document.getElementById('unity-frame');
+    var is3D    = iframe.style.display !== 'none';
+
+    if (is3D) {
+      // 切回 2D
+      iframe.style.display = 'none';
+      canvas.style.display = '';
+      $btnUnity.textContent = '🎮 3D视图';
+    } else {
+      // 切到 3D
+      canvas.style.display = 'none';
+      iframe.style.display = '';
+      $btnUnity.textContent = '📐 2D视图';
+    }
+  }
 })();
