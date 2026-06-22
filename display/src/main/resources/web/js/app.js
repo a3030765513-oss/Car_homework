@@ -98,7 +98,6 @@
   var elapsedTimerId = null;
   var startTimestamp = null;
   var wasEverConnected = false;
-  var userRole = null;
 
   var addCarPending = { active: false, carId: '', baselineCount: 0, timerId: null };
   var ADD_CAR_TIMEOUT_MS = 30000;
@@ -603,13 +602,27 @@
           status: car.status || ''
         });
       }
+      var wastedSteps = steps - effective;
+      var efficiencyPercent = steps > 0 ? Math.round(effective / steps * 100) : 0;
+      var balanceScore = computeBalanceScore(cars);
+      var algorithm = ($cfgAlgorithm && $cfgAlgorithm.value) || (data.taskConfig && data.taskConfig.algorithm) || '';
+      var obstacleRatio = parseFloat(($cfgObstacleRatio && $cfgObstacleRatio.value) || (data.taskConfig && data.taskConfig.obstacleRatio) || 0);
+      var mapWidth = parseInt((data.taskConfig && data.taskConfig.mapWidth) || DEFAULT_GRID_W, 10);
+      var mapHeight = parseInt((data.taskConfig && data.taskConfig.mapHeight) || DEFAULT_GRID_H, 10);
       var rec = {
         explorationRate: rate,
         tick: data.tick || 0,
         duration: elapsed,
         totalSteps: steps,
         totalEffectiveSteps: effective,
+        efficiencyPercent: efficiencyPercent,
+        wastedSteps: wastedSteps,
         carCount: count,
+        algorithm: algorithm,
+        obstacleRatio: obstacleRatio,
+        mapWidth: mapWidth,
+        mapHeight: mapHeight,
+        balanceScore: balanceScore,
         cars: cars,
         timestamp: Date.now(),
         date: new Date().toLocaleString()
@@ -622,6 +635,25 @@
       alert('已保存！可在「统计分析」页面查看。');
     };
     document.getElementById('ap-discard').onclick = function () { overlay.remove(); };
+  }
+
+  function computeBalanceScore(cars) {
+    if (!cars || cars.length < 2) { return 1; }
+    var effectiveVals = [];
+    for (var i = 0; i < cars.length; i++) {
+      effectiveVals.push(cars[i].effectiveSteps || 0);
+    }
+    var sum = 0;
+    for (var j = 0; j < effectiveVals.length; j++) { sum += effectiveVals[j]; }
+    var avg = sum / effectiveVals.length;
+    if (avg === 0) { return 1; }
+    var variance = 0;
+    for (var k = 0; k < effectiveVals.length; k++) {
+      variance += (effectiveVals[k] - avg) * (effectiveVals[k] - avg);
+    }
+    variance /= effectiveVals.length;
+    var std = Math.sqrt(variance);
+    return Math.max(0, Math.round((1 - std / avg) * 100)) / 100;
   }
 
   function startElapsedTimer() {
