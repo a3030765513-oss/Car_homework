@@ -10,8 +10,6 @@ import com.substation.common.redis.BlackboardClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import redis.clients.jedis.Jedis;
-
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
@@ -108,8 +106,6 @@ public class TaskConfiguratorMain {
     }
 
     private void selectiveClear() {
-        try (Jedis jedis = bb.getJedisPool().getResource()) {
-            jedis.flushDB();
-        }
+        bb.clearSimulationState();
     }
 }

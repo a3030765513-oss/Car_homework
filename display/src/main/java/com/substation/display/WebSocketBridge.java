@@ -206,10 +206,19 @@ public class WebSocketBridge extends WebSocketServer {
         if (clients.isEmpty()) {
             return;
         }
-        if (tick % 20 == 0 || tick == 1) {
-            LOG.info("pushState tick={} rate={}%", tick, explorationRate);
+        int syncedRate = resolveExplorationRate();
+        if (tick % 20 == 0 || tick == 1 || syncedRate >= 100) {
+            LOG.info("pushState tick={} rate={}%", tick, syncedRate);
         }
-        broadcast(serializeState(tick, explorationRate));
+        broadcast(serializeState(tick, syncedRate));
+    }
+
+    /** 与 mapView 同源：从黑板实时读取探索率，避免 MQ 消息滞后于 Redis 位图 */
+    private int resolveExplorationRate() {
+        if (blackboard.isExplorationComplete()) {
+            return 100;
+        }
+        return blackboard.getExplorationRate();
     }
 
     private String serializeState(int tick, int explorationRate) {

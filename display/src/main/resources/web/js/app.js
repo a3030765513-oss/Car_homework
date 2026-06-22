@@ -92,6 +92,8 @@
 
   var replay = { currentTick: 0, maxTick: 0, playing: false, timerId: null };
   var replayData = null;
+  var taskCompleteShown = false;
+  var simulationFrozenTick = null;
 
   var elapsedTimerId = null;
   var startTimestamp = null;
@@ -518,22 +520,108 @@
     $leaderboard.innerHTML = html;
   }
 
+  function isSimulationComplete(data) {
+    if (!data) { return false; }
+    if (data.taskConfig && data.taskConfig.active === 'false') { return true; }
+    return (data.explorationRate || 0) >= 100;
+  }
+
+  function applyTaskCompleteUi(data, tick, rate) {
+    $tick.textContent = '节拍: ' + tick;
+    $rate.textContent = '探索率: ' + rate + '% ✓ 任务完成';
+    $modeTag.textContent = '✓ 任务完成';
+    $modeTag.hidden = false;
+    if (elapsedTimerId) stopElapsedTimer();
+    $btnStart.disabled = false;
+    $btnPause.disabled = true;
+    $btnPause.textContent = '⏯ 暂停';
+    if (!taskCompleteShown) {
+      taskCompleteShown = true;
+      var snapshot = Object.assign({}, data, { tick: tick, explorationRate: rate });
+      showSavePopup(snapshot, rate);
+    }
+  }
+
   function updateGlobalInfo(data) {
-    $tick.textContent = '节拍: ' + (data.tick || 0);
-    $rate.textContent = '探索率: ' + (data.explorationRate || 0) + '%';
+    if (taskCompleteShown && simulationFrozenTick !== null) {
+      applyTaskCompleteUi(data, simulationFrozenTick, 100);
+      return;
+    }
+
+    var rate = data.explorationRate || 0;
+    var tick = data.tick || 0;
+    if (isSimulationComplete(data)) {
+      simulationFrozenTick = tick;
+      applyTaskCompleteUi(data, tick, 100);
+      return;
+    }
+
+    $tick.textContent = '节拍: ' + tick;
+    $rate.textContent = '探索率: ' + rate + '%';
     if (data.cars) { $cfgCarCount.value = data.cars.length; }
     if (data.tick === 1 && !startTimestamp) {
       startTimestamp = Date.now(); startElapsedTimer();
     }
-    if (data.explorationRate >= 100) {
-      $rate.textContent = '探索率: ' + (data.explorationRate || 0) + '% ✓ 任务完成';
-      $modeTag.textContent = '✓ 任务完成';
-      $modeTag.hidden = false;
-      if (elapsedTimerId) stopElapsedTimer();
-      $btnStart.disabled = false;
-      $btnPause.disabled = true;
-      $btnPause.textContent = '⏯ 暂停';
+  }
+
+  function showSavePopup(data, rate) {
+    var elapsed = 0;
+    if (startTimestamp) {
+      elapsed = Math.floor((Date.now() - startTimestamp) / 1000);
     }
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'display:flex;position:fixed;top:0;left:0;width:100%;height:100%;'
+      + 'background:rgba(0,0,0,0.5);z-index:9999;justify-content:center;align-items:center';
+    overlay.innerHTML =
+      '<div style="background:#FFF;border-radius:16px;padding:36px;width:400px;text-align:center;'
+      + 'box-shadow:0 8px 40px rgba(0,0,0,0.2)">'
+      + '<div style="font-size:52px;margin-bottom:16px">✅</div>'
+      + '<h2 style="color:#1E293B;margin-bottom:10px">探索完成！</h2>'
+      + '<p style="color:#64748B;font-size:14px;margin-bottom:24px">探索率:' + rate
+      + '% | 耗时:' + elapsed + 's | 是否保存？</p>'
+      + '<div style="display:flex;gap:12px">'
+      + '<button id="ap-save" style="flex:1;height:48px;background:#3B82F6;color:#fff;border:none;'
+      + 'border-radius:10px;font-size:15px;cursor:pointer;font-weight:600">💾 保存记录</button>'
+      + '<button id="ap-discard" style="flex:1;height:48px;background:#F1F5F9;color:#64748B;'
+      + 'border:1px solid #CBD5E1;border-radius:10px;font-size:15px;cursor:pointer;font-weight:600">'
+      + '🗑 不保存</button></div></div>';
+    document.body.appendChild(overlay);
+    document.getElementById('ap-save').onclick = function () {
+      overlay.remove();
+      var steps = 0, effective = 0, count = data.cars ? data.cars.length : 0;
+      var cars = [];
+      for (var i = 0; i < (data.cars || []).length; i++) {
+        var car = data.cars[i];
+        var carSteps = car.steps || 0;
+        var carEffective = car.effectiveSteps || 0;
+        steps += carSteps;
+        effective += carEffective;
+        cars.push({
+          carId: 'Car' + String(car.number).padStart(3, '0'),
+          steps: carSteps,
+          effectiveSteps: carEffective,
+          status: car.status || ''
+        });
+      }
+      var rec = {
+        explorationRate: rate,
+        tick: data.tick || 0,
+        duration: elapsed,
+        totalSteps: steps,
+        totalEffectiveSteps: effective,
+        carCount: count,
+        cars: cars,
+        timestamp: Date.now(),
+        date: new Date().toLocaleString()
+      };
+      var records = [];
+      try { records = JSON.parse(localStorage.getItem('sim_records') || '[]'); } catch (e) { /* ignore */ }
+      records.unshift(rec);
+      if (records.length > 50) { records.length = 50; }
+      localStorage.setItem('sim_records', JSON.stringify(records));
+      alert('已保存！可在「统计分析」页面查看。');
+    };
+    document.getElementById('ap-discard').onclick = function () { overlay.remove(); };
   }
 
   function startElapsedTimer() {
@@ -559,6 +647,8 @@
     }
     startTimestamp = null;
     if (elapsedTimerId) stopElapsedTimer();
+    taskCompleteShown = false;
+    simulationFrozenTick = null;
     clearMapCaches();
     mapLayerDirty = true;
     $modeTag.hidden = true;
@@ -593,6 +683,8 @@
     startTimestamp = null;
     $elapsed.textContent = '⏱ 00:00';
     if (mode === 'replay') exitReplay();
+    taskCompleteShown = false;
+    simulationFrozenTick = null;
     liveData = null;
     replayData = null;
     replay.currentTick = 0;
@@ -876,5 +968,11 @@
     canvasReady = false; finalizeCanvas();
     if (canvasReady) { mapLayerDirty = true; renderMapLayer(); renderCarsLayer(); }
   });
+  setInterval(function () {
+    var token = localStorage.getItem('auth_token');
+    if (token) {
+      fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
+    }
+  }, 600000);
   connectWebSocket();
 })();

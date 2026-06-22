@@ -35,6 +35,10 @@ public class BlackboardClient implements AutoCloseable {
     private static final String KEY_CONTROLLER_INSTANCE = "controller:instance";
     /** Redis key: 探索事件列表（回放用），每元素为 {tick,row,col} */
     private static final String KEY_EXPLORATION_EVENTS = "explorationEvents";
+    /** 仿真数据 SCAN 模式（不含 auth:* 等非仿真键） */
+    private static final String[] SIMULATION_SCAN_PATTERNS = {
+        "Car*:*", "pos:reserve:*", "lock:*"
+    };
     /** 控制器锁的TTL（秒），防止宕机后锁永不释放 */
     private static final int CONTROLLER_LOCK_TTL_SECONDS = 30;
     /** Hash字段名: X坐标 */
@@ -899,6 +903,27 @@ public class BlackboardClient implements AutoCloseable {
     public void initTaskConfig(Map<String, String> config) {
         try (Jedis jedis = pool.getResource()) {
             jedis.hset(KEY_TASK_CONFIG, config);
+        }
+    }
+
+    /**
+     * 清空仿真黑板数据，保留登录会话（auth:session:*）等非仿真键。
+     * 替代 flushDB，避免点击「开始」后用户被登出。
+     */
+    public void clearSimulationState() {
+        try (Jedis jedis = pool.getResource()) {
+            jedis.del(KEY_MAP_VIEW, KEY_MAP_BLOCK, KEY_MAP_SEALED,
+                KEY_MAP_HEAT, KEY_TASK_CONFIG, KEY_EXPLORATION_EVENTS);
+            for (String pattern : SIMULATION_SCAN_PATTERNS) {
+                deleteKeysMatching(jedis, pattern);
+            }
+        }
+    }
+
+    private static void deleteKeysMatching(Jedis jedis, String pattern) {
+        Set<String> keys = jedis.keys(pattern);
+        if (!keys.isEmpty()) {
+            jedis.del(keys.toArray(String[]::new));
         }
     }
 

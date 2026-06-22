@@ -21,8 +21,8 @@ import java.util.concurrent.ConcurrentHashMap;
 /** 状态分派器：每节拍发现车辆、按状态分发处理、发送移动指令、广播刷新 */
 public class StatusDispatcher {
 
-    /** 探索完成阈值（百分比），与前端「99% 任务完成」一致 */
-    private static final int EXPLORATION_COMPLETE = 99;
+    /** 探索完成阈值（百分比），与前端「100% 任务完成」一致 */
+    private static final int EXPLORATION_COMPLETE = 100;
     /** 所有车 IDLE 且无事可做的连续 tick 数，超时强制完成 */
     private static final int ALL_IDLE_COMPLETE_TICKS = 30;
     /** 阻塞随机超时范围（打破死锁） */
@@ -151,12 +151,16 @@ public class StatusDispatcher {
             bb.getCarStatus(cid).orElse(null) == CarStatus.IDLE);
         if (allIdle && pendingTargetRequests.isEmpty() && pendingPlanRequests.isEmpty()) {
             allIdleTicks++;
-            if (allIdleTicks >= ALL_IDLE_COMPLETE_TICKS) {
+            if (allIdleTicks >= ALL_IDLE_COMPLETE_TICKS && isExplorationComplete()) {
                 completeTask();
                 return;
             }
         } else {
             allIdleTicks = 0;
+        }
+
+        if (taskActive && isExplorationComplete()) {
+            completeTask();
         }
     }
 
@@ -241,8 +245,12 @@ public class StatusDispatcher {
 
     /** 车辆移动完成回调：清除TICK_MOVE发送标记，允许下一轮发送，并刷新前端 */
     public void onMoveAcknowledged(String carId) {
+        if (!taskActive) {
+            return;
+        }
         pendingMoveRequests.remove(carId);
         broadcastRefresh();
+        tryCompleteIfExplorationDone();
     }
 
     /** 监督器建议优化路线，标记该车 */
@@ -519,7 +527,13 @@ public class StatusDispatcher {
 
     /** 广播探索进度刷新消息给前端（fanout） */
     private void broadcastRefresh() {
+        if (!taskActive) {
+            return;
+        }
         int rate = bb.getExplorationRate();
+        if (bb.isExplorationComplete()) {
+            rate = EXPLORATION_COMPLETE;
+        }
         Map<String, Object> data = Map.of("explorationRate", rate);
         try {
             String msg = MessageBuilder.build(MessageTypes.REFRESH_ALL, tick, null, data);
@@ -540,12 +554,13 @@ public class StatusDispatcher {
         taskActive = false;
         freezeAllCars();
         clearPendingState();
+        bb.setTaskActive(false);
         long elapsed = (System.currentTimeMillis() - taskStartTime) / 1000;
         bb.setElapsedSeconds(elapsed);
-        int rate = bb.getExplorationRate();
+        int rate = bb.isExplorationComplete() ? EXPLORATION_COMPLETE : bb.getExplorationRate();
         System.out.println("[Controller] 探索完成，任务结束 tick=" + tick
             + " 探索率=" + rate + "% 耗时=" + elapsed + "s");
-        Map<String, Object> data = Map.of("explorationRate", Math.max(rate, EXPLORATION_COMPLETE));
+        Map<String, Object> data = Map.of("explorationRate", rate);
         try {
             String msg = MessageBuilder.build(MessageTypes.REFRESH_ALL, tick, null, data);
             bus.publishFanout(QueueNames.UPDATE_VIEW_EXCHANGE, msg);
