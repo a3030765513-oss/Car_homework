@@ -1,5 +1,6 @@
 package com.substation.car;
 
+import com.substation.common.infra.InfraConnectionConfig;
 import com.substation.common.map.SpawnPositionSelector;
 import com.substation.common.model.CarStatus;
 import com.substation.common.model.Point;
@@ -100,16 +101,17 @@ public class CarMain {
     /** 独立运行入口（阻塞等待 Ctrl+C） */
     public static void main(String[] args) throws IOException, TimeoutException {
         String carId = parseCarId(args);
-        int redisPort = parseRedisPort(args);
+        var infra = InfraConnectionConfig.fromArgs(args);
         boolean dynamicAdd = isDynamicAdd(args);
 
         log.info("╔══════════════════════════════════════╗");
         log.info("║  {} 模块启动中...", padRight(carId, 24));
-        log.info("║  Redis: localhost:{}", padRight(String.valueOf(redisPort), 26));
-        log.info("║  RabbitMQ: localhost:5672");
+        log.info("║  Redis: {}:{}", padRight(infra.redisHost(), 10), infra.redisPort());
+        log.info("║  RabbitMQ: {}:{}", padRight(infra.mqHost(), 10), infra.mqPort());
         log.info("╚══════════════════════════════════════╝");
 
-        CarMain car = new CarMain(carId, "localhost", redisPort, "localhost", 5672, dynamicAdd);
+        CarMain car = new CarMain(carId,
+                infra.redisHost(), infra.redisPort(), infra.mqHost(), infra.mqPort(), dynamicAdd);
         car.start();
 
         while (car.mb != null && car.mb.isConnected()) {
@@ -143,25 +145,6 @@ public class CarMain {
             }
         }
         return "Car001";
-    }
-
-    private static int parseRedisPort(String[] args) {
-        boolean foundCarId = false;
-        for (String arg : args) {
-            if (isOptionArg(arg)) {
-                continue;
-            }
-            if (!foundCarId) {
-                foundCarId = true;
-                continue;
-            }
-            try {
-                return Integer.parseInt(arg);
-            } catch (NumberFormatException e) {
-                log.warn("非法端口号: {}, 使用默认端口 {}", arg, 6379);
-            }
-        }
-        return 6379;
     }
 
     private static boolean isOptionArg(String arg) {

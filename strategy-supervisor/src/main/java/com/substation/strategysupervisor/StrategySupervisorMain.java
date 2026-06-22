@@ -89,7 +89,9 @@ public class StrategySupervisorMain {
     }
 
     public static void main(String[] args) throws IOException, TimeoutException {
-        new StrategySupervisorMain("localhost", 6379, "localhost", 5672).start();
+        var infra = com.substation.common.infra.InfraConnectionConfig.fromArgs(args);
+        new StrategySupervisorMain(
+                infra.redisHost(), infra.redisPort(), infra.mqHost(), infra.mqPort()).start();
         synchronized (StrategySupervisorMain.class) {
             try { StrategySupervisorMain.class.wait(); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
         }

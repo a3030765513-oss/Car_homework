@@ -103,8 +103,10 @@ public class DisplayMain {
     }
 
     public static void main(String[] args) throws IOException, TimeoutException, InterruptedException {
+        var infra = com.substation.common.infra.InfraConnectionConfig.fromArgs(args);
         Path webRoot = findWebRoot();
-        DisplayMain display = new DisplayMain("localhost", 6379, "localhost", 5672,
+        DisplayMain display = new DisplayMain(
+                infra.redisHost(), infra.redisPort(), infra.mqHost(), infra.mqPort(),
                 DEFAULT_HTTP_PORT, DEFAULT_WS_PORT, webRoot);
         display.start();
         Thread.currentThread().join();

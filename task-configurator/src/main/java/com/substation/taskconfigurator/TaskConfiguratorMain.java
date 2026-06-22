@@ -75,7 +75,9 @@ public class TaskConfiguratorMain {
 
     /** 独立运行入口 */
     public static void main(String[] args) throws IOException, TimeoutException {
-        new TaskConfiguratorMain("localhost", 6379, "localhost", 5672).start();
+        var infra = com.substation.common.infra.InfraConnectionConfig.fromArgs(args);
+        new TaskConfiguratorMain(
+                infra.redisHost(), infra.redisPort(), infra.mqHost(), infra.mqPort()).start();
         synchronized (TaskConfiguratorMain.class) {
             try { TaskConfiguratorMain.class.wait(); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
         }
