@@ -398,7 +398,8 @@
 
   function shouldDrawRoute(car) {
     if (!car.routeList || car.routeList.length === 0) return false;
-    return car.status === 'READY' || car.status === 'MOVING' || car.status === 'BLOCKED';
+    if (car.status === 'READY' || car.status === 'MOVING' || car.status === 'BLOCKED') return true;
+    return car.status === 'WAITING_ROUTE';
   }
 
   function drawRoute(car, ctx, cs) {
@@ -506,10 +507,13 @@
 
   function renderLeaderboard(data) {
     if (!data.cars || data.cars.length === 0) { $leaderboard.innerHTML = ''; return; }
-    var sorted = data.cars.slice().sort(function (a, b) { return b.steps - a.steps; });
+    var sorted = data.cars.slice().sort(function (a, b) {
+      return (b.effectiveSteps || 0) - (a.effectiveSteps || 0);
+    });
     var html = '';
     for (var i = 0; i < sorted.length; i++) {
-      html += '<li>Car ' + sorted[i].number + ': ' + sorted[i].steps + ' 步</li>';
+      var effective = sorted[i].effectiveSteps || 0;
+      html += '<li>Car ' + sorted[i].number + ': ' + effective + '/' + sorted[i].steps + ' 步</li>';
     }
     $leaderboard.innerHTML = html;
   }
@@ -632,11 +636,13 @@
     replay.currentTick = 0;
     replay.playing = false;
 
+    var w = msg.mapWidth || 30;
+    var h = msg.mapHeight || 30;
+
     // 定尺寸
     var mapArea = document.querySelector('.map-area');
     if (mapArea) {
       var availW = mapArea.clientWidth - 20, availH = mapArea.clientHeight - 20;
-      var w = msg.mapWidth || 30, h = msg.mapHeight || 30;
       CELL_SIZE = Math.max(4, Math.min(Math.floor(availW / w), Math.floor(availH / h)));
       var cw = w * CELL_SIZE, ch = h * CELL_SIZE;
       mapCanvas.width = cw; mapCanvas.height = ch;
@@ -665,7 +671,6 @@
     if (!Array.isArray(events)) events = [];
     replayData._tickViews = [];
     var currentView = createEmptyView(w, h);
-    replayData._tickViews[0] = cloneView(currentView);
     var eventIdx = 0;
     var parsedEvents = [];
     for (var i2 = 0; i2 < events.length; i2++) {
@@ -673,13 +678,18 @@
       parsedEvents.push({ tick: parseInt(parts[0], 10), row: parseInt(parts[1], 10), col: parseInt(parts[2], 10) });
     }
     parsedEvents.sort(function (a, b) { return a.tick - b.tick; });
-    for (var tick2 = 1; tick2 <= replay.maxTick; tick2++) {
+    for (var tick2 = 0; tick2 <= replay.maxTick; tick2++) {
       while (eventIdx < parsedEvents.length && parsedEvents[eventIdx].tick <= tick2) {
         var ev = parsedEvents[eventIdx];
         if (ev.row >= 0 && ev.row < h && ev.col >= 0 && ev.col < w) currentView[ev.row][ev.col] = true;
         eventIdx++;
       }
       replayData._tickViews[tick2] = cloneView(currentView);
+    }
+    if (msg.mapViewB64) {
+      var finalView = decodeBitmapB64(msg.mapViewB64, w, h);
+      replayData._tickViews[replay.maxTick] = mergeMapViews(
+        replayData._tickViews[replay.maxTick] || createEmptyView(w, h), finalView);
     }
     replayData._mapBlock = msg.mapBlock || [];
     replayData._mapSealed = msg.mapSealed || [];
@@ -699,6 +709,17 @@
 
   function createEmptyView(w, h) { var v = []; for (var r = 0; r < h; r++) { v[r] = []; for (var c = 0; c < w; c++) v[r][c] = false; } return v; }
   function cloneView(v) { return v.map(function (r) { return r.slice(); }); }
+  function mergeMapViews(eventView, finalView) {
+    var merged = cloneView(eventView);
+    for (var r = 0; r < finalView.length; r++) {
+      if (!finalView[r]) continue;
+      if (!merged[r]) merged[r] = [];
+      for (var c = 0; c < finalView[r].length; c++) {
+        if (finalView[r][c]) merged[r][c] = true;
+      }
+    }
+    return merged;
+  }
 
   function enterReplay() {
     if (replayData && replayData.maxTick > 0) {

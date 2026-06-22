@@ -578,6 +578,38 @@ public class BlackboardClient implements AutoCloseable {
         }
     }
 
+    /**
+     * 获取小车走过未探索区域的步数。
+     *
+     * @param carId 小车ID
+     * @return 有效步数，不存在返回0
+     */
+    public int getCarEffectiveSteps(String carId) {
+        try (Jedis jedis = pool.getResource()) {
+            String val = jedis.get(carId + ":EffectiveSteps");
+            return val != null ? Integer.parseInt(val) : 0;
+        }
+    }
+
+    /** 小车有效步数加1（踩入此前未探索的格子时调用）。 */
+    public void incrementCarEffectiveSteps(String carId) {
+        try (Jedis jedis = pool.getResource()) {
+            jedis.incr(carId + ":EffectiveSteps");
+        }
+    }
+
+    /**
+     * 设置小车有效步数值。
+     *
+     * @param carId 小车ID
+     * @param steps 有效步数值
+     */
+    public void setCarEffectiveSteps(String carId, int steps) {
+        try (Jedis jedis = pool.getResource()) {
+            jedis.set(carId + ":EffectiveSteps", String.valueOf(steps));
+        }
+    }
+
     // ==================== CarID:BlockedTick ====================
 
     /**

@@ -211,6 +211,29 @@ class GreedyTargetAllocatorTest {
             "高障碍场景应优先深入内部未探索区，而非沿外围兜圈，实际目标=" + target.get());
     }
 
+    @Test
+    void prefersNearestFrontierOverDistantPocketEntry() {
+        markAllExplored(bb, MAP_SIZE, MAP_SIZE);
+
+        Point nearFrontier = new Point(16, 15);
+        Point pocketEntry = new Point(19, 19);
+        Point pocketInterior = new Point(21, 20);
+        bb.setMapViewBit(nearFrontier.y(), nearFrontier.x(), false);
+        bb.setMapViewBit(pocketEntry.y(), pocketEntry.x(), false);
+        bb.setMapViewBit(pocketInterior.y(), pocketInterior.x(), false);
+        bb.setMapViewBit(20, 19, false);
+        bb.setMapViewBit(21, 19, false);
+        bb.setMapViewBit(20, 20, false);
+
+        Point carPos = new Point(15, 15);
+        bb.setMapViewBit(carPos.y(), carPos.x(), true);
+        Optional<Point> target = allocator.allocate(TEST_CAR, carPos, bb, allocated);
+
+        assertTrue(target.isPresent());
+        assertEquals(nearFrontier, target.get(),
+            "应优先分配最近前沿格，而非远处口袋内部");
+    }
+
     private void markAllExplored(BlackboardClient bb, int width, int height) {
         for (int r = 0; r < height; r++) {
             for (int c = 0; c < width; c++) {

@@ -127,6 +127,17 @@ class BlackboardClientTest {
     }
 
     @Test
+    void carEffectiveSteps() {
+        assertEquals(0, bb.getCarEffectiveSteps("Car001"));
+
+        bb.setCarEffectiveSteps("Car001", 7);
+        assertEquals(7, bb.getCarEffectiveSteps("Car001"));
+
+        bb.incrementCarEffectiveSteps("Car001");
+        assertEquals(8, bb.getCarEffectiveSteps("Car001"));
+    }
+
+    @Test
     void blockedTick() {
         assertEquals(-1, bb.getBlockedTick("Car001"));
 

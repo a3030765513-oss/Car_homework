@@ -140,7 +140,7 @@ public class StatusDispatcher {
 
         for (String carId : carIds) {
             bb.getCarStatus(carId).ifPresent(status -> {
-                if (status == CarStatus.READY) {
+                if (status == CarStatus.READY && !awaitingSupervision.contains(carId)) {
                     sendTickMove(carId);
                 }
             });
@@ -193,6 +193,7 @@ public class StatusDispatcher {
             if (shouldSupervise(carId)) {
                 lastSupervisedTick.put(carId, tick);
                 awaitingSupervision.add(carId);
+                bb.setCarStatus(carId, CarStatus.READY);
                 sendSuperviseRoute(carId);
                 return;
             }
@@ -399,6 +400,16 @@ public class StatusDispatcher {
 
     /** 发送路径规划请求到导航器，带缺失保护与超时兜底 */
     private void checkAndPlanRoute(String carId) {
+        if (awaitingSupervision.contains(carId)) {
+            return;
+        }
+        if (!bb.getCarRoute(carId).isEmpty()) {
+            waitingRouteTickCounts.remove(carId);
+            pendingPlanRequests.remove(carId);
+            bb.setCarStatus(carId, CarStatus.READY);
+            return;
+        }
+
         int waitingTicks = waitingRouteTickCounts.getOrDefault(carId, 0) + 1;
         waitingRouteTickCounts.put(carId, waitingTicks);
 

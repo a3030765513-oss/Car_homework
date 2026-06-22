@@ -274,21 +274,43 @@ public class WebSocketBridge extends WebSocketServer {
         replayData.put("mapSealed", readSealedBitmap(mapWidth, mapHeight));
         replayData.put("carHistories", buildHistoryMap());
         replayData.put("explorationEvents", blackboard.getExplorationEvents());
+        replayData.put("mapViewB64",
+            Base64.getEncoder().encodeToString(blackboard.getMapViewBytes()));
 
-        // 找最大tick
-        int maxTick = 0;
         Map<String, List<String>> histories = blackboard.getAllCarHistories();
-        for (List<String> hist : histories.values()) {
-            for (String entry : hist) {
-                JSONObject e = JSON.parseObject(entry);
-                int t = e.getIntValue("tick", 0);
-                if (t > maxTick) maxTick = t;
-            }
-        }
+        int maxTick = resolveReplayMaxTick(histories);
         replayData.put("maxTick", maxTick);
 
         conn.send(replayData.toJSONString());
         LOG.info("已发送回放数据到 {}, maxTick={}", conn.getRemoteSocketAddress(), maxTick);
+    }
+
+    private int resolveReplayMaxTick(Map<String, List<String>> histories) {
+        int maxTick = 0;
+        for (List<String> hist : histories.values()) {
+            for (String entry : hist) {
+                JSONObject event = JSON.parseObject(entry);
+                int tick = event.getIntValue("tick", 0);
+                if (tick > maxTick) {
+                    maxTick = tick;
+                }
+            }
+        }
+        for (String explorationEvent : blackboard.getExplorationEvents()) {
+            int comma = explorationEvent.indexOf(',');
+            if (comma <= 0) {
+                continue;
+            }
+            try {
+                int tick = Integer.parseInt(explorationEvent.substring(0, comma));
+                if (tick > maxTick) {
+                    maxTick = tick;
+                }
+            } catch (NumberFormatException ignored) {
+                // 跳过格式异常的事件
+            }
+        }
+        return maxTick;
     }
 
     private JSONObject buildHistoryMap() {
@@ -336,9 +358,10 @@ public class WebSocketBridge extends WebSocketServer {
         List<Point> route = blackboard.getCarRoute(carId);
         CarStatus status = blackboard.getCarStatus(carId).orElse(CarStatus.IDLE);
         int steps = blackboard.getCarSteps(carId);
+        int effectiveSteps = blackboard.getCarEffectiveSteps(carId);
 
         return Optional.of(new SimulationState.CarInfo(
-                carId, number, positionOpt.get(), target, route, status, steps));
+                carId, number, positionOpt.get(), target, route, status, steps, effectiveSteps));
     }
 
     /**

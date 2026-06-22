@@ -1,5 +1,6 @@
 package com.substation.targetplanner;
 
+import com.substation.common.map.FrontierCellFinder;
 import com.substation.common.map.UnexploredCluster;
 import com.substation.common.map.UnexploredClusterFinder;
 import com.substation.common.model.Point;
@@ -87,7 +88,7 @@ final class GreedyTargetAllocator {
         Point bestEntry = null;
         int bestEntryScore = Integer.MAX_VALUE;
 
-        for (Point cell : cluster.cells()) {
+        for (Point cell : selectClusterEntryCandidates(cluster, explored, obstacles, sealed, width, height)) {
             int score = scoreTargetCell(
                 currentPos, cell, valuableClusterSize, blocked, explored, width, height, overlapCells);
             if (score < bestEntryScore) {
@@ -105,7 +106,8 @@ final class GreedyTargetAllocator {
     private int scoreTargetCell(Point currentPos, Point target, int clusterSize,
                                  boolean[][] blocked, boolean[][] explored,
                                  int width, int height, Set<Point> overlapCells) {
-        List<Point> path = pathEstimator.planPath(currentPos, target, blocked, width, height);
+        List<Point> path = pathEstimator.planPath(
+            currentPos, target, blocked, explored, width, height);
         if (path.isEmpty() && !currentPos.equals(target)) {
             return Integer.MAX_VALUE;
         }
@@ -126,7 +128,7 @@ final class GreedyTargetAllocator {
         int mapWidth = bb.getMapWidth();
         int mapHeight = bb.getMapHeight();
 
-        List<Point> candidates = collectUnexploredCells(bb, mapWidth, mapHeight);
+        List<Point> candidates = collectFrontierFirstCandidates(bb, mapWidth, mapHeight);
         candidates.removeAll(alreadyAllocated);
         candidates.removeIf(cell -> cell.equals(currentPosition));
 
@@ -140,10 +142,20 @@ final class GreedyTargetAllocator {
         return chosen;
     }
 
-    private List<Point> collectUnexploredCells(BlackboardClient bb, int width, int height) {
+    private List<Point> collectFrontierFirstCandidates(BlackboardClient bb, int width, int height) {
         boolean[][] explored = bb.loadExploredBitmap();
         boolean[][] obstacles = bb.loadObstacleBitmap();
         boolean[][] sealed = bb.loadSealedBitmap();
+        List<Point> frontiers = FrontierCellFinder.findFrontierCells(
+            explored, obstacles, sealed, width, height);
+        if (!frontiers.isEmpty()) {
+            return frontiers;
+        }
+        return collectUnexploredCells(explored, obstacles, sealed, width, height);
+    }
+
+    private List<Point> collectUnexploredCells(boolean[][] explored, boolean[][] obstacles,
+                                                boolean[][] sealed, int width, int height) {
         List<Point> cells = new ArrayList<>();
         for (int row = 0; row < height; row++) {
             for (int col = 0; col < width; col++) {
@@ -166,7 +178,8 @@ final class GreedyTargetAllocator {
         boolean[][] obstacles = bb.loadObstacleBitmap();
         boolean[][] sealed = bb.loadSealedBitmap();
         Set<Point> overlapCells = collectOverlapCells(carId, bb, alreadyAllocated);
-        List<Point> pool = narrowCandidatePool(currentPos, candidates, blocked, width, height);
+        List<Point> pool = narrowCandidatePool(
+            currentPos, candidates, blocked, explored, width, height);
 
         Point bestTarget = null;
         int bestScore = Integer.MAX_VALUE;
@@ -185,7 +198,7 @@ final class GreedyTargetAllocator {
         if (bestTarget != null) {
             return Optional.of(bestTarget);
         }
-        return fallbackFarthestReachable(currentPos, candidates, blocked, width, height);
+        return fallbackFarthestReachable(currentPos, candidates, blocked, explored, width, height);
     }
 
     private Set<Point> collectOverlapCells(String carId, BlackboardClient bb,
@@ -202,19 +215,20 @@ final class GreedyTargetAllocator {
     }
 
     private List<Point> narrowCandidatePool(Point currentPos, List<Point> candidates,
-                                             boolean[][] blocked, int width, int height) {
+                                             boolean[][] blocked, boolean[][] explored,
+                                             int width, int height) {
         if (candidates.size() <= MAX_CANDIDATES_TO_SCORE) {
             return candidates;
         }
         List<Point> sorted = new ArrayList<>(candidates);
         sorted.sort(Comparator.comparingInt((Point candidate) ->
-            reachablePathLength(currentPos, candidate, blocked, width, height)).reversed());
+            reachablePathLength(currentPos, candidate, blocked, explored, width, height)).reversed());
         return sorted.subList(0, MAX_CANDIDATES_TO_SCORE);
     }
 
     private int reachablePathLength(Point start, Point target, boolean[][] blocked,
-                                     int width, int height) {
-        List<Point> path = pathEstimator.planPath(start, target, blocked, width, height);
+                                     boolean[][] explored, int width, int height) {
+        List<Point> path = pathEstimator.planPath(start, target, blocked, explored, width, height);
         return path.isEmpty() ? -1 : path.size();
     }
 
@@ -306,11 +320,13 @@ final class GreedyTargetAllocator {
     }
 
     private Optional<Point> fallbackFarthestReachable(Point currentPos, List<Point> candidates,
-                                                       boolean[][] blocked, int width, int height) {
+                                                       boolean[][] blocked, boolean[][] explored,
+                                                       int width, int height) {
         Point bestTarget = null;
         int bestPathLength = -1;
         for (Point candidate : candidates) {
-            List<Point> path = pathEstimator.planPath(currentPos, candidate, blocked, width, height);
+            List<Point> path = pathEstimator.planPath(
+                currentPos, candidate, blocked, explored, width, height);
             if (path.isEmpty() || path.size() <= bestPathLength) {
                 continue;
             }
@@ -318,6 +334,19 @@ final class GreedyTargetAllocator {
             bestTarget = candidate;
         }
         return Optional.ofNullable(bestTarget);
+    }
+
+    private List<Point> selectClusterEntryCandidates(UnexploredCluster cluster, boolean[][] explored,
+                                                      boolean[][] obstacles, boolean[][] sealed,
+                                                      int width, int height) {
+        List<Point> frontiers = new ArrayList<>();
+        for (Point cell : cluster.cells()) {
+            if (FrontierCellFinder.isFrontier(
+                cell.x(), cell.y(), explored, obstacles, sealed, width, height)) {
+                frontiers.add(cell);
+            }
+        }
+        return frontiers.isEmpty() ? cluster.cells() : frontiers;
     }
 
     private record ClusterCandidate(Point target, int score) {

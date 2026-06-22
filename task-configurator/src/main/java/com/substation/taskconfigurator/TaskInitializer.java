@@ -179,6 +179,7 @@ final class TaskInitializer {
         bb.setCarPosition(carId, position);
         bb.setCarStatus(carId, CarStatus.IDLE);
         bb.setCarSteps(carId, 0);
+        bb.setCarEffectiveSteps(carId, 0);
         bb.appendCarHistory(carId, position, 0);
     }
 
@@ -186,7 +187,7 @@ final class TaskInitializer {
         int row = center.y();
         int col = center.x();
         if (row >= 0 && row < mapHeight && col >= 0 && col < mapWidth) {
-            bb.setMapViewBit(row, col, true);
+            bb.recordExploration(0, row, col);
         }
     }
 

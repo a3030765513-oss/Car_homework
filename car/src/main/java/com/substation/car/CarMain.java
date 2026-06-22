@@ -197,6 +197,7 @@ public class CarMain {
         bb.setCarPosition(carId, pos);
         bb.setCarStatus(carId, CarStatus.IDLE);
         bb.setCarSteps(carId, 0);
+        bb.setCarEffectiveSteps(carId, 0);
         illuminateAndHeat(bb, pos, mapWidth, mapHeight);
         bb.appendCarHistory(carId, pos, 0);
         log.info("[{}] 自初始化完成，初始位置: ({},{})", carId, pos.x(), pos.y());
@@ -252,7 +253,7 @@ public class CarMain {
                                    int mapWidth, int mapHeight) {
         int r = center.y(), c = center.x();
         if (r >= 0 && r < mapHeight && c >= 0 && c < mapWidth) {
-            bb.setMapViewBit(r, c, true);
+            bb.recordExploration(0, r, c);
             bb.incrementMapHeat(r, c);
         }
     }
