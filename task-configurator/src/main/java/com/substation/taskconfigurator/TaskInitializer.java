@@ -47,15 +47,15 @@ final class TaskInitializer {
         writeTaskConfig(bb, mapWidth, mapHeight, carCount, obstacleRatio, algorithm, tickInterval);
 
         List<String> carIds = generateCarIds(carCount);
-        placeObstacles(bb, mapWidth, mapHeight, obstacleRatio, Set.of());
-        List<Point> initialPositions = assignInitialPositions(bb, carCount, mapWidth, mapHeight);
+        boolean[][] obstacles = placeObstacles(bb, mapWidth, mapHeight, obstacleRatio, Set.of());
+        List<Point> initialPositions = assignInitialPositions(carCount, mapWidth, mapHeight, obstacles);
 
         for (int i = 0; i < carIds.size(); i++) {
             initSingleCar(bb, carIds.get(i), initialPositions.get(i));
             lightUpArea(bb, initialPositions.get(i), mapWidth, mapHeight);
         }
 
-        markSealedUnreachableCells(bb, mapWidth, mapHeight, initialPositions);
+        markSealedUnreachableCells(bb, mapWidth, mapHeight, initialPositions, obstacles);
     }
 
     // ==================== 步骤实现 ====================
@@ -82,9 +82,8 @@ final class TaskInitializer {
         return ids;
     }
 
-    private List<Point> assignInitialPositions(BlackboardClient bb, int carCount,
-                                                int mapWidth, int mapHeight) {
-        boolean[][] obstacles = buildObstacleGrid(bb, mapWidth, mapHeight);
+    private List<Point> assignInitialPositions(int carCount, int mapWidth, int mapHeight,
+                                                boolean[][] obstacles) {
         if (carCount <= FIXED_SPAWN_LAYOUT_CAR_COUNT) {
             return assignCornerAndCenterPositions(carCount, mapWidth, mapHeight, obstacles);
         }
@@ -157,8 +156,9 @@ final class TaskInitializer {
         return !obstacles[row][col] && !occupied[row][col];
     }
 
-    private void placeObstacles(BlackboardClient bb, int width, int height,
-                                 double ratio, Set<Point> exclude) {
+    private boolean[][] placeObstacles(BlackboardClient bb, int width, int height,
+                                        double ratio, Set<Point> exclude) {
+        boolean[][] obstacles = new boolean[height][width];
         int interiorCells = (width - 2 * EDGE_MARGIN) * (height - 2 * EDGE_MARGIN);
         int targetCount = (int) (interiorCells * ratio);
         int placed = 0;
@@ -168,11 +168,13 @@ final class TaskInitializer {
             int x = EDGE_MARGIN + random.nextInt(width - 2 * EDGE_MARGIN);
             int y = EDGE_MARGIN + random.nextInt(height - 2 * EDGE_MARGIN);
             Point candidate = new Point(x, y);
-            if (!exclude.contains(candidate) && !bb.isBlocked(y, x)) {
+            if (!exclude.contains(candidate) && !obstacles[y][x]) {
+                obstacles[y][x] = true;
                 bb.setBlock(y, x, true);
                 placed++;
             }
         }
+        return obstacles;
     }
 
     private void initSingleCar(BlackboardClient bb, String carId, Point position) {
@@ -192,20 +194,9 @@ final class TaskInitializer {
     }
 
     private void markSealedUnreachableCells(BlackboardClient bb, int mapWidth, int mapHeight,
-                                             List<Point> carStartPositions) {
-        boolean[][] obstacles = buildObstacleGrid(bb, mapWidth, mapHeight);
+                                             List<Point> carStartPositions, boolean[][] obstacles) {
         boolean[][] sealed = ReachabilityAnalyzer.findSealedFreeCells(obstacles, carStartPositions);
         bb.writeSealedBitmap(sealed, mapWidth);
-    }
-
-    private boolean[][] buildObstacleGrid(BlackboardClient bb, int mapWidth, int mapHeight) {
-        boolean[][] obstacles = new boolean[mapHeight][mapWidth];
-        for (int row = 0; row < mapHeight; row++) {
-            for (int col = 0; col < mapWidth; col++) {
-                obstacles[row][col] = bb.isBlocked(row, col);
-            }
-        }
-        return obstacles;
     }
 
     // ==================== 参数解析 ====================

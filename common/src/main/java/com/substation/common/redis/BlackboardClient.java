@@ -6,6 +6,7 @@ import com.substation.common.model.Point;
 
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.params.SetParams;
 
 import java.util.*;
@@ -59,6 +60,8 @@ public class BlackboardClient implements AutoCloseable {
     private static final String FIELD_TICK_INTERVAL = "tickInterval";
     /** Hash字段名: 障碍物比例 */
     private static final String FIELD_OBSTACLE_RATIO = "obstacleRatio";
+    /** 分布式部署时 Tailscale 往返较慢，默认 2s 易触发 Read timed out */
+    private static final int REDIS_SOCKET_TIMEOUT_MS = 30_000;
 
     /** Redis连接池 */
     private final JedisPool pool;
@@ -76,7 +79,8 @@ public class BlackboardClient implements AutoCloseable {
      * @param mapHeight 地图高度
      */
     public BlackboardClient(String host, int port, int mapWidth, int mapHeight) {
-        this.pool = new JedisPool(host, port);
+        JedisPoolConfig poolConfig = new JedisPoolConfig();
+        this.pool = new JedisPool(poolConfig, host, port, REDIS_SOCKET_TIMEOUT_MS);
         this.mapWidth = mapWidth;
         this.mapHeight = mapHeight;
     }
