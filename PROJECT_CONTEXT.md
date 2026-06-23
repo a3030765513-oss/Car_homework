@@ -175,7 +175,7 @@ flowchart LR
 
 - 一键脚本：`start_all.bat`（默认 3 台车，`chcp 65001` 控制台 UTF-8）  
 - 浏览器：`http://localhost:8887` → `login.html` → `dashboard.html` 选功能  
-- **分布式多机（已实现）**：各模块 `main` 支持 `--redis-host` / `--mq-host`（及可选 `--redis-port` / `--mq-port`），由 `common/.../InfraConnectionConfig.java` 统一解析；Person A 本机默认 `localhost`，Person C/D 指向 Person A 的 Tailscale IP。操作清单见 **`三台分布式启动流程.md`**；原理与 portproxy 备选见 `分布式部署指南.md`  
+- **分布式多机（已实现）**：各模块 `main` 通过 `InfraConnectionConfig.resolve` 读取 `deploy/infra.local.json`（命令行 `--redis-host` 可覆盖）；Person A 用 `localhost`，B/C/D 指向 Person A 的 Tailscale IP。操作清单见 **`四台分布式启动流程.md`**；一键脚本见 `scripts/`。  
 - **分布式联调注意**：全组只有一套 Redis+MQ、一个 Controller、一个 Display、一个 TaskConfigurator 消费者；若本机与远程各起一个 TC，会抢 `TaskConfigCmd` 队列导致 `SET_CONFIG` 后收不到 `TASK_READY`  
 - **乱序启动容错**：设计稿见 `启动健壮性方案.md`（**尚未编码**，当前仍建议按序启动）
 
@@ -246,7 +246,7 @@ cd D:\car_homework
 | **远程基础设施 CLI** | `InfraConnectionConfig`；各 `*Main` 与 `LauncherMain` 解析 `--redis-host` / `--mq-host`；Person A 不加参，C/D 指向 A 的 IP |
 | **分布式初始化 Redis 优化** | `TaskInitializer` 出生点/封死区计算用内存 `boolean[][]` 障碍栅格，避免每格 `isBlocked()` 经 Tailscale 打 Redis；`BlackboardClient` Jedis 超时 **30s**（默认 2s 易 `Read timed out`） |
 | **UTF-8 工具链** | `.mvn/jvm.config`、`mvnw.cmd`/`mvnw.ps1`、`start_all.bat`、`pom.xml` exec JVM 参数、`common/.../logback.xml` |
-| **三台联调文档** | `三台分布式启动流程.md`（Tailscale 分工与启动顺序） |
+| **分布式联调文档** | `四台分布式启动流程.md`（Tailscale 四人四机 + `deploy/infra.local.json`） |
 
 ### 11.3 统计分析 UI（Person D + 本地增强，仍走 localStorage）
 
@@ -317,7 +317,8 @@ cd D:\car_homework
 
 | 文档 | 内容 |
 |------|------|
-| `三台分布式启动流程.md` | **推荐**：Tailscale 三机分工、启动顺序、`$REMOTE` 变量、常见故障 |
+| `四台分布式启动流程.md` | **推荐**：四人四机分工、`scripts/*.ps1` 一键启动、常见故障 |
+| `多人同步观看网页教程.md` | 多台电脑实时看同一仿真页面（防火墙、观众 URL） |
 | `分布式部署指南.md` | 多机原理、防火墙、portproxy 备选 |
 | `启动健壮性方案.md` | 乱序启动、就绪闸门（设计稿，未实现） |
 | `统计分析改进方案.md` | 统计图表改进（P0 大部分已落地；P1+ 待做） |

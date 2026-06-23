@@ -103,7 +103,7 @@ public class DisplayMain {
     }
 
     public static void main(String[] args) throws IOException, TimeoutException, InterruptedException {
-        var infra = com.substation.common.infra.InfraConnectionConfig.fromArgs(args);
+        var infra = com.substation.common.infra.InfraConnectionConfig.resolve(args);
         Path webRoot = findWebRoot();
         DisplayMain display = new DisplayMain(
                 infra.redisHost(), infra.redisPort(), infra.mqHost(), infra.mqPort(),

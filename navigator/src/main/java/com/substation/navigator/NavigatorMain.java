@@ -85,7 +85,7 @@ public class NavigatorMain {
 
     /** 独立运行入口 */
     public static void main(String[] args) throws IOException, TimeoutException {
-        var infra = com.substation.common.infra.InfraConnectionConfig.fromArgs(args);
+        var infra = com.substation.common.infra.InfraConnectionConfig.resolve(args);
         new NavigatorMain(
                 infra.redisHost(), infra.redisPort(), infra.mqHost(), infra.mqPort()).start();
         synchronized (NavigatorMain.class) {

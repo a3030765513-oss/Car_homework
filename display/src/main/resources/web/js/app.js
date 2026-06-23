@@ -103,10 +103,16 @@
   var addCarPending = { active: false, carId: '', baselineCount: 0, timerId: null };
   var ADD_CAR_TIMEOUT_MS = 30000;
   var ADD_CAR_LABEL_DEFAULT = '+ 添加小车';
+  var WS_PORT = 8888;
 
   // ══════════════ WebSocket
+  function buildWebSocketUrl() {
+    var wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return wsProtocol + '//' + location.hostname + ':' + WS_PORT;
+  }
+
   function connectWebSocket() {
-    ws = new WebSocket('ws://localhost:8888');
+    ws = new WebSocket(buildWebSocketUrl());
     ws.onopen = onSocketOpen;
     ws.onmessage = onSocketMessage;
     ws.onclose = onSocketClose;

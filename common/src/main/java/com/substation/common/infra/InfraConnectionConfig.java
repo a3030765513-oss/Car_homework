@@ -1,10 +1,11 @@
 package com.substation.common.infra;
 
+import java.util.Optional;
+
 /**
- * Redis / RabbitMQ 连接参数，供各模块 {@code main} 解析命令行。
+ * Redis / RabbitMQ 连接参数，供各模块 {@code main} 解析命令行或本地配置文件。
  *
- * <p>单机默认 {@code localhost}；分布式时 Person C/D 传入 Person A 的 Tailscale IP：
- * {@code --redis-host 100.x.x.x --mq-host 100.x.x.x}
+ * <p>优先级：命令行显式参数 &gt; {@code deploy/infra.local.json} &gt; localhost 默认值。
  */
 public record InfraConnectionConfig(
         String redisHost,
@@ -23,25 +24,53 @@ public record InfraConnectionConfig(
     }
 
     /**
-     * 从 {@code args} 解析 {@code --redis-host} 等；未识别的参数（如 {@code Car001}）忽略。
+     * 合并配置文件与命令行；命令行显式传入的项覆盖文件。
+     */
+    public static InfraConnectionConfig resolve(String[] args) {
+        return resolve(args, DeployConfigLoader.loadOptional());
+    }
+
+    static InfraConnectionConfig resolve(String[] args, Optional<DeployConfig> deployConfig) {
+        InfraConnectionConfig base = deployConfig
+                .map(DeployConfig::toInfraConnectionConfig)
+                .orElseGet(InfraConnectionConfig::localhost);
+        ArgOverrides overrides = parseOverrides(args);
+        return new InfraConnectionConfig(
+                overrides.redisHost().orElse(base.redisHost()),
+                overrides.redisPort().orElse(base.redisPort()),
+                overrides.mqHost().orElse(base.mqHost()),
+                overrides.mqPort().orElse(base.mqPort()));
+    }
+
+    /**
+     * 仅从 {@code args} 解析；未传入的项使用 localhost 默认值。
      */
     public static InfraConnectionConfig fromArgs(String[] args) {
-        String redisHost = DEFAULT_REDIS_HOST;
-        int redisPort = DEFAULT_REDIS_PORT;
-        String mqHost = DEFAULT_MQ_HOST;
-        int mqPort = DEFAULT_MQ_PORT;
+        ArgOverrides overrides = parseOverrides(args);
+        return new InfraConnectionConfig(
+                overrides.redisHost().orElse(DEFAULT_REDIS_HOST),
+                overrides.redisPort().orElse(DEFAULT_REDIS_PORT),
+                overrides.mqHost().orElse(DEFAULT_MQ_HOST),
+                overrides.mqPort().orElse(DEFAULT_MQ_PORT));
+    }
+
+    private static ArgOverrides parseOverrides(String[] args) {
+        Optional<String> redisHost = Optional.empty();
+        Optional<Integer> redisPort = Optional.empty();
+        Optional<String> mqHost = Optional.empty();
+        Optional<Integer> mqPort = Optional.empty();
 
         for (int i = 0; i < args.length; i++) {
             String key = args[i];
             switch (key) {
-                case "--redis-host" -> redisHost = requireValue(args, ++i, key);
-                case "--redis-port" -> redisPort = requireInt(args, ++i, key);
-                case "--mq-host" -> mqHost = requireValue(args, ++i, key);
-                case "--mq-port" -> mqPort = requireInt(args, ++i, key);
+                case "--redis-host" -> redisHost = Optional.of(requireValue(args, ++i, key));
+                case "--redis-port" -> redisPort = Optional.of(requireInt(args, ++i, key));
+                case "--mq-host" -> mqHost = Optional.of(requireValue(args, ++i, key));
+                case "--mq-port" -> mqPort = Optional.of(requireInt(args, ++i, key));
                 default -> { /* 忽略 Car001、--dynamic 等 */ }
             }
         }
-        return new InfraConnectionConfig(redisHost, redisPort, mqHost, mqPort);
+        return new ArgOverrides(redisHost, redisPort, mqHost, mqPort);
     }
 
     private static String requireValue(String[] args, int index, String key) {
@@ -57,5 +86,12 @@ public record InfraConnectionConfig(
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("参数 " + key + " 的值不是有效整数", e);
         }
+    }
+
+    private record ArgOverrides(
+            Optional<String> redisHost,
+            Optional<Integer> redisPort,
+            Optional<String> mqHost,
+            Optional<Integer> mqPort) {
     }
 }

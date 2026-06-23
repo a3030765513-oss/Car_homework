@@ -67,7 +67,7 @@ public class ControllerMain {
 
     /** 独立运行入口（使用默认 localhost 参数） */
     public static void main(String[] args) throws Exception {
-        var infra = com.substation.common.infra.InfraConnectionConfig.fromArgs(args);
+        var infra = com.substation.common.infra.InfraConnectionConfig.resolve(args);
         new ControllerMain(infra.redisHost(), infra.redisPort(), infra.mqHost(), infra.mqPort()).start();
         synchronized (ControllerMain.class) {
             try {

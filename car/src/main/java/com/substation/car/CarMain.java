@@ -101,7 +101,7 @@ public class CarMain {
     /** 独立运行入口（阻塞等待 Ctrl+C） */
     public static void main(String[] args) throws IOException, TimeoutException {
         String carId = parseCarId(args);
-        var infra = InfraConnectionConfig.fromArgs(args);
+        var infra = InfraConnectionConfig.resolve(args);
         boolean dynamicAdd = isDynamicAdd(args);
 
         log.info("╔══════════════════════════════════════╗");

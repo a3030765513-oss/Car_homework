@@ -2,6 +2,9 @@ package com.substation.common.infra;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -29,8 +32,33 @@ class InfraConnectionConfigTest {
     }
 
     @Test
+    void resolveUsesFileWhenCliOmitsHosts() {
+        DeployConfig file = new DeployConfig(
+                "100.94.124.1", 6379, "100.94.124.1", 5672,
+                DeployConfig.ROLE_PLANNER, "localhost", 8887, 8888,
+                List.of("Car001"));
+        var config = InfraConnectionConfig.resolve(new String[]{"Car001"}, Optional.of(file));
+        assertEquals("100.94.124.1", config.redisHost());
+        assertEquals("100.94.124.1", config.mqHost());
+    }
+
+    @Test
+    void resolvePrefersCliOverFile() {
+        DeployConfig file = new DeployConfig(
+                "1.1.1.1", 6379, "1.1.1.1", 5672,
+                DeployConfig.ROLE_CAR, "localhost", 8887, 8888,
+                DeployConfig.DEFAULT_CARS);
+        var config = InfraConnectionConfig.resolve(
+                new String[]{"--redis-host", "2.2.2.2"},
+                Optional.of(file));
+        assertEquals("2.2.2.2", config.redisHost());
+        assertEquals("1.1.1.1", config.mqHost());
+    }
+
+    @Test
     void missingHostValueThrows() {
         assertThrows(IllegalArgumentException.class,
                 () -> InfraConnectionConfig.fromArgs(new String[]{"--redis-host"}));
     }
 }
+
