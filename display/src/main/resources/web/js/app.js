@@ -22,8 +22,8 @@
     MOVING: '移动中', BLOCKED: '受阻'
   };
 
-  // ══════════════ 每车固定颜色
-  var CAR_COLORS = ['#E74C3C','#3498DB','#2ECC71','#9B59B6','#F39C12','#1ABC9C','#E91E63','#00BCD4'];
+  // ══════════════ 每车固定颜色（与 Unity 3D 端一致：同色相、降饱和）
+  var CAR_COLORS = ['#A6665F','#58829E','#51936D','#785C83','#AF8B51','#44877A','#A85370','#408F99'];
 
   // ══════════════ 浅色主题颜色
   var LIGHT = {
@@ -131,6 +131,24 @@
     }
   }
 
+  function syncCarCountFromLiveData(data) {
+    if (!$cfgCarCount || !data || !data.cars) return;
+    var count = data.cars.length;
+    if (count <= 0) return;
+    var countStr = String(count);
+    $cfgCarCount.value = countStr;
+    initialCarCount = countStr;
+  }
+
+  function syncCarCountFromLaunchedCar(carId) {
+    if (!$cfgCarCount || !carId) return;
+    var carNumber = parseInt(String(carId).replace(/\D/g, ''), 10);
+    if (carNumber <= 0) return;
+    var countStr = String(Math.max(parseInt($cfgCarCount.value, 10) || 0, carNumber));
+    $cfgCarCount.value = countStr;
+    initialCarCount = countStr;
+  }
+
   function onSocketMessage(event) {
     wasEverConnected = true;
     var msg = JSON.parse(event.data);
@@ -140,10 +158,16 @@
       return;
     }
     if (msg.type === 'CAR_PENDING') { beginAddCarPending(msg.carId); return; }
-    if (msg.type === 'CAR_LAUNCHED') { clearAddCarPending(true); return; }
+    if (msg.type === 'CAR_LAUNCHED') {
+      clearAddCarPending(true);
+      syncCarCountFromLaunchedCar(msg.carId);
+      return;
+    }
     if (msg.type === 'CAR_LAUNCH_FAILED') { failAddCarPending(msg.reason); return; }
     liveData = normalizeMapPayload(msg);
     if (mode === 'live') {
+      syncControlButtons(liveData);
+      syncCarCountFromLiveData(liveData);
       finalizeCanvas();
       if (canvasReady) {
         var tick = liveData.tick || 0;
@@ -184,12 +208,14 @@
         var pendingId = 'Car' + String(data.cars[i].number).padStart(3, '0');
         if (pendingId === addCarPending.carId && data.cars.length > addCarPending.baselineCount) {
           clearAddCarPending(true);
+          syncCarCountFromLiveData(data);
           return;
         }
       }
     }
     if (data.cars.length > addCarPending.baselineCount) {
       clearAddCarPending(true);
+      syncCarCountFromLiveData(data);
     }
   }
 
@@ -309,9 +335,31 @@
 
   function onSocketError(err) { console.error('[app] WS error', err); }
 
+  function buildTaskConfigFromForm() {
+    return {
+      mapWidth: String($cfgWidth.value),
+      mapHeight: String($cfgHeight.value),
+      carCount: String(initialCarCount),
+      obstacleRatio: String($cfgObstacleRatio.value),
+      algorithm: $cfgAlgorithm.value,
+      tickInterval: String($cfgTickInterval.value),
+      active: 'true',
+      operator: currentOperator
+    };
+  }
+
+  function ensureLiveDataTaskConfig() {
+    if (!liveData) {
+      liveData = { tick: 0, explorationRate: 0, cars: [] };
+    }
+    if (!liveData.taskConfig || !liveData.taskConfig.mapWidth) {
+      liveData.taskConfig = buildTaskConfigFromForm();
+    }
+  }
+
   // ══════════════ Canvas 尺寸
   function finalizeCanvas() {
-    if (canvasReady) return;
+    ensureLiveDataTaskConfig();
     if (!liveData || !liveData.taskConfig) return;
     var mapArea = document.querySelector('.map-area');
     if (!mapArea) return;
@@ -323,11 +371,20 @@
     var h = parseInt(liveData.taskConfig.mapHeight, 10) || DEFAULT_GRID_H;
     var cellW = Math.floor(availW / w);
     var cellH = Math.floor(availH / h);
-    CELL_SIZE = Math.max(4, Math.min(cellW, cellH));
+    var nextCellSize = Math.max(4, Math.min(cellW, cellH));
+    var cw = w * nextCellSize;
+    var ch = h * nextCellSize;
 
-    var cw = w * CELL_SIZE, ch = h * CELL_SIZE;
-    mapCanvas.width = cw; mapCanvas.height = ch;
-    carCanvas.width = cw; carCanvas.height = ch;
+    if (canvasReady && mapCanvas.width === cw && mapCanvas.height === ch
+        && CELL_SIZE === nextCellSize) {
+      return;
+    }
+
+    CELL_SIZE = nextCellSize;
+    mapCanvas.width = cw;
+    mapCanvas.height = ch;
+    carCanvas.width = cw;
+    carCanvas.height = ch;
 
     canvasReady = true;
     mapLayerDirty = true;
@@ -555,6 +612,31 @@
     return (data.explorationRate || 0) >= 100;
   }
 
+  function isSimulationInProgress(data) {
+    if (!data || isSimulationComplete(data)) return false;
+    if ((data.tick || 0) > 0) return true;
+    return !!(data.taskConfig && data.taskConfig.active === 'true'
+      && data.cars && data.cars.length > 0);
+  }
+
+  function syncControlButtons(data) {
+    if (!data || mode !== 'live') return;
+    if (isSimulationComplete(data) || taskCompleteShown) {
+      $btnStart.disabled = false;
+      $btnPause.disabled = true;
+      $btnPause.textContent = '⏯ 暂停';
+      return;
+    }
+    if (isSimulationInProgress(data)) {
+      $btnStart.disabled = true;
+      $btnPause.disabled = false;
+      return;
+    }
+    $btnStart.disabled = false;
+    $btnPause.disabled = true;
+    $btnPause.textContent = '⏯ 暂停';
+  }
+
   function applyTaskCompleteUi(data, tick, rate) {
     $tick.textContent = '节拍: ' + tick;
     $rate.textContent = '探索率: ' + rate + '% ✓ 任务完成';
@@ -587,7 +669,8 @@
 
     $tick.textContent = '节拍: ' + tick;
     $rate.textContent = '探索率: ' + rate + '%';
-    if (data.tick === 1 && !startTimestamp) {
+    syncControlButtons(data);
+    if (data.tick >= 1 && !startTimestamp) {
       startTimestamp = Date.now(); startElapsedTimer();
     }
   }
@@ -728,19 +811,22 @@
     taskCompleteShown = false;
     simulationFrozenTick = null;
     lastSavedRunId = null;
+    canvasReady = false;
     clearMapCaches();
     mapLayerDirty = true;
     $modeTag.hidden = true;
-    var config = {
-      type: 'SET_CONFIG',
-      data: {
-        mapWidth: String($cfgWidth.value), mapHeight: String($cfgHeight.value),
-        carCount: String(initialCarCount), obstacleRatio: String($cfgObstacleRatio.value),
-        algorithm: $cfgAlgorithm.value, tickInterval: String($cfgTickInterval.value),
-        active: 'true', operator: currentOperator
-      }
+    liveData = {
+      tick: 0,
+      explorationRate: 0,
+      taskConfig: buildTaskConfigFromForm(),
+      cars: []
     };
-    sendCommand(config);
+    finalizeCanvas();
+    if (canvasReady) {
+      renderMapLayer();
+      renderCarsLayer();
+    }
+    sendCommand({ type: 'SET_CONFIG', data: liveData.taskConfig });
     $btnStart.disabled = true;
     $btnPause.disabled = false;
     $btnPause.textContent = '⏯ 暂停';

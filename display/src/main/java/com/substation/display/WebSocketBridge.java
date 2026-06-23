@@ -304,7 +304,11 @@ public class WebSocketBridge extends WebSocketServer {
         if (tick % 20 == 0 || tick == 1 || syncedRate >= 100) {
             LOG.info("pushState tick={} rate={}%", tick, syncedRate);
         }
-        broadcast(serializeState(tick, syncedRate));
+        try {
+            broadcast(serializeState(tick, syncedRate));
+        } catch (RuntimeException e) {
+            LOG.error("推送仿真状态失败 tick={}", tick, e);
+        }
     }
 
     /** 与 mapView 同源：从黑板实时读取探索率，避免 MQ 消息滞后于 Redis 位图 */
@@ -336,16 +340,11 @@ public class WebSocketBridge extends WebSocketServer {
         json.put("taskConfig", config);
         json.put("cars", cars);
         json.put("mapViewB64", Base64.getEncoder().encodeToString(blackboard.getMapViewBytes()));
-        if (tick <= 1) {
-            json.put("mapBlockB64", Base64.getEncoder().encodeToString(blackboard.getMapBlockBytes()));
-            json.put("mapSealedB64", Base64.getEncoder().encodeToString(blackboard.getMapSealedBytes()));
-        }
+        json.put("mapBlockB64", Base64.getEncoder().encodeToString(blackboard.getMapBlockBytes()));
+        json.put("mapSealedB64", Base64.getEncoder().encodeToString(blackboard.getMapSealedBytes()));
         return json.toJSONString();
     }
 
-    /**
-     * 从 Redis mapView bitmap 构建二维 boolean 数组（小地图 JSON 模式使用）。
-     */
     private boolean[][] readViewBitmap(int mapWidth, int mapHeight) {
         return BlackboardClient.bytesToBitmap(
             blackboard.getMapViewBytes(), mapWidth, mapHeight);
@@ -361,14 +360,6 @@ public class WebSocketBridge extends WebSocketServer {
             blackboard.getMapSealedBytes(), mapWidth, mapHeight);
     }
 
-    // ────────────────── 车辆信息构建 ──────────────────
-
-    /**
-     * 遍历所有已注册车辆，构建按编号排序的 CarInfo 列表。
-     *
-     * <p>动态发现：调用 {@link BlackboardClient#discoverCarIds()}，
-     * 而非遍历 1..N 预设范围。未注册到黑板的 carId 将被跳过。</p>
-     */
     private List<SimulationState.CarInfo> buildCarInfoList() {
         List<SimulationState.CarInfo> cars = new ArrayList<>();
         for (String carId : discoverActiveCarIds()) {
@@ -378,12 +369,6 @@ public class WebSocketBridge extends WebSocketServer {
         return cars;
     }
 
-    /**
-     * 构建单个车辆的 CarInfo。
-     *
-     * <p>如果车辆尚未在黑板中记录位置（{@code CarID:Position} key 不存在），
-     * 认为该车尚未完成注册，返回空 Optional 跳过。</p>
-     */
     private Optional<SimulationState.CarInfo> buildSingleCarInfo(String carId) {
         Optional<Point> positionOpt = blackboard.getCarPosition(carId);
         if (positionOpt.isEmpty()) {
@@ -401,6 +386,10 @@ public class WebSocketBridge extends WebSocketServer {
                 carId, number, positionOpt.get(), target, route, status, steps, effectiveSteps));
     }
 
+    private Set<String> discoverActiveCarIds() {
+        return blackboard.discoverCarIds();
+    }
+
     /**
      * 从 carId 中提取显示编号。
      *
@@ -415,13 +404,6 @@ public class WebSocketBridge extends WebSocketServer {
         } catch (NumberFormatException e) {
             return 0;
         }
-    }
-
-    /**
-     * 调用 {@link BlackboardClient#discoverCarIds()} 获取已注册车辆。
-     */
-    private Set<String> discoverActiveCarIds() {
-        return blackboard.discoverCarIds();
     }
 
     // ────────────────── 工具方法 ──────────────────
