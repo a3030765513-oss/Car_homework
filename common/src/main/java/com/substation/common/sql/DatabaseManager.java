@@ -114,5 +114,53 @@ public class DatabaseManager {
             ip_address NVARCHAR(50) NULL,
             created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
         );
+
+        IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name='simulation_runs')
+        CREATE TABLE simulation_runs (
+            id INT IDENTITY(1,1) PRIMARY KEY,
+            started_by NVARCHAR(50) NOT NULL,
+            started_at DATETIME2 NOT NULL,
+            ended_at DATETIME2 NOT NULL,
+            map_width INT NOT NULL,
+            map_height INT NOT NULL,
+            car_count INT NOT NULL,
+            algorithm NVARCHAR(20) NULL,
+            obstacle_ratio NVARCHAR(20) NULL,
+            tick_interval NVARCHAR(20) NULL,
+            max_tick INT NOT NULL DEFAULT 0,
+            exploration_rate INT NOT NULL DEFAULT 0,
+            status NVARCHAR(20) NOT NULL,
+            map_block_b64 NVARCHAR(MAX) NULL,
+            map_sealed_b64 NVARCHAR(MAX) NULL,
+            map_view_final_b64 NVARCHAR(MAX) NULL,
+            car_histories NVARCHAR(MAX) NOT NULL,
+            exploration_events NVARCHAR(MAX) NOT NULL
+        );
+
+        IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name='simulation_run_stats')
+        CREATE TABLE simulation_run_stats (
+            run_id INT NOT NULL PRIMARY KEY,
+            saved_by NVARCHAR(50) NOT NULL,
+            saved_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+            client_timestamp BIGINT NOT NULL DEFAULT 0,
+            exploration_rate INT NOT NULL DEFAULT 0,
+            tick INT NOT NULL DEFAULT 0,
+            duration INT NOT NULL DEFAULT 0,
+            total_steps INT NOT NULL DEFAULT 0,
+            total_effective_steps INT NOT NULL DEFAULT 0,
+            efficiency_percent INT NOT NULL DEFAULT 0,
+            car_count INT NOT NULL DEFAULT 0,
+            algorithm NVARCHAR(20) NULL,
+            obstacle_ratio FLOAT NOT NULL DEFAULT 0,
+            map_width INT NOT NULL DEFAULT 0,
+            map_height INT NOT NULL DEFAULT 0,
+            balance_score FLOAT NOT NULL DEFAULT 0,
+            payload NVARCHAR(MAX) NOT NULL,
+            CONSTRAINT FK_simulation_run_stats_run
+                FOREIGN KEY (run_id) REFERENCES simulation_runs(id)
+        );
+
+        IF EXISTS (SELECT 1 FROM sys.tables WHERE name='simulation_stats')
+        DROP TABLE simulation_stats;
         """;
 }

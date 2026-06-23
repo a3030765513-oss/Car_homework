@@ -3,10 +3,16 @@ package com.substation.display;
 import com.alibaba.fastjson2.JSONObject;
 import com.substation.common.admin.AdminApiHandler;
 import com.substation.common.analysis.AnalysisApiHandler;
+import com.substation.common.analysis.SimulationRecordService;
+import com.substation.common.analysis.SimulationStatsStore;
 import com.substation.common.auth.AuthApiHandler;
 import com.substation.common.auth.SessionManager;
 import com.substation.common.mq.MessageBus;
+import com.substation.common.mq.QueueNames;
 import com.substation.common.redis.BlackboardClient;
+import com.substation.common.replay.ReplayApiHandler;
+import com.substation.common.replay.RunArchiver;
+import com.substation.common.replay.SimulationRunStore;
 import com.substation.common.sql.DatabaseManager;
 import com.substation.common.sql.OperationLogStore;
 import com.substation.common.sql.RegistrationStore;
@@ -52,7 +58,14 @@ public class DisplayMain {
         SessionManager sessionManager = new SessionManager(blackboard.getJedisPool());
         AuthApiHandler authApi = new AuthApiHandler(sqlUserStore, regStore, logStore, sessionManager);
         AdminApiHandler adminApi = new AdminApiHandler(sqlUserStore, regStore, logStore);
-        AnalysisApiHandler analysisApi = new AnalysisApiHandler();
+        SimulationStatsStore statsStore = new SimulationStatsStore(db);
+        SimulationRunStore runStore = new SimulationRunStore(db);
+        RunArchiver runArchiver = new RunArchiver(runStore);
+        SimulationRecordService recordService = new SimulationRecordService(
+                blackboard, runArchiver, runStore, statsStore);
+        AnalysisApiHandler analysisApi = new AnalysisApiHandler(
+                statsStore, runStore, recordService, sessionManager);
+        ReplayApiHandler replayApi = new ReplayApiHandler(runStore);
 
         WebSocketBridge.MqSender mqSender = (queue, message) -> {
             try { messageBus.publish(queue, message); }
@@ -60,8 +73,12 @@ public class DisplayMain {
         };
 
         this.wsBridge = new WebSocketBridge(wsPort, blackboard, mqSender);
+        this.wsBridge.setBeforeCarLaunch(carId -> prepareCarQueue(carId));
         this.wsBridge.setOperationLogStore(logStore);
-        this.httpServer = new HttpFileServer(httpPort, webRoot, authApi, analysisApi, adminApi, sessionManager);
+        ReplayCoordinator replayCoordinator = new ReplayCoordinator(blackboard, runStore);
+        this.wsBridge.setReplayCoordinator(replayCoordinator);
+        this.httpServer = new HttpFileServer(
+                httpPort, webRoot, authApi, analysisApi, adminApi, replayApi, sessionManager);
 
         LOG.info("DisplayMain 初始化完成");
         LOG.info("  Redis:  {}:{}", redisHost, redisPort);
@@ -88,6 +105,15 @@ public class DisplayMain {
         httpServer.stop();
         messageBus.close();
         blackboard.close();
+    }
+
+    private void prepareCarQueue(String carId) {
+        try {
+            messageBus.declareCarQueue(carId);
+            messageBus.purgeQueue(QueueNames.carQueue(carId));
+        } catch (IOException e) {
+            LOG.warn("准备小车队列失败: {}", carId, e);
+        }
     }
 
     private void onRefreshAllReceived(String rawMessage) {

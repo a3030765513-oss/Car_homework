@@ -158,7 +158,10 @@ public class CarMain {
         if (dynamicAdd) {
             if (bb.getCarStatus(carId).isPresent()) {
                 CarStatus status = bb.getCarStatus(carId).orElse(CarStatus.IDLE);
-                log.info("[{}] 动态添加：黑板已有注册，状态: {}", carId, status.chineseName());
+                log.info("[{}] 动态添加：接管黑板上已有注册，原状态: {}", carId, status.chineseName());
+                bb.setCarStatus(carId, CarStatus.IDLE);
+                bb.clearCarTarget(carId);
+                bb.clearRoute(carId);
                 return;
             }
             log.info("[{}] 动态添加：跳过 TaskConfigurator 等待，直接自初始化", carId);

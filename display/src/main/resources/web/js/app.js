@@ -58,6 +58,7 @@
   var $btnLive = document.getElementById('btn-live');
 
   var $replayControls = document.getElementById('replay-controls');
+  var $replayRunSelect = document.getElementById('replay-run-select');
   var $replaySlider = document.getElementById('replay-slider');
   var $replayTickLbl = document.getElementById('replay-tick-label');
   var $replayToggle = document.getElementById('replay-toggle');
@@ -65,6 +66,7 @@
   var $cfgWidth = document.getElementById('cfg-width');
   var $cfgHeight = document.getElementById('cfg-height');
   var $cfgCarCount = document.getElementById('cfg-carCount');
+  var initialCarCount = $cfgCarCount ? String($cfgCarCount.value || '3') : '3';
   var $cfgObstacleRatio = document.getElementById('cfg-obstacleRatio');
   var $cfgAlgorithm = document.getElementById('cfg-algorithm');
   var $cfgTickInterval = document.getElementById('cfg-tickInterval');
@@ -99,6 +101,9 @@
   var startTimestamp = null;
   var wasEverConnected = false;
   var userRole = null;
+  var currentOperator = 'unknown';
+  var selectedReplayRunId = null;
+  var lastSavedRunId = null;
 
   var addCarPending = { active: false, carId: '', baselineCount: 0, timerId: null };
   var ADD_CAR_TIMEOUT_MS = 30000;
@@ -130,7 +135,12 @@
     wasEverConnected = true;
     var msg = JSON.parse(event.data);
     if (msg.type === 'REPLAY_DATA') { receiveReplayData(msg); return; }
+    if (msg.type === 'REPLAY_ERROR') { alert(msg.error || '回放加载失败'); return; }
+    if (msg.type === 'RUN_ARCHIVED') {
+      return;
+    }
     if (msg.type === 'CAR_PENDING') { beginAddCarPending(msg.carId); return; }
+    if (msg.type === 'CAR_LAUNCHED') { clearAddCarPending(true); return; }
     if (msg.type === 'CAR_LAUNCH_FAILED') { failAddCarPending(msg.reason); return; }
     liveData = normalizeMapPayload(msg);
     if (mode === 'live') {
@@ -163,12 +173,21 @@
       ? ('添加 ' + addCarPending.carId + '...')
       : '添加中...';
     addCarPending.timerId = setTimeout(function () {
-      failAddCarPending('超时：请查看 logs/car-' + (addCarPending.carId || 'CarXXX') + '.log');
+      failAddCarPending('超时：请查看 logs/ 下 car-' + (addCarPending.carId || 'CarXXX') + '-*.log');
     }, ADD_CAR_TIMEOUT_MS);
   }
 
   function maybeCompleteAddCarPending(data) {
     if (!addCarPending.active || !data.cars) return;
+    if (addCarPending.carId) {
+      for (var i = 0; i < data.cars.length; i++) {
+        var pendingId = 'Car' + String(data.cars[i].number).padStart(3, '0');
+        if (pendingId === addCarPending.carId && data.cars.length > addCarPending.baselineCount) {
+          clearAddCarPending(true);
+          return;
+        }
+      }
+    }
     if (data.cars.length > addCarPending.baselineCount) {
       clearAddCarPending(true);
     }
@@ -313,7 +332,11 @@
     canvasReady = true;
     mapLayerDirty = true;
     if ($welcome) $welcome.style.display = 'none';
-    if ($mapStack) $mapStack.style.display = 'block';
+    if (window.UnityView) {
+      UnityView.onCanvasReady();
+    } else if ($mapStack) {
+      $mapStack.style.display = 'block';
+    }
   }
 
   // ══════════════ 地图层（静态：网格+探索+障碍物）
@@ -564,7 +587,6 @@
 
     $tick.textContent = '节拍: ' + tick;
     $rate.textContent = '探索率: ' + rate + '%';
-    if (data.cars) { $cfgCarCount.value = data.cars.length; }
     if (data.tick === 1 && !startTimestamp) {
       startTimestamp = Date.now(); startElapsedTimer();
     }
@@ -634,14 +656,31 @@
         timestamp: Date.now(),
         date: new Date().toLocaleString()
       };
-      var records = [];
-      try { records = JSON.parse(localStorage.getItem('sim_records') || '[]'); } catch (e) { /* ignore */ }
-      records.unshift(rec);
-      if (records.length > 50) { records.length = 50; }
-      localStorage.setItem('sim_records', JSON.stringify(records));
-      alert('已保存！可在「统计分析」页面查看。');
+      fetch('/api/analysis/records', {
+        method: 'POST',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+        body: JSON.stringify(rec)
+      }).then(function (resp) { return resp.json(); })
+        .then(function (body) {
+          if (body && body.success) {
+            lastSavedRunId = body.runId || null;
+            loadReplayRunList(lastSavedRunId);
+            alert('已保存到场次 #' + body.runId + '！可在「统计分析」与「路径回放」查看。');
+            return;
+          }
+          alert('保存失败：' + ((body && body.error) || '未知错误'));
+        })
+        .catch(function () {
+          alert('保存失败：无法连接 Display 服务器');
+        });
     };
-    document.getElementById('ap-discard').onclick = function () { overlay.remove(); };
+    document.getElementById('ap-discard').onclick = function () {
+      overlay.remove();
+      fetch('/api/analysis/discard', {
+        method: 'POST',
+        headers: authHeaders()
+      }).catch(function () { /* 忽略网络错误，不影响继续操作 */ });
+    };
   }
 
   function computeBalanceScore(cars) {
@@ -688,6 +727,7 @@
     if (elapsedTimerId) stopElapsedTimer();
     taskCompleteShown = false;
     simulationFrozenTick = null;
+    lastSavedRunId = null;
     clearMapCaches();
     mapLayerDirty = true;
     $modeTag.hidden = true;
@@ -695,8 +735,9 @@
       type: 'SET_CONFIG',
       data: {
         mapWidth: String($cfgWidth.value), mapHeight: String($cfgHeight.value),
-        carCount: String($cfgCarCount.value), obstacleRatio: String($cfgObstacleRatio.value),
-        algorithm: $cfgAlgorithm.value, tickInterval: String($cfgTickInterval.value), active: 'true'
+        carCount: String(initialCarCount), obstacleRatio: String($cfgObstacleRatio.value),
+        algorithm: $cfgAlgorithm.value, tickInterval: String($cfgTickInterval.value),
+        active: 'true', operator: currentOperator
       }
     };
     sendCommand(config);
@@ -724,6 +765,8 @@
     if (mode === 'replay') exitReplay();
     taskCompleteShown = false;
     simulationFrozenTick = null;
+    lastSavedRunId = null;
+    if ($cfgCarCount) { $cfgCarCount.value = initialCarCount; }
     liveData = null;
     replayData = null;
     replay.currentTick = 0;
@@ -734,6 +777,7 @@
   }
 
   function resetCanvas() {
+    if (window.UnityView) UnityView.exit();
     if ($welcome) $welcome.style.display = 'flex';
     if ($mapStack) $mapStack.style.display = 'none';
     $carsPanel.innerHTML = '<div class="car-card placeholder"><p>等待车辆数据...</p></div>';
@@ -761,6 +805,79 @@
   }
 
   // ══════════════ 回放
+  function authHeaders() {
+    var token = window.Auth ? Auth.getToken() : localStorage.getItem('auth_token');
+    return token ? { Authorization: 'Bearer ' + token } : {};
+  }
+
+  function formatRunLabel(run) {
+    var started = run.startedAt ? new Date(run.startedAt).toLocaleString() : '';
+    return '#' + run.id + ' ' + (run.algorithm || '') + ' ' + run.explorationRate + '% tick' + run.maxTick
+      + (started ? ' (' + started + ')' : '');
+  }
+
+  function loadReplayRunList(selectRunId) {
+    if (!$replayRunSelect || !window.Auth || !Auth.getToken()) {
+      return;
+    }
+    fetch('/api/replay/runs?page=1&size=50', { headers: authHeaders() })
+      .then(function (r) { return r.json(); })
+      .then(function (body) {
+        if (!body || !body.success) {
+          return;
+        }
+        var runs = body.runs || [];
+        var html = '<option value="current">当前场次（内存）</option>';
+        for (var i = 0; i < runs.length; i++) {
+          var run = runs[i];
+          html += '<option value="' + run.id + '">' + formatRunLabel(run) + '</option>';
+        }
+        $replayRunSelect.innerHTML = html;
+        if (selectRunId) {
+          $replayRunSelect.value = String(selectRunId);
+        }
+      })
+      .catch(function () { /* ignore */ });
+  }
+
+  function requestReplayBySelection() {
+    if (window.UnityView) UnityView.exit();
+    var selected = $replayRunSelect ? $replayRunSelect.value : 'current';
+    $modeTag.hidden = false;
+    $modeTag.textContent = '加载回放数据...';
+    if (selected === 'current') {
+      selectedReplayRunId = null;
+      if (replayData && replayData.maxTick > 0) {
+        replay.currentTick = 0;
+        replay.playing = false;
+        mode = 'replay';
+        $btnReplay.hidden = true;
+        $btnLive.hidden = false;
+        $replayControls.hidden = false;
+        $modeTag.textContent = '◀ 回放中（当前场次）';
+        $replaySlider.min = 0;
+        $replaySlider.max = replay.maxTick;
+        $replaySlider.value = 0;
+        updateReplayLabel();
+        renderReplayFrame();
+        return;
+      }
+      ws.send(JSON.stringify({ type: 'REQUEST_REPLAY' }));
+      return;
+    }
+    selectedReplayRunId = parseInt(selected, 10);
+    fetch('/api/replay/runs/' + selectedReplayRunId, { headers: authHeaders() })
+      .then(function (r) { return r.json(); })
+      .then(function (body) {
+        if (!body || !body.success || !body.data) {
+          alert((body && body.error) || '加载历史场次失败');
+          return;
+        }
+        receiveReplayData(body.data);
+      })
+      .catch(function () { alert('加载历史场次失败'); });
+  }
+
   function receiveReplayData(msg) {
     replayData = msg;
     replay.maxTick = msg.maxTick || 0;
@@ -830,7 +947,8 @@
     $btnLive.hidden = false;
     $replayControls.hidden = false;
     $modeTag.hidden = false;
-    $modeTag.textContent = '◀ 回放中';
+    var runLabel = msg.runId ? ('场次 #' + msg.runId) : '当前场次';
+    $modeTag.textContent = '◀ 回放中（' + runLabel + '）';
     $replaySlider.min = 0;
     $replaySlider.max = replay.maxTick;
     $replaySlider.value = 0;
@@ -853,20 +971,11 @@
   }
 
   function enterReplay() {
-    if (replayData && replayData.maxTick > 0) {
-      replay.currentTick = 0; replay.playing = false;
-      mode = 'replay';
-      $btnReplay.hidden = true; $btnLive.hidden = false; $replayControls.hidden = false;
-      $modeTag.hidden = false; $modeTag.textContent = '◀ 回放中';
-      $replaySlider.min = 0; $replaySlider.max = replay.maxTick; $replaySlider.value = 0;
-      updateReplayLabel(); renderReplayFrame();
-      return;
-    }
-    $modeTag.hidden = false; $modeTag.textContent = '加载回放数据...';
-    ws.send(JSON.stringify({ type: 'REQUEST_REPLAY' }));
+    requestReplayBySelection();
   }
 
   function exitReplay() {
+    if (window.UnityView) UnityView.exit();
     mode = 'replay'; stopReplayTimer(); mode = 'live';
     $btnReplay.hidden = false; $btnLive.hidden = true; $replayControls.hidden = true; $modeTag.hidden = true;
     mapLayerDirty = true;
@@ -998,15 +1107,27 @@
   if (window.Auth) {
     Auth.checkAuth().then(function (user) {
       if (!user || !user.success) return;
+      currentOperator = user.username || user.displayName || 'unknown';
+      userRole = user.role;
       Auth.renderNavBar(user);
       Auth.applyPermissions(user.role);
+      loadReplayRunList();
     });
   }
   window.addEventListener('resize', function () {
     if (!liveData) return;
     canvasReady = false; finalizeCanvas();
     if (canvasReady) { mapLayerDirty = true; renderMapLayer(); renderCarsLayer(); }
+    if (window.UnityView && UnityView.is3D()) UnityView.syncSize();
   });
+  if (window.UnityView) {
+    UnityView.init({
+      getLiveData: function () { return liveData; },
+      getReplayData: function () { return replayData; },
+      isCanvasReady: function () { return canvasReady; },
+      requestFinalizeCanvas: function () { finalizeCanvas(); }
+    });
+  }
   setInterval(function () {
     var token = localStorage.getItem('auth_token');
     if (token) {

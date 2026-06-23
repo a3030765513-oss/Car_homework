@@ -1,11 +1,10 @@
 /**
- * 统计分析 — localStorage sim_records
+ * 统计分析 — 服务端 sim_records（Person D SQL Server）
  * 步数有效率 / 均衡条 / 筛选与勾选对比
  */
 (function () {
   'use strict';
 
-  var STORAGE_KEY = 'sim_records';
   var MAX_STORED_RECORDS = 50;
   var EXPORT_VERSION = 1;
   var EFF_GREEN = '#10B981';
@@ -16,7 +15,15 @@
   var filterAlgo = '';
   var selectMode = false;
   var selected = {};
+  var loadFailed = false;
   var $wrap, $toolbar, $fsd, $fsdBody, $fsdTitle, $compareModal, $comparePanel, $importFile;
+
+  function authHeaders() {
+    var token = window.Auth ? Auth.getToken() : localStorage.getItem('auth_token');
+    var headers = { 'Content-Type': 'application/json' };
+    if (token) { headers.Authorization = 'Bearer ' + token; }
+    return headers;
+  }
 
   async function init() {
     var user = await Auth.checkAuth();
@@ -34,12 +41,26 @@
     $compareModal.addEventListener('click', function (e) {
       if (e.target === $compareModal) { closeCompareModal(); }
     });
-    loadList();
+    await loadList();
   }
 
-  function loadRecords() {
-    try { records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
-    catch (e) { records = []; }
+  async function loadRecords() {
+    loadFailed = false;
+    try {
+      var resp = await fetch('/api/analysis/records?page=1&size=' + MAX_STORED_RECORDS, {
+        headers: authHeaders()
+      });
+      if (resp.status === 401) {
+        loadFailed = true;
+        records = [];
+        return;
+      }
+      var body = await resp.json();
+      records = (body && body.success && Array.isArray(body.records)) ? body.records : [];
+    } catch (e) {
+      loadFailed = true;
+      records = [];
+    }
   }
 
   function fmtDate(ts) {
@@ -89,31 +110,68 @@
     return n;
   }
 
-  function loadList() {
-    loadRecords();
+  function recordLabel(r, index) {
+    var runId = r.runId != null ? r.runId : r.id;
+    return runId != null ? ('场次 #' + runId) : ('#' + (index + 1));
+  }
+
+  function recordRunId(r) {
+    return r.runId != null ? r.runId : r.id;
+  }
+
+  async function loadList() {
+    await loadRecords();
     pruneSelection();
     renderToolbar();
+    if (loadFailed) {
+      $wrap.innerHTML = '<div class="empty"><div class="icon">⚠️</div><p>无法加载仿真记录</p>'
+        + '<p style="font-size:12px;margin-top:8px">请确认 Display 已启动且 SQL Server 可用</p></div>';
+      return;
+    }
     if (!records.length) {
       selectMode = false;
       selected = {};
       $wrap.innerHTML = '<div class="empty"><div class="icon">📋</div><p>暂无仿真记录</p>'
-        + '<p style="font-size:12px;margin-top:8px">可通过上方「导入 JSON」加载备份文件</p></div>';
+        + '<p style="font-size:12px;margin-top:8px">完成探索并保存统计后，记录会与历史场次编号关联</p></div>';
       return;
     }
     renderCardGrid();
   }
 
-  function saveRecords() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+  async function saveRecordToServer(rec) {
+    var resp = await fetch('/api/analysis/records', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(rec)
+    });
+    var body = await resp.json();
+    if (!body || !body.success) {
+      throw new Error((body && body.error) || '保存失败');
+    }
+    return body.record || rec;
+  }
+
+  async function deleteRecordOnServer(runId) {
+    var resp = await fetch('/api/analysis/records/' + runId, {
+      method: 'DELETE',
+      headers: authHeaders()
+    });
+    var body = await resp.json();
+    if (!body || !body.success) {
+      throw new Error((body && body.error) || '删除失败');
+    }
   }
 
   function recordKey(r) {
+    var runId = recordRunId(r);
+    if (runId != null) { return 'run:' + runId; }
     if (r.timestamp != null) { return 'ts:' + r.timestamp; }
     return 'date:' + (r.date || '') + ':' + (r.totalSteps || 0);
   }
 
   function isValidRecord(item) {
     return item != null && typeof item === 'object'
+      && recordRunId(item) != null
       && (item.totalSteps != null || item.explorationRate != null);
   }
 
@@ -129,7 +187,7 @@
     for (var i = 0; i < records.length; i++) {
       keySet[recordKey(records[i])] = true;
     }
-    var added = 0;
+    var toUpload = [];
     var skipped = 0;
     for (var j = 0; j < incoming.length; j++) {
       var item = incoming[j];
@@ -137,14 +195,9 @@
       var key = recordKey(item);
       if (keySet[key]) { skipped++; continue; }
       keySet[key] = true;
-      records.push(item);
-      added++;
+      toUpload.push(item);
     }
-    records.sort(function (a, b) { return (b.timestamp || 0) - (a.timestamp || 0); });
-    if (records.length > MAX_STORED_RECORDS) {
-      records.length = MAX_STORED_RECORDS;
-    }
-    return { added: added, skipped: skipped };
+    return { toUpload: toUpload, skipped: skipped };
   }
 
   function exportRecordsJson() {
@@ -172,13 +225,17 @@
     var file = $importFile.files && $importFile.files[0];
     if (!file) { return; }
     var reader = new FileReader();
-    reader.onload = function () {
+    reader.onload = async function () {
       try {
         var incoming = parseImportPayload(String(reader.result || ''));
         var result = mergeImported(incoming);
-        saveRecords();
-        loadList();
-        alert('导入完成：新增 ' + result.added + ' 条，跳过重复/无效 ' + result.skipped + ' 条');
+        var added = 0;
+        for (var i = 0; i < result.toUpload.length; i++) {
+          await saveRecordToServer(result.toUpload[i]);
+          added++;
+        }
+        await loadList();
+        alert('导入完成：新增 ' + added + ' 条，跳过重复/无效 ' + result.skipped + ' 条');
       } catch (e) {
         alert('导入失败：' + (e.message || '无法解析 JSON 文件'));
       }
@@ -228,7 +285,7 @@
       + '<div class="io-row">'
       + '<button type="button" class="btn-io" id="btn-export-json">导出 JSON</button>'
       + '<button type="button" class="btn-io" id="btn-import-json">导入 JSON</button>'
-      + '<span style="font-size:11px;color:#94A3B8">导出备份或从队友处导入合并（按时间戳去重）</span>'
+      + '<span style="font-size:11px;color:#94A3B8">统计记录与历史场次编号一一对应；导入 JSON 需含 runId</span>'
       + '</div>';
     document.getElementById('algo-filter').addEventListener('change', function (e) {
       filterAlgo = e.target.value;
@@ -301,8 +358,8 @@
       html += '<div class="a-card' + selCls + modeCls + '" data-idx="' + i + '">'
         + checkHtml
         + '<button class="a-del" type="button">✕</button>'
-        + '<h4>仿真记录 #' + (i + 1) + '</h4>'
-        + '<p>' + (r.date || fmtDate(r.timestamp)) + '</p>'
+        + '<h4>仿真记录 ' + recordLabel(r, i) + '</h4>'
+        + '<p>' + (r.date || fmtDate(r.timestamp)) + (r.savedBy ? ' · ' + r.savedBy : '') + '</p>'
         + '<div class="a-rate" style="color:' + effColor(eff) + '">' + effDisplay + '</div>'
         + '<div class="a-rate-label">步数有效率</div>'
         + '<div class="a-coverage">探索覆盖率 ' + cov + '</div>'
@@ -372,7 +429,7 @@
     for (var k in selected) { if (selected[k]) { indices.push(parseInt(k, 10)); } }
     indices.sort(function (a, b) { return a - b; });
     if (indices.length < 2) { return; }
-    var headers = indices.map(function (i) { return '#' + (i + 1); });
+    var headers = indices.map(function (i) { return recordLabel(records[i], i); });
     var rows = [
       { label: '步数有效率', fn: function (r) { var e = getEfficiency(r); return e != null ? e + '%' : '--'; } },
       { label: '探索覆盖率', fn: function (r) { return (r.explorationRate != null ? r.explorationRate : '--') + (r.explorationRate != null ? '%' : ''); } },
@@ -406,12 +463,24 @@
 
   function closeCompareModal() { $compareModal.classList.remove('active'); }
 
-  function delRecord(i) {
+  async function delRecord(i) {
+    var r = records[i];
+    if (!r) { return; }
     if (!confirm('确定要删除该仿真记录吗？此操作不可恢复。')) { return; }
-    records.splice(i, 1);
-    saveRecords();
-    loadList();
-    closeDetail();
+    var runId = recordRunId(r);
+    if (runId == null) {
+      records.splice(i, 1);
+      loadList();
+      closeDetail();
+      return;
+    }
+    try {
+      await deleteRecordOnServer(runId);
+      await loadList();
+      closeDetail();
+    } catch (e) {
+      alert('删除失败：' + (e.message || '未知错误'));
+    }
   }
 
   function closeDetail() { $fsd.classList.remove('active'); }
@@ -419,7 +488,7 @@
   function showDetail(i) {
     var r = records[i];
     if (!r) { return; }
-    $fsdTitle.textContent = '仿真记录 #' + (i + 1) + ' - ' + (r.date || fmtDate(r.timestamp));
+    $fsdTitle.textContent = '仿真记录 ' + recordLabel(r, i) + ' - ' + (r.date || fmtDate(r.timestamp));
     var eff = getEfficiency(r);
     var effDisplay = eff != null ? eff + '%' : '--';
     var cov = r.explorationRate != null ? r.explorationRate + '%' : '--';
@@ -440,6 +509,7 @@
       + kpi('耗时', (r.duration || 0) + 's', '#8B5CF6')
       + '</div>'
       + '<div class="info-row">'
+      + '<span>场次: #' + (recordRunId(r) || '--') + '</span>'
       + '<span>节拍: ' + (r.tick || 0) + '</span>'
       + '<span>车辆: ' + (r.carCount || 0) + '</span>'
       + '<span>算法: ' + algo + '</span>'

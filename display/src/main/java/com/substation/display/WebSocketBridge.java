@@ -2,6 +2,7 @@ package com.substation.display;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
+import com.substation.common.infra.DeployConfigLoader;
 import com.substation.common.model.CarStatus;
 import com.substation.common.model.Point;
 import com.substation.common.model.SimulationState;
@@ -64,6 +65,18 @@ public class WebSocketBridge extends WebSocketServer {
     /** 当前连接的浏览器客户端集合（线程安全） */
     private final Set<WebSocket> clients = ConcurrentHashMap.newKeySet();
 
+    /** deploy/infra.local.json 中由其他机器启动的小车（如 Person B） */
+    private final Set<String> externalProcessCarIds;
+
+    /** 本 Display 已通过 ADD_CAR 启动过进程的小车 */
+    private final Set<String> displayLaunchedCarIds = ConcurrentHashMap.newKeySet();
+
+    /** 防止并发 ADD_CAR 分配到重复 CarId */
+    private final Object addCarLock = new Object();
+
+    /** 启动动态小车前执行（如清空 MQ 队列） */
+    private java.util.function.Consumer<String> beforeCarLaunch = carId -> {};
+
     // ────────────────── 构造 ──────────────────
 
     /**
@@ -75,6 +88,11 @@ public class WebSocketBridge extends WebSocketServer {
         super(new InetSocketAddress(port));
         this.blackboard = blackboard;
         this.mqSender = mqSender;
+        this.externalProcessCarIds = Set.copyOf(
+                DeployConfigLoader.loadOptional()
+                        .map(config -> config.cars())
+                        .orElse(List.of()));
+        DynamicCarLauncher.setProcessExitListener(this::onDynamicCarProcessExit);
     }
 
     // ════════════════════════════════════════════════════════════════
@@ -113,8 +131,22 @@ public class WebSocketBridge extends WebSocketServer {
     /** 操作日志存储（SQL Server，可选） */
     private com.substation.common.sql.OperationLogStore operationLogStore;
 
+    /** 场次归档与历史回放 */
+    private ReplayCoordinator replayCoordinator;
+
+    /** 最近一次广播的 tick，用于加车后主动刷新 */
+    private volatile int lastBroadcastTick;
+
     public void setOperationLogStore(com.substation.common.sql.OperationLogStore store) {
         this.operationLogStore = store;
+    }
+
+    public void setReplayCoordinator(ReplayCoordinator coordinator) {
+        this.replayCoordinator = coordinator;
+    }
+
+    void setBeforeCarLaunch(java.util.function.Consumer<String> beforeCarLaunch) {
+        this.beforeCarLaunch = beforeCarLaunch != null ? beforeCarLaunch : carId -> {};
     }
 
     @Override
@@ -126,8 +158,14 @@ public class WebSocketBridge extends WebSocketServer {
             if ("ADD_CAR".equals(type)) {
                 handleAddCar();
             } else if ("REQUEST_REPLAY".equals(type)) {
-                sendReplayData(conn);
+                handleReplayRequest(conn, msg);
             } else {
+                if ("RESET".equals(type) || "SET_CONFIG".equals(type)) {
+                    stopAllDynamicCars();
+                }
+                if (replayCoordinator != null && "SET_CONFIG".equals(type)) {
+                    replayCoordinator.beforeSimCommand(type, msg.getJSONObject("data"));
+                }
                 mqSender.send(QueueNames.CONTROLLER_CMD, message);
             }
         } catch (Exception e) {
@@ -135,29 +173,68 @@ public class WebSocketBridge extends WebSocketServer {
         }
     }
 
-    private void handleAddCar() {
-        String carId = resolveNextCarId();
-        Path projectRoot = Path.of(".").toAbsolutePath().normalize();
-
-        broadcastEvent("CAR_PENDING", Map.of("carId", carId));
-
-        if (!DynamicCarLauncher.isJarAvailable(projectRoot)) {
-            String reason = "未找到 car JAR，请先执行: .\\mvnw.cmd package -pl car -am -DskipTests";
-            LOG.error("动态添加小车失败 {}: {}", carId, reason);
-            broadcastEvent("CAR_LAUNCH_FAILED", Map.of("carId", carId, "reason", reason));
+    private void handleReplayRequest(WebSocket conn, JSONObject msg) {
+        if (replayCoordinator == null) {
+            conn.send("{\"type\":\"REPLAY_ERROR\",\"error\":\"回放服务未就绪\"}");
             return;
         }
-
-        try {
-            DynamicCarLauncher.launchAsync(carId, projectRoot);
-            LOG.info("动态添加小车: {} 地图={}×{}", carId,
-                blackboard.getMapWidth(), blackboard.getMapHeight());
-        } catch (IllegalStateException e) {
-            LOG.warn("动态添加小车失败: {}", carId, e);
-            broadcastEvent("CAR_LAUNCH_FAILED", Map.of(
-                "carId", carId,
-                "reason", e.getMessage() != null ? e.getMessage() : "启动失败"));
+        Long runId = msg.getLong("runId");
+        if (runId != null && runId > 0) {
+            replayCoordinator.sendStoredReplay(conn, runId);
+            return;
         }
+        replayCoordinator.sendLiveReplay(conn);
+    }
+
+    private void handleAddCar() {
+        synchronized (addCarLock) {
+            pruneDeadLaunches();
+            String carId = resolveNextCarId();
+            Path projectRoot = Path.of(".").toAbsolutePath().normalize();
+
+            broadcastEvent("CAR_PENDING", Map.of("carId", carId));
+
+            if (!DynamicCarLauncher.isLaunchAvailable(projectRoot)) {
+                String reason = "未找到 car JAR，请先执行: .\\mvnw.cmd package -pl car -am -DskipTests";
+                LOG.error("动态添加小车失败 {}: {}", carId, reason);
+                broadcastEvent("CAR_LAUNCH_FAILED", Map.of("carId", carId, "reason", reason));
+                return;
+            }
+
+            if (DynamicCarLauncher.isProcessAlive(carId)) {
+                String reason = carId + " 进程已在运行，请勿重复添加";
+                LOG.warn("动态添加小车跳过: {}", reason);
+                broadcastEvent("CAR_LAUNCH_FAILED", Map.of("carId", carId, "reason", reason));
+                return;
+            }
+
+            try {
+                displayLaunchedCarIds.add(carId);
+                DynamicCarLauncher.launchAsync(
+                        carId,
+                        projectRoot,
+                        () -> beforeCarLaunch.accept(carId),
+                        this::onCarLaunched,
+                        this::onCarLaunchFailed);
+                LOG.info("动态添加小车: {} 地图={}×{}", carId,
+                    blackboard.getMapWidth(), blackboard.getMapHeight());
+            } catch (IllegalStateException e) {
+                onCarLaunchFailed(carId, e);
+            }
+        }
+    }
+
+    private void onCarLaunched(String carId) {
+        LOG.info("动态小车进程已就绪: {}", carId);
+        broadcastEvent("CAR_LAUNCHED", Map.of("carId", carId));
+        pushSimulationState(lastBroadcastTick, resolveExplorationRate());
+    }
+
+    private void onCarLaunchFailed(String carId, Throwable error) {
+        displayLaunchedCarIds.remove(carId);
+        String reason = error != null && error.getMessage() != null ? error.getMessage() : "启动失败";
+        LOG.warn("动态添加小车失败: {}", carId, error);
+        broadcastEvent("CAR_LAUNCH_FAILED", Map.of("carId", carId, "reason", reason));
     }
 
     private void broadcastEvent(String eventType, Map<String, String> payload) {
@@ -168,11 +245,27 @@ public class WebSocketBridge extends WebSocketServer {
     }
 
     private String resolveNextCarId() {
-        int maxNumber = 0;
-        for (String existingId : blackboard.discoverCarIds()) {
-            maxNumber = Math.max(maxNumber, extractCarNumber(existingId));
+        return DynamicCarIdResolver.resolve(
+                blackboard.discoverCarIds(),
+                externalProcessCarIds,
+                displayLaunchedCarIds,
+                DynamicCarLauncher::isProcessAlive);
+    }
+
+    private void pruneDeadLaunches() {
+        displayLaunchedCarIds.removeIf(carId -> !DynamicCarLauncher.isProcessAlive(carId));
+    }
+
+    private void onDynamicCarProcessExit(String carId) {
+        displayLaunchedCarIds.remove(carId);
+    }
+
+    private void stopAllDynamicCars() {
+        DynamicCarProcessKiller.killAllDynamicExcept(externalProcessCarIds);
+        for (String carId : Set.copyOf(displayLaunchedCarIds)) {
+            DynamicCarLauncher.stopProcess(carId);
         }
-        return String.format("Car%03d", maxNumber + 1);
+        displayLaunchedCarIds.clear();
     }
 
     /** WebSocket 异常 */
@@ -206,6 +299,7 @@ public class WebSocketBridge extends WebSocketServer {
         if (clients.isEmpty()) {
             return;
         }
+        lastBroadcastTick = tick;
         int syncedRate = resolveExplorationRate();
         if (tick % 20 == 0 || tick == 1 || syncedRate >= 100) {
             LOG.info("pushState tick={} rate={}%", tick, syncedRate);
@@ -265,72 +359,6 @@ public class WebSocketBridge extends WebSocketServer {
     private boolean[][] readSealedBitmap(int mapWidth, int mapHeight) {
         return BlackboardClient.bytesToBitmap(
             blackboard.getMapSealedBytes(), mapWidth, mapHeight);
-    }
-
-    // ────────────────── 回放数据构建 ──────────────────
-
-    /** 从Redis读取全部回放数据并推送给指定客户端 */
-    private void sendReplayData(WebSocket conn) {
-        Map<String, String> config = blackboard.getTaskConfig();
-        int mapWidth = parseIntOrDefault(config.get("mapWidth"), DEFAULT_W);
-        int mapHeight = parseIntOrDefault(config.get("mapHeight"), DEFAULT_H);
-
-        JSONObject replayData = new JSONObject();
-        replayData.put("type", "REPLAY_DATA");
-        replayData.put("mapWidth", mapWidth);
-        replayData.put("mapHeight", mapHeight);
-        replayData.put("mapBlock", readBlockBitmap(mapWidth, mapHeight));
-        replayData.put("mapSealed", readSealedBitmap(mapWidth, mapHeight));
-        replayData.put("carHistories", buildHistoryMap());
-        replayData.put("explorationEvents", blackboard.getExplorationEvents());
-        replayData.put("mapViewB64",
-            Base64.getEncoder().encodeToString(blackboard.getMapViewBytes()));
-
-        Map<String, List<String>> histories = blackboard.getAllCarHistories();
-        int maxTick = resolveReplayMaxTick(histories);
-        replayData.put("maxTick", maxTick);
-
-        conn.send(replayData.toJSONString());
-        LOG.info("已发送回放数据到 {}, maxTick={}", conn.getRemoteSocketAddress(), maxTick);
-    }
-
-    private int resolveReplayMaxTick(Map<String, List<String>> histories) {
-        int maxTick = 0;
-        for (List<String> hist : histories.values()) {
-            for (String entry : hist) {
-                JSONObject event = JSON.parseObject(entry);
-                int tick = event.getIntValue("tick", 0);
-                if (tick > maxTick) {
-                    maxTick = tick;
-                }
-            }
-        }
-        for (String explorationEvent : blackboard.getExplorationEvents()) {
-            int comma = explorationEvent.indexOf(',');
-            if (comma <= 0) {
-                continue;
-            }
-            try {
-                int tick = Integer.parseInt(explorationEvent.substring(0, comma));
-                if (tick > maxTick) {
-                    maxTick = tick;
-                }
-            } catch (NumberFormatException ignored) {
-                // 跳过格式异常的事件
-            }
-        }
-        return maxTick;
-    }
-
-    private JSONObject buildHistoryMap() {
-        JSONObject map = new JSONObject();
-        for (String carId : blackboard.discoverCarIds()) {
-            List<String> history = blackboard.getCarHistory(carId);
-            if (!history.isEmpty()) {
-                map.put(carId, history);
-            }
-        }
-        return map;
     }
 
     // ────────────────── 车辆信息构建 ──────────────────

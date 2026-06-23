@@ -36,6 +36,10 @@ public class BlackboardClient implements AutoCloseable {
     private static final String KEY_CONTROLLER_INSTANCE = "controller:instance";
     /** Redis key: 探索事件列表（回放用），每元素为 {tick,row,col} */
     private static final String KEY_EXPLORATION_EVENTS = "explorationEvents";
+    /** 仿真场次元数据（归档前写入 SQL） */
+    private static final String KEY_SIM_RUN_STARTED_AT = "sim:run:startedAt";
+    private static final String KEY_SIM_RUN_STARTED_BY = "sim:run:startedBy";
+    private static final String KEY_SIM_RUN_ARCHIVED = "sim:run:archived";
     /** 仿真数据 SCAN 模式（不含 auth:* 等非仿真键） */
     private static final String[] SIMULATION_SCAN_PATTERNS = {
         "Car*:*", "pos:reserve:*", "lock:*"
@@ -711,6 +715,62 @@ public class BlackboardClient implements AutoCloseable {
         }
     }
 
+    // ==================== 仿真场次元数据（SQL 归档） ====================
+
+    /** 是否存在可归档的轨迹或探索事件 */
+    public boolean hasReplayableData() {
+        if (!getExplorationEvents().isEmpty()) {
+            return true;
+        }
+        return !getAllCarHistories().isEmpty();
+    }
+
+    public boolean isSimRunArchived() {
+        try (Jedis jedis = pool.getResource()) {
+            return "1".equals(jedis.get(KEY_SIM_RUN_ARCHIVED));
+        }
+    }
+
+    public void markSimRunArchived() {
+        try (Jedis jedis = pool.getResource()) {
+            jedis.set(KEY_SIM_RUN_ARCHIVED, "1");
+        }
+    }
+
+    public void clearSimRunArchived() {
+        try (Jedis jedis = pool.getResource()) {
+            jedis.del(KEY_SIM_RUN_ARCHIVED);
+        }
+    }
+
+    public Optional<java.time.Instant> getSimRunStartedAt() {
+        try (Jedis jedis = pool.getResource()) {
+            String value = jedis.get(KEY_SIM_RUN_STARTED_AT);
+            if (value == null || value.isBlank()) {
+                return Optional.empty();
+            }
+            return Optional.of(java.time.Instant.ofEpochSecond(Long.parseLong(value.trim())));
+        } catch (NumberFormatException e) {
+            return Optional.empty();
+        }
+    }
+
+    public Optional<String> getSimRunStartedBy() {
+        try (Jedis jedis = pool.getResource()) {
+            String value = jedis.get(KEY_SIM_RUN_STARTED_BY);
+            return value == null || value.isBlank() ? Optional.empty() : Optional.of(value);
+        }
+    }
+
+    /** 新仿真开始前记录操作者与开始时间 */
+    public void beginSimRun(String startedBy) {
+        try (Jedis jedis = pool.getResource()) {
+            jedis.set(KEY_SIM_RUN_STARTED_AT, String.valueOf(System.currentTimeMillis() / 1000));
+            jedis.set(KEY_SIM_RUN_STARTED_BY, startedBy == null || startedBy.isBlank() ? "unknown" : startedBy);
+            jedis.del(KEY_SIM_RUN_ARCHIVED);
+        }
+    }
+
     // ==================== mapHeat ====================
 
     /**
@@ -917,7 +977,8 @@ public class BlackboardClient implements AutoCloseable {
     public void clearSimulationState() {
         try (Jedis jedis = pool.getResource()) {
             jedis.del(KEY_MAP_VIEW, KEY_MAP_BLOCK, KEY_MAP_SEALED,
-                KEY_MAP_HEAT, KEY_TASK_CONFIG, KEY_EXPLORATION_EVENTS);
+                KEY_MAP_HEAT, KEY_TASK_CONFIG, KEY_EXPLORATION_EVENTS,
+                KEY_SIM_RUN_STARTED_AT, KEY_SIM_RUN_STARTED_BY, KEY_SIM_RUN_ARCHIVED);
             for (String pattern : SIMULATION_SCAN_PATTERNS) {
                 deleteKeysMatching(jedis, pattern);
             }

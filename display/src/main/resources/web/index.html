@@ -90,9 +90,16 @@
       <!-- 附加功能按钮 -->
       <div class="btn-group" style="margin-top:4px">
         <button id="btn-addcar" class="btn secondary" title="动态添加一台新车">+ 添加小车</button>
+        <button id="btn-unity" class="btn" title="切换到 Unity 3D 地图">&#x1F3AE; 3D视图</button>
       </div>
 
       <!-- 回放控制 -->
+      <div class="form-row" style="margin-top:4px">
+        <label for="replay-run-select">历史场次</label>
+        <select id="replay-run-select" class="cfg-input">
+          <option value="current">当前场次（内存）</option>
+        </select>
+      </div>
       <div class="btn-group" style="margin-top:4px">
         <button id="btn-replay" class="btn replay">&#x25B6; 路径回放</button>
         <button id="btn-live"   class="btn live" hidden>&#x25CF; 返回实时</button>
@@ -150,6 +157,10 @@
       <canvas id="map-canvas"></canvas>
       <canvas id="car-canvas"></canvas>
     </div>
+    <div id="unity-shell" class="unity-shell" hidden>
+      <iframe id="unity-frame" class="unity-frame" src="unity/index.html" title="Unity 3D 地图" tabindex="-1"></iframe>
+      <div id="unity-input" class="unity-input-layer" title="左键拖移 | Shift+左键或右键旋转 | 滚轮缩放"></div>
+    </div>
   </main>
 
   <!-- ════════════ 右侧栏：车辆状态卡 ════════════ -->
@@ -179,6 +190,7 @@
 </div>
 
 <script src="js/auth.js?v=11"></script>
+<script src="js/unity-view.js"></script>
 <script src="js/app.js"></script>
 
 </body>

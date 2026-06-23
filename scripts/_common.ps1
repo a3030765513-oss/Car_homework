@@ -44,7 +44,7 @@ function Start-ModuleWindow {
         [string]$ExecArgs = ""
     )
 
-    $command = "title $Title && cd /d `"$ProjectRoot`" && .\mvnw.cmd exec:java -pl $ModuleName -Dexec.mainClass=$MainClass"
+    $command = "title $Title && cd /d `"$ProjectRoot`" && .\mvnw.cmd exec:java -pl $ModuleName -am -Dexec.mainClass=$MainClass"
     if ($ExecArgs -ne "") {
         $command += " `"-Dexec.args=$ExecArgs`""
     }

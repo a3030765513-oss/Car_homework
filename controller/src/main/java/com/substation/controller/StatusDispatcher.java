@@ -71,6 +71,8 @@ public class StatusDispatcher {
     private final Set<String> supervisedFlags;
     /** 已发监督请求、等待监督结果后再切 READY 的车辆 */
     private final Set<String> awaitingSupervision;
+    /** 已声明 MQ 队列的小车，避免重复 declare */
+    private final Set<String> declaredCarQueues = ConcurrentHashMap.newKeySet();
     /** 随机数生成器 */
     private final Random random = new Random();
     /** 每车随机阻塞超时阈值（打破多车互堵死锁） */
@@ -121,6 +123,8 @@ public class StatusDispatcher {
         if (carIds.isEmpty()) {
             return;
         }
+
+        ensureCarQueuesDeclared(carIds);
 
         // 先广播当前帧（Display 读到车移动前的干净状态，避免跳格）
         broadcastRefresh();
@@ -243,13 +247,12 @@ public class StatusDispatcher {
         return last == null || tick - last >= SUPERVISE_COOLDOWN_TICKS;
     }
 
-    /** 车辆移动完成回调：清除TICK_MOVE发送标记，允许下一轮发送，并刷新前端 */
+    /** 车辆移动完成回调：清除 TICK_MOVE 发送标记，允许下一轮发送 */
     public void onMoveAcknowledged(String carId) {
         if (!taskActive) {
             return;
         }
         pendingMoveRequests.remove(carId);
-        broadcastRefresh();
         tryCompleteIfExplorationDone();
     }
 
@@ -302,16 +305,25 @@ public class StatusDispatcher {
         supervisedFlags.clear();
         awaitingSupervision.clear();
         blockedTimeoutTicks.clear();
+        declaredCarQueues.clear();
+    }
+
+    private void ensureCarQueuesDeclared(Set<String> carIds) {
+        for (String carId : carIds) {
+            if (!declaredCarQueues.add(carId)) {
+                continue;
+            }
+            try {
+                bus.declareCarQueue(carId);
+            } catch (IOException e) {
+                declaredCarQueues.remove(carId);
+                System.err.println("[Controller] 声明小车队列失败 " + carId + ": " + e.getMessage());
+            }
+        }
     }
 
     private void declareCarQueues() {
-        try {
-            for (String carId : bb.discoverCarIds()) {
-                bus.declareCarQueue(carId);
-            }
-        } catch (IOException e) {
-            System.err.println("[Controller] 声明小车队列失败: " + e.getMessage());
-        }
+        ensureCarQueuesDeclared(bb.discoverCarIds());
     }
 
     private void applyTickIntervalFromConfig() {
