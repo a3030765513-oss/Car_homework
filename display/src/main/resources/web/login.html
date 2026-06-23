@@ -60,9 +60,11 @@
   </div>
 </div>
 
+<script src="js/auth.js?v=11"></script>
 <script>
 (function () {
   'use strict';
+  Auth.showKickMessageIfAny();
   var $u = document.getElementById('login-username');
   var $p = document.getElementById('login-password');
   var $btn = document.getElementById('login-submit');
@@ -82,27 +84,22 @@
     $err.textContent = '';
   });
 
-  $btn.addEventListener('click', function () {
+  $btn.addEventListener('click', async function () {
     var u = $u.value.trim(), p = $p.value;
     if (!u || !p) { $err.textContent = '请输入用户名和密码'; return; }
     $btn.disabled = true; $btn.innerHTML = '<span class="spinner"></span> 登录中...'; $err.textContent = '';
-    fetch('/api/auth/login', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({username:u, password:p})
-    }).then(function(r){ return r.json(); })
-    .then(function(d){
+    try {
+      var d = await Auth.login(u, p);
       if (d && d.success) {
-        localStorage.setItem('auth_token', d.token);
         window.location.href = '/dashboard.html';
       } else {
         $err.textContent = (d && d.error) || '用户名或密码错误';
       }
-    }).catch(function(e){
+    } catch (e) {
       $err.textContent = '网络错误';
-    }).finally(function(){
+    } finally {
       $btn.disabled = false; $btn.innerHTML = '登 录';
-    });
+    }
   });
   $p.addEventListener('keydown', function(e){ if(e.key==='Enter') $btn.click(); });
 

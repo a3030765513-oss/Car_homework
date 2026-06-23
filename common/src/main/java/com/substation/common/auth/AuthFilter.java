@@ -34,19 +34,25 @@ public class AuthFilter extends Filter {
         if (isWhitelisted(path)) { chain.doFilter(exchange); return; }
         String token = SessionManager.extractToken(
                 exchange.getRequestHeaders().getFirst("Authorization"));
-        sessionManager.validate(token).ifPresentOrElse(
-                session -> {
-                    try {
-                        if (path.startsWith("/api/analysis/export") &&
-                                !"admin".equals(session.role())) {
-                            sendJson(exchange, 403,
-                                    "{\"success\":false,\"error\":\"权限不足，仅管理员可导出\"}");
-                            return;
-                        }
-                        chain.doFilter(exchange);
-                    } catch (IOException e) { log.error("Filter 链异常: {}", e.getMessage()); }
-                },
-                () -> sendJson(exchange, 401, "{\"success\":false,\"error\":\"请先登录\"}"));
+        var validation = sessionManager.validateDetailed(token);
+        if (validation.isValid()) {
+            try {
+                var session = validation.session();
+                if (path.startsWith("/api/analysis/export") && !"admin".equals(session.role())) {
+                    sendJson(exchange, 403, "{\"success\":false,\"error\":\"权限不足，仅管理员可导出\"}");
+                    return;
+                }
+                chain.doFilter(exchange);
+            } catch (IOException e) {
+                log.error("Filter 链异常: {}", e.getMessage());
+            }
+            return;
+        }
+        if (validation.isKicked()) {
+            sendJson(exchange, 401, AuthResponses.kicked());
+            return;
+        }
+        sendJson(exchange, 401, AuthResponses.unauthorized());
     }
 
     private boolean isWhitelisted(String path) {
