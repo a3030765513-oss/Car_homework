@@ -84,6 +84,14 @@ class TaskInitializerTest {
     }
 
     @Test
+    void spawnCellsRecordExplorationEventsForReplay() {
+        initializer.initialize(bb, Map.of("carCount", 3));
+
+        assertEquals(3, bb.getExplorationEvents().size(),
+            "每台车出生格应写入 tick=0 的探索事件");
+    }
+
+    @Test
     void carsPlacedAtCornersAndCenterWhenCountAtMostFive() {
         initializer.initialize(bb, Map.of("obstacleRatio", 0));
 

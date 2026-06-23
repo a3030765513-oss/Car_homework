@@ -1,5 +1,6 @@
 package com.substation.car;
 
+import com.substation.common.infra.InfraConnectionConfig;
 import com.substation.common.map.SpawnPositionSelector;
 import com.substation.common.model.CarStatus;
 import com.substation.common.model.Point;
@@ -100,16 +101,17 @@ public class CarMain {
     /** 独立运行入口（阻塞等待 Ctrl+C） */
     public static void main(String[] args) throws IOException, TimeoutException {
         String carId = parseCarId(args);
-        int redisPort = parseRedisPort(args);
+        var infra = InfraConnectionConfig.resolve(args);
         boolean dynamicAdd = isDynamicAdd(args);
 
         log.info("╔══════════════════════════════════════╗");
         log.info("║  {} 模块启动中...", padRight(carId, 24));
-        log.info("║  Redis: localhost:{}", padRight(String.valueOf(redisPort), 26));
-        log.info("║  RabbitMQ: localhost:5672");
+        log.info("║  Redis: {}:{}", padRight(infra.redisHost(), 10), infra.redisPort());
+        log.info("║  RabbitMQ: {}:{}", padRight(infra.mqHost(), 10), infra.mqPort());
         log.info("╚══════════════════════════════════════╝");
 
-        CarMain car = new CarMain(carId, "localhost", redisPort, "localhost", 5672, dynamicAdd);
+        CarMain car = new CarMain(carId,
+                infra.redisHost(), infra.redisPort(), infra.mqHost(), infra.mqPort(), dynamicAdd);
         car.start();
 
         while (car.mb != null && car.mb.isConnected()) {
@@ -145,25 +147,6 @@ public class CarMain {
         return "Car001";
     }
 
-    private static int parseRedisPort(String[] args) {
-        boolean foundCarId = false;
-        for (String arg : args) {
-            if (isOptionArg(arg)) {
-                continue;
-            }
-            if (!foundCarId) {
-                foundCarId = true;
-                continue;
-            }
-            try {
-                return Integer.parseInt(arg);
-            } catch (NumberFormatException e) {
-                log.warn("非法端口号: {}, 使用默认端口 {}", arg, 6379);
-            }
-        }
-        return 6379;
-    }
-
     private static boolean isOptionArg(String arg) {
         return arg != null && arg.startsWith("--");
     }
@@ -175,7 +158,10 @@ public class CarMain {
         if (dynamicAdd) {
             if (bb.getCarStatus(carId).isPresent()) {
                 CarStatus status = bb.getCarStatus(carId).orElse(CarStatus.IDLE);
-                log.info("[{}] 动态添加：黑板已有注册，状态: {}", carId, status.chineseName());
+                log.info("[{}] 动态添加：接管黑板上已有注册，原状态: {}", carId, status.chineseName());
+                bb.setCarStatus(carId, CarStatus.IDLE);
+                bb.clearCarTarget(carId);
+                bb.clearRoute(carId);
                 return;
             }
             log.info("[{}] 动态添加：跳过 TaskConfigurator 等待，直接自初始化", carId);
@@ -197,6 +183,7 @@ public class CarMain {
         bb.setCarPosition(carId, pos);
         bb.setCarStatus(carId, CarStatus.IDLE);
         bb.setCarSteps(carId, 0);
+        bb.setCarEffectiveSteps(carId, 0);
         illuminateAndHeat(bb, pos, mapWidth, mapHeight);
         bb.appendCarHistory(carId, pos, 0);
         log.info("[{}] 自初始化完成，初始位置: ({},{})", carId, pos.x(), pos.y());
@@ -252,7 +239,7 @@ public class CarMain {
                                    int mapWidth, int mapHeight) {
         int r = center.y(), c = center.x();
         if (r >= 0 && r < mapHeight && c >= 0 && c < mapWidth) {
-            bb.setMapViewBit(r, c, true);
+            bb.recordExploration(0, r, c);
             bb.incrementMapHeat(r, c);
         }
     }

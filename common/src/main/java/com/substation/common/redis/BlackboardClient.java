@@ -6,6 +6,7 @@ import com.substation.common.model.Point;
 
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.params.SetParams;
 
 import java.util.*;
@@ -35,6 +36,14 @@ public class BlackboardClient implements AutoCloseable {
     private static final String KEY_CONTROLLER_INSTANCE = "controller:instance";
     /** Redis key: 探索事件列表（回放用），每元素为 {tick,row,col} */
     private static final String KEY_EXPLORATION_EVENTS = "explorationEvents";
+    /** 仿真场次元数据（归档前写入 SQL） */
+    private static final String KEY_SIM_RUN_STARTED_AT = "sim:run:startedAt";
+    private static final String KEY_SIM_RUN_STARTED_BY = "sim:run:startedBy";
+    private static final String KEY_SIM_RUN_ARCHIVED = "sim:run:archived";
+    /** 仿真数据 SCAN 模式（不含 auth:* 等非仿真键） */
+    private static final String[] SIMULATION_SCAN_PATTERNS = {
+        "Car*:*", "pos:reserve:*", "lock:*"
+    };
     /** 控制器锁的TTL（秒），防止宕机后锁永不释放 */
     private static final int CONTROLLER_LOCK_TTL_SECONDS = 30;
     /** Hash字段名: X坐标 */
@@ -55,6 +64,8 @@ public class BlackboardClient implements AutoCloseable {
     private static final String FIELD_TICK_INTERVAL = "tickInterval";
     /** Hash字段名: 障碍物比例 */
     private static final String FIELD_OBSTACLE_RATIO = "obstacleRatio";
+    /** 分布式部署时 Tailscale 往返较慢，默认 2s 易触发 Read timed out */
+    private static final int REDIS_SOCKET_TIMEOUT_MS = 30_000;
 
     /** Redis连接池 */
     private final JedisPool pool;
@@ -72,7 +83,8 @@ public class BlackboardClient implements AutoCloseable {
      * @param mapHeight 地图高度
      */
     public BlackboardClient(String host, int port, int mapWidth, int mapHeight) {
-        this.pool = new JedisPool(host, port);
+        JedisPoolConfig poolConfig = new JedisPoolConfig();
+        this.pool = new JedisPool(poolConfig, host, port, REDIS_SOCKET_TIMEOUT_MS);
         this.mapWidth = mapWidth;
         this.mapHeight = mapHeight;
     }
@@ -578,6 +590,38 @@ public class BlackboardClient implements AutoCloseable {
         }
     }
 
+    /**
+     * 获取小车走过未探索区域的步数。
+     *
+     * @param carId 小车ID
+     * @return 有效步数，不存在返回0
+     */
+    public int getCarEffectiveSteps(String carId) {
+        try (Jedis jedis = pool.getResource()) {
+            String val = jedis.get(carId + ":EffectiveSteps");
+            return val != null ? Integer.parseInt(val) : 0;
+        }
+    }
+
+    /** 小车有效步数加1（踩入此前未探索的格子时调用）。 */
+    public void incrementCarEffectiveSteps(String carId) {
+        try (Jedis jedis = pool.getResource()) {
+            jedis.incr(carId + ":EffectiveSteps");
+        }
+    }
+
+    /**
+     * 设置小车有效步数值。
+     *
+     * @param carId 小车ID
+     * @param steps 有效步数值
+     */
+    public void setCarEffectiveSteps(String carId, int steps) {
+        try (Jedis jedis = pool.getResource()) {
+            jedis.set(carId + ":EffectiveSteps", String.valueOf(steps));
+        }
+    }
+
     // ==================== CarID:BlockedTick ====================
 
     /**
@@ -668,6 +712,62 @@ public class BlackboardClient implements AutoCloseable {
     public List<String> getExplorationEvents() {
         try (Jedis jedis = pool.getResource()) {
             return jedis.lrange(KEY_EXPLORATION_EVENTS, 0, -1);
+        }
+    }
+
+    // ==================== 仿真场次元数据（SQL 归档） ====================
+
+    /** 是否存在可归档的轨迹或探索事件 */
+    public boolean hasReplayableData() {
+        if (!getExplorationEvents().isEmpty()) {
+            return true;
+        }
+        return !getAllCarHistories().isEmpty();
+    }
+
+    public boolean isSimRunArchived() {
+        try (Jedis jedis = pool.getResource()) {
+            return "1".equals(jedis.get(KEY_SIM_RUN_ARCHIVED));
+        }
+    }
+
+    public void markSimRunArchived() {
+        try (Jedis jedis = pool.getResource()) {
+            jedis.set(KEY_SIM_RUN_ARCHIVED, "1");
+        }
+    }
+
+    public void clearSimRunArchived() {
+        try (Jedis jedis = pool.getResource()) {
+            jedis.del(KEY_SIM_RUN_ARCHIVED);
+        }
+    }
+
+    public Optional<java.time.Instant> getSimRunStartedAt() {
+        try (Jedis jedis = pool.getResource()) {
+            String value = jedis.get(KEY_SIM_RUN_STARTED_AT);
+            if (value == null || value.isBlank()) {
+                return Optional.empty();
+            }
+            return Optional.of(java.time.Instant.ofEpochSecond(Long.parseLong(value.trim())));
+        } catch (NumberFormatException e) {
+            return Optional.empty();
+        }
+    }
+
+    public Optional<String> getSimRunStartedBy() {
+        try (Jedis jedis = pool.getResource()) {
+            String value = jedis.get(KEY_SIM_RUN_STARTED_BY);
+            return value == null || value.isBlank() ? Optional.empty() : Optional.of(value);
+        }
+    }
+
+    /** 新仿真开始前记录操作者与开始时间 */
+    public void beginSimRun(String startedBy) {
+        try (Jedis jedis = pool.getResource()) {
+            jedis.set(KEY_SIM_RUN_STARTED_AT, String.valueOf(System.currentTimeMillis() / 1000));
+            jedis.set(KEY_SIM_RUN_STARTED_BY, startedBy == null || startedBy.isBlank() ? "unknown" : startedBy);
+            jedis.del(KEY_SIM_RUN_ARCHIVED);
         }
     }
 
@@ -867,6 +967,28 @@ public class BlackboardClient implements AutoCloseable {
     public void initTaskConfig(Map<String, String> config) {
         try (Jedis jedis = pool.getResource()) {
             jedis.hset(KEY_TASK_CONFIG, config);
+        }
+    }
+
+    /**
+     * 清空仿真黑板数据，保留登录会话（auth:session:*）等非仿真键。
+     * 替代 flushDB，避免点击「开始」后用户被登出。
+     */
+    public void clearSimulationState() {
+        try (Jedis jedis = pool.getResource()) {
+            jedis.del(KEY_MAP_VIEW, KEY_MAP_BLOCK, KEY_MAP_SEALED,
+                KEY_MAP_HEAT, KEY_TASK_CONFIG, KEY_EXPLORATION_EVENTS,
+                KEY_SIM_RUN_STARTED_AT, KEY_SIM_RUN_STARTED_BY, KEY_SIM_RUN_ARCHIVED);
+            for (String pattern : SIMULATION_SCAN_PATTERNS) {
+                deleteKeysMatching(jedis, pattern);
+            }
+        }
+    }
+
+    private static void deleteKeysMatching(Jedis jedis, String pattern) {
+        Set<String> keys = jedis.keys(pattern);
+        if (!keys.isEmpty()) {
+            jedis.del(keys.toArray(String[]::new));
         }
     }
 

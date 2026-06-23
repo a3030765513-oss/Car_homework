@@ -1,0 +1,11 @@
+{
+  "redisHost": "100.94.124.1",
+  "redisPort": 6379,
+  "mqHost": "100.94.124.1",
+  "mqPort": 5672,
+  "role": "planner",
+  "displayHost": "100.94.124.4",
+  "displayHttpPort": 8887,
+  "displayWsPort": 8888,
+  "cars": ["Car001", "Car002", "Car003"]
+}

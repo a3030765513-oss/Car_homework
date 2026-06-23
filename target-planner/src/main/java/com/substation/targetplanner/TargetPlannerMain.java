@@ -86,7 +86,9 @@ public class TargetPlannerMain {
 
     /** 独立运行入口 */
     public static void main(String[] args) throws IOException, TimeoutException {
-        new TargetPlannerMain("localhost", 6379, "localhost", 5672).start();
+        var infra = com.substation.common.infra.InfraConnectionConfig.resolve(args);
+        new TargetPlannerMain(
+                infra.redisHost(), infra.redisPort(), infra.mqHost(), infra.mqPort()).start();
         synchronized (TargetPlannerMain.class) {
             try { TargetPlannerMain.class.wait(); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
         }

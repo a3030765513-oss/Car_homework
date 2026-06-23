@@ -174,4 +174,25 @@ class BfsPathFinderTest {
                 "多次运行应得到相同长度的路径");
         }
     }
+
+    @Test
+    void prefersUnexploredDetourOverExploredCorridor() {
+        int width = 7;
+        int height = 3;
+        bb.initTaskConfig(java.util.Map.of("mapWidth", String.valueOf(width), "mapHeight", String.valueOf(height)));
+
+        for (int col = 0; col < width; col++) {
+            bb.setMapViewBit(0, col, true);
+            bb.setMapViewBit(1, col, col < width - 1);
+        }
+
+        Point start = new Point(0, 1);
+        Point target = new Point(6, 1);
+        List<Point> path = finder.plan(start, target, bb);
+
+        assertFalse(path.contains(new Point(3, 1)),
+            "应绕开已探索走廊，实际路径=" + path);
+        assertTrue(path.stream().anyMatch(p -> p.y() == 2),
+            "应经过未探索底行");
+    }
 }

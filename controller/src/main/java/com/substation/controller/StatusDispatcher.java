@@ -21,8 +21,8 @@ import java.util.concurrent.ConcurrentHashMap;
 /** 状态分派器：每节拍发现车辆、按状态分发处理、发送移动指令、广播刷新 */
 public class StatusDispatcher {
 
-    /** 探索完成阈值（百分比），与前端「99% 任务完成」一致 */
-    private static final int EXPLORATION_COMPLETE = 99;
+    /** 探索完成阈值（百分比），与前端「100% 任务完成」一致 */
+    private static final int EXPLORATION_COMPLETE = 100;
     /** 所有车 IDLE 且无事可做的连续 tick 数，超时强制完成 */
     private static final int ALL_IDLE_COMPLETE_TICKS = 30;
     /** 阻塞随机超时范围（打破死锁） */
@@ -71,6 +71,8 @@ public class StatusDispatcher {
     private final Set<String> supervisedFlags;
     /** 已发监督请求、等待监督结果后再切 READY 的车辆 */
     private final Set<String> awaitingSupervision;
+    /** 已声明 MQ 队列的小车，避免重复 declare */
+    private final Set<String> declaredCarQueues = ConcurrentHashMap.newKeySet();
     /** 随机数生成器 */
     private final Random random = new Random();
     /** 每车随机阻塞超时阈值（打破多车互堵死锁） */
@@ -122,6 +124,8 @@ public class StatusDispatcher {
             return;
         }
 
+        ensureCarQueuesDeclared(carIds);
+
         // 先广播当前帧（Display 读到车移动前的干净状态，避免跳格）
         broadcastRefresh();
 
@@ -140,7 +144,7 @@ public class StatusDispatcher {
 
         for (String carId : carIds) {
             bb.getCarStatus(carId).ifPresent(status -> {
-                if (status == CarStatus.READY) {
+                if (status == CarStatus.READY && !awaitingSupervision.contains(carId)) {
                     sendTickMove(carId);
                 }
             });
@@ -151,12 +155,16 @@ public class StatusDispatcher {
             bb.getCarStatus(cid).orElse(null) == CarStatus.IDLE);
         if (allIdle && pendingTargetRequests.isEmpty() && pendingPlanRequests.isEmpty()) {
             allIdleTicks++;
-            if (allIdleTicks >= ALL_IDLE_COMPLETE_TICKS) {
+            if (allIdleTicks >= ALL_IDLE_COMPLETE_TICKS && isExplorationComplete()) {
                 completeTask();
                 return;
             }
         } else {
             allIdleTicks = 0;
+        }
+
+        if (taskActive && isExplorationComplete()) {
+            completeTask();
         }
     }
 
@@ -193,6 +201,7 @@ public class StatusDispatcher {
             if (shouldSupervise(carId)) {
                 lastSupervisedTick.put(carId, tick);
                 awaitingSupervision.add(carId);
+                bb.setCarStatus(carId, CarStatus.READY);
                 sendSuperviseRoute(carId);
                 return;
             }
@@ -238,10 +247,13 @@ public class StatusDispatcher {
         return last == null || tick - last >= SUPERVISE_COOLDOWN_TICKS;
     }
 
-    /** 车辆移动完成回调：清除TICK_MOVE发送标记，允许下一轮发送，并刷新前端 */
+    /** 车辆移动完成回调：清除 TICK_MOVE 发送标记，允许下一轮发送 */
     public void onMoveAcknowledged(String carId) {
+        if (!taskActive) {
+            return;
+        }
         pendingMoveRequests.remove(carId);
-        broadcastRefresh();
+        tryCompleteIfExplorationDone();
     }
 
     /** 监督器建议优化路线，标记该车 */
@@ -293,16 +305,25 @@ public class StatusDispatcher {
         supervisedFlags.clear();
         awaitingSupervision.clear();
         blockedTimeoutTicks.clear();
+        declaredCarQueues.clear();
+    }
+
+    private void ensureCarQueuesDeclared(Set<String> carIds) {
+        for (String carId : carIds) {
+            if (!declaredCarQueues.add(carId)) {
+                continue;
+            }
+            try {
+                bus.declareCarQueue(carId);
+            } catch (IOException e) {
+                declaredCarQueues.remove(carId);
+                System.err.println("[Controller] 声明小车队列失败 " + carId + ": " + e.getMessage());
+            }
+        }
     }
 
     private void declareCarQueues() {
-        try {
-            for (String carId : bb.discoverCarIds()) {
-                bus.declareCarQueue(carId);
-            }
-        } catch (IOException e) {
-            System.err.println("[Controller] 声明小车队列失败: " + e.getMessage());
-        }
+        ensureCarQueuesDeclared(bb.discoverCarIds());
     }
 
     private void applyTickIntervalFromConfig() {
@@ -399,6 +420,16 @@ public class StatusDispatcher {
 
     /** 发送路径规划请求到导航器，带缺失保护与超时兜底 */
     private void checkAndPlanRoute(String carId) {
+        if (awaitingSupervision.contains(carId)) {
+            return;
+        }
+        if (!bb.getCarRoute(carId).isEmpty()) {
+            waitingRouteTickCounts.remove(carId);
+            pendingPlanRequests.remove(carId);
+            bb.setCarStatus(carId, CarStatus.READY);
+            return;
+        }
+
         int waitingTicks = waitingRouteTickCounts.getOrDefault(carId, 0) + 1;
         waitingRouteTickCounts.put(carId, waitingTicks);
 
@@ -508,7 +539,13 @@ public class StatusDispatcher {
 
     /** 广播探索进度刷新消息给前端（fanout） */
     private void broadcastRefresh() {
+        if (!taskActive) {
+            return;
+        }
         int rate = bb.getExplorationRate();
+        if (bb.isExplorationComplete()) {
+            rate = EXPLORATION_COMPLETE;
+        }
         Map<String, Object> data = Map.of("explorationRate", rate);
         try {
             String msg = MessageBuilder.build(MessageTypes.REFRESH_ALL, tick, null, data);
@@ -529,12 +566,13 @@ public class StatusDispatcher {
         taskActive = false;
         freezeAllCars();
         clearPendingState();
+        bb.setTaskActive(false);
         long elapsed = (System.currentTimeMillis() - taskStartTime) / 1000;
         bb.setElapsedSeconds(elapsed);
-        int rate = bb.getExplorationRate();
+        int rate = bb.isExplorationComplete() ? EXPLORATION_COMPLETE : bb.getExplorationRate();
         System.out.println("[Controller] 探索完成，任务结束 tick=" + tick
             + " 探索率=" + rate + "% 耗时=" + elapsed + "s");
-        Map<String, Object> data = Map.of("explorationRate", Math.max(rate, EXPLORATION_COMPLETE));
+        Map<String, Object> data = Map.of("explorationRate", rate);
         try {
             String msg = MessageBuilder.build(MessageTypes.REFRESH_ALL, tick, null, data);
             bus.publishFanout(QueueNames.UPDATE_VIEW_EXCHANGE, msg);

@@ -48,9 +48,10 @@ class TargetPathEstimatorTest {
             bb.setBlock(row, 5, true);
         }
         boolean[][] blocked = bb.loadBlockedMapWithCars();
+        boolean[][] explored = bb.loadExploredBitmap();
 
         var path = estimator.planPath(
-            new Point(0, 0), new Point(9, 0), blocked, MAP_SIZE, MAP_SIZE);
+            new Point(0, 0), new Point(9, 0), blocked, explored, MAP_SIZE, MAP_SIZE);
 
         assertFalse(path.isEmpty());
         assertEquals(new Point(9, 0), path.get(path.size() - 1));
@@ -63,9 +64,10 @@ class TargetPathEstimatorTest {
             bb.setBlock(5, col, true);
         }
         boolean[][] blocked = bb.loadBlockedMapWithCars();
+        boolean[][] explored = bb.loadExploredBitmap();
 
         var path = estimator.planPath(
-            new Point(0, 0), new Point(0, 9), blocked, MAP_SIZE, MAP_SIZE);
+            new Point(0, 0), new Point(0, 9), blocked, explored, MAP_SIZE, MAP_SIZE);
 
         assertTrue(path.isEmpty());
     }

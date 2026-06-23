@@ -4,26 +4,41 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>用户管理 — 变电站巡检仿真系统</title>
+<link rel="stylesheet" href="css/style.css?v=4">
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC',sans-serif; background:#F1F5F9; color:#1E293B; line-height:1.6; }
-  .header { display:flex; justify-content:space-between; align-items:center; padding:0 24px; height:52px; background:#fff; border-bottom:1px solid #E2E8F0; }
-  .header h1 { font-size:18px; }
-  .header .nav { display:flex; gap:12px; align-items:center; }
-  .header .nav a { text-decoration:none; color:#3B82F6; font-size:14px; }
-  .header .nav .active { color:#1E293B; font-weight:700; cursor:default; }
-  .btn { padding:8px 16px; border-radius:8px; border:1px solid #E2E8F0; cursor:pointer; font-size:13px; font-family:inherit; background:#F8FAFC; color:#64748B; }
-  .btn:hover { background:#F1F5F9; }
-  .btn-primary { background:#3B82F6; color:#fff; border:none; }
-  .btn-primary:hover { background:#2563EB; }
-  .btn-danger { background:#EF4444; color:#fff; border:none; }
-  .btn-danger:hover { background:#DC2626; }
-  .btn-success { background:#10B981; color:#fff; border:none; }
-  .btn-success:hover { background:#059669; }
+  body.um-page { overflow-y:auto; height:auto; min-height:100vh; }
+  .um-wrap { width:100%; overflow-y:auto; }
+  /* 覆盖 style.css 中仿真页 .btn { flex:1 }，避免管理页按钮被拉满整行 */
+  .um-page .btn {
+    flex:none;
+    display:inline-flex;
+    width:auto;
+    height:auto;
+    min-height:32px;
+    padding:6px 14px;
+    border-radius:8px;
+    border:1px solid #E2E8F0;
+    cursor:pointer;
+    font-size:13px;
+    font-weight:500;
+    font-family:inherit;
+    background:#F8FAFC;
+    color:#64748B;
+    white-space:nowrap;
+  }
+  .um-page .btn:hover { background:#F1F5F9; }
+  .um-page .btn-primary { background:#3B82F6; color:#fff; border-color:#3B82F6; }
+  .um-page .btn-primary:hover { background:#2563EB; }
+  .um-page .btn-danger { background:#EF4444; color:#fff; border-color:#EF4444; }
+  .um-page .btn-danger:hover { background:#DC2626; }
+  .um-page .btn-success { background:#10B981; color:#fff; border-color:#10B981; }
+  .um-page .btn-success:hover { background:#059669; }
+  .um-page td .btn { margin-right:6px; }
+  .um-page td .btn:last-child { margin-right:0; }
   .main { max-width:1200px; margin:24px auto; padding:0 24px; }
   .tabs { display:flex; gap:0; margin-bottom:24px; background:#fff; border-radius:12px; border:1px solid #E2E8F0; overflow:hidden; }
-  .tab { padding:14px 28px; cursor:pointer; font-size:14px; font-weight:600; color:#64748B; border:none; background:none; font-family:inherit; }
-  .tab.active { color:#3B82F6; background:#EFF6FF; }
+  .um-page .tab { padding:14px 28px; cursor:pointer; font-size:14px; font-weight:600; color:#64748B; border:none; background:none; font-family:inherit; flex:none; width:auto; height:auto; display:inline-block; }
+  .um-page .tab.active { color:#3B82F6; background:#EFF6FF; }
   .tab:not(:last-child) { border-right:1px solid #E2E8F0; }
   .toolbar { display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
   .toolbar input, .toolbar select { padding:8px 12px; border:1px solid #CBD5E1; border-radius:8px; font-size:13px; background:#fff; color:#1E293B; outline:none; }
@@ -40,23 +55,33 @@
   .badge-disabled { background:#F1F5F9; color:#64748B; }
   .empty { text-align:center; padding:60px 20px; color:#94A3B8; }
   .empty h3 { font-size:18px; color:#64748B; margin-bottom:8px; }
-  .pagination { display:flex; justify-content:center; gap:4px; padding:16px; }
-  .pagination button { padding:6px 12px; border:1px solid #E2E8F0; border-radius:6px; background:#fff; cursor:pointer; font-size:13px; }
-  .pagination button.active { background:#3B82F6; color:#fff; border-color:#3B82F6; }
+  .um-page .pagination { display:flex; justify-content:center; gap:4px; padding:16px; flex-wrap:wrap; }
+  .um-page .pagination button {
+    flex:none;
+    width:auto;
+    padding:6px 12px;
+    border:1px solid #E2E8F0;
+    border-radius:6px;
+    background:#fff;
+    cursor:pointer;
+    font-size:13px;
+  }
+  .um-page .pagination button.active { background:#3B82F6; color:#fff; border-color:#3B82F6; }
   .toast { position:fixed; top:16px; right:16px; padding:12px 24px; border-radius:8px; color:#fff; font-size:13px; z-index:999; display:none; }
   .toast.success { background:#10B981; }
   .toast.error { background:#EF4444; }
 </style>
 </head>
-<body>
-<div class="header">
-  <h1>&#x26A1; 变电站巡检仿真系统</h1>
+<body class="um-page">
+<header class="header">
+  <h1>&#x26A1; 用户管理</h1>
   <div class="global-info">
-    <a href="dashboard.html" class="nav-link">&#x2190; 返回</a>
-    <button class="btn" style="margin-left:12px" onclick="Auth.logout()">退出</button>
+    <span id="info-user">加载中...</span>
+    <a href="dashboard.html" class="nav-link">← 返回</a>
   </div>
-</div>
-
+</header>
+<div class="main-container">
+<div class="um-wrap">
 <div class="main">
   <div class="tabs">
     <button class="tab active" id="tab-users" onclick="showTab('users')">用户列表</button>
@@ -89,6 +114,8 @@
     <div class="pagination" id="reg-pagination"></div>
   </div>
 </div>
+</div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -114,7 +141,7 @@
   </div>
 </div>
 
-<script src="js/auth.js"></script>
+<script src="js/auth.js?v=11"></script>
 <script>
 // ===== 认证适配: wsh_test Auth API =====
 function authHeaders() {
@@ -317,6 +344,7 @@ async function init() {
     setTimeout(function() { window.location.href = 'dashboard.html'; }, 2000);
     return;
   }
+  Auth.renderNavBar(user);
   loadUsers();
   fetch('/api/admin/registrations?status=pending&size=1', { headers: authHeaders() })
     .then(function(r) { return r.json(); })

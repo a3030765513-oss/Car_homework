@@ -35,5 +35,7 @@ public record SimulationState(
             /** 小车当前状态 */
             CarStatus status,
             /** 已行走的步数 */
-            int steps) {}
+            int steps,
+            /** 走过未探索区域的步数 */
+            int effectiveSteps) {}
 }

@@ -117,13 +117,21 @@ public class AuthApiHandler {
 
     private void handleMe(HttpExchange exchange) throws IOException {
         String token = SessionManager.extractToken(exchange.getRequestHeaders().getFirst("Authorization"));
-        sessionManager.validate(token).ifPresentOrElse(
-                session -> sqlUserStore.getUserInfo(session.username()).ifPresentOrElse(
-                        user -> sendJson(exchange, 200, JSON.toJSONString(
-                                java.util.Map.of("success", true, "username", user.username(),
-                                        "role", user.role(), "displayName", user.displayName()))),
-                        () -> sendJson(exchange, 401, "{\"success\":false,\"error\":\"用户不存在\"}")),
-                () -> sendJson(exchange, 401, "{\"success\":false,\"error\":\"请先登录\"}"));
+        var validation = sessionManager.validateDetailed(token);
+        if (validation.isKicked()) {
+            sendJson(exchange, 401, AuthResponses.kicked());
+            return;
+        }
+        if (!validation.isValid()) {
+            sendJson(exchange, 401, AuthResponses.unauthorized());
+            return;
+        }
+        var session = validation.session();
+        sqlUserStore.getUserInfo(session.username()).ifPresentOrElse(
+                user -> sendJson(exchange, 200, JSON.toJSONString(
+                        java.util.Map.of("success", true, "username", user.username(),
+                                "role", user.role(), "displayName", user.displayName()))),
+                () -> sendJson(exchange, 401, "{\"success\":false,\"error\":\"用户不存在\"}"));
     }
 
     private void handleChangePassword(HttpExchange exchange) throws IOException {

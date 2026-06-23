@@ -34,9 +34,8 @@
     <span id="info-elapsed">&#x23F1; 00:00</span>
     <span id="info-mode" class="mode-tag" hidden>&#x1F534; 回放中</span>
     <span class="info-divider">|</span>
-    <span id="info-user">&#x1F464; 管理员</span>
+    <span id="info-user">&#x1F464; 加载中...</span>
     <a href="dashboard.html" class="nav-link">← 返回</a>
-    <button id="btn-logout" class="btn-small">退出</button>
   </div>
 </header>
 
@@ -95,6 +94,12 @@
       </div>
 
       <!-- 回放控制 -->
+      <div class="form-row" style="margin-top:4px">
+        <label for="replay-run-select">历史场次</label>
+        <select id="replay-run-select" class="cfg-input">
+          <option value="current">当前场次（内存）</option>
+        </select>
+      </div>
       <div class="btn-group" style="margin-top:4px">
         <button id="btn-replay" class="btn replay">&#x25B6; 路径回放</button>
         <button id="btn-live"   class="btn live" hidden>&#x25CF; 返回实时</button>
@@ -114,7 +119,7 @@
 
     <!-- 步数排行榜 -->
     <section class="panel">
-      <h3>&#x1F3C6; 步数排行</h3>
+      <h3>&#x1F3C6; 步数排行（有效步数/总步数）</h3>
       <ol id="leaderboard"></ol>
     </section>
 
@@ -184,7 +189,8 @@
   </div>
 </div>
 
-<script src="js/auth.js"></script>
+<script src="js/auth.js?v=11"></script>
+<script src="js/unity-view.js"></script>
 <script src="js/app.js"></script>
 
 </body>

@@ -10,8 +10,6 @@ import com.substation.common.redis.BlackboardClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import redis.clients.jedis.Jedis;
-
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
@@ -77,7 +75,9 @@ public class TaskConfiguratorMain {
 
     /** 独立运行入口 */
     public static void main(String[] args) throws IOException, TimeoutException {
-        new TaskConfiguratorMain("localhost", 6379, "localhost", 5672).start();
+        var infra = com.substation.common.infra.InfraConnectionConfig.resolve(args);
+        new TaskConfiguratorMain(
+                infra.redisHost(), infra.redisPort(), infra.mqHost(), infra.mqPort()).start();
         synchronized (TaskConfiguratorMain.class) {
             try { TaskConfiguratorMain.class.wait(); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
         }
@@ -108,8 +108,6 @@ public class TaskConfiguratorMain {
     }
 
     private void selectiveClear() {
-        try (Jedis jedis = bb.getJedisPool().getResource()) {
-            jedis.flushDB();
-        }
+        bb.clearSimulationState();
     }
 }

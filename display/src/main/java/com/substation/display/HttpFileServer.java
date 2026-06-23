@@ -4,6 +4,7 @@ import com.substation.common.admin.AdminApiHandler;
 import com.substation.common.analysis.AnalysisApiHandler;
 import com.substation.common.auth.AuthApiHandler;
 import com.substation.common.auth.SessionManager;
+import com.substation.common.replay.ReplayApiHandler;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 
@@ -28,12 +29,15 @@ final class HttpFileServer {
             "js",   "application/javascript; charset=utf-8",
             "json", "application/json",
             "png",  "image/png",
-            "svg",  "image/svg+xml"
+            "svg",  "image/svg+xml",
+            "wasm", "application/wasm",
+            "data", "application/octet-stream",
+            "ico",  "image/x-icon"
     );
 
     private static final Set<String> WHITELIST = Set.of(
             "/login.html", "/index.html", "/dashboard.html", "/analysis.html",
-            "/css/", "/js/",
+            "/css/", "/js/", "/unity/", "/api/auth/login", "/api/auth/register",
             "/favicon.ico", "/");
 
     private final HttpServer server;
@@ -41,16 +45,19 @@ final class HttpFileServer {
     private final AuthApiHandler authApi;
     private final AnalysisApiHandler analysisApi;
     private final AdminApiHandler adminApi;
+    private final ReplayApiHandler replayApi;
     private final SessionManager sessionManager;
 
     HttpFileServer(int port, Path webRoot,
                    AuthApiHandler authApi, AnalysisApiHandler analysisApi,
-                   AdminApiHandler adminApi, SessionManager sessionManager) throws IOException {
+                   AdminApiHandler adminApi, ReplayApiHandler replayApi,
+                   SessionManager sessionManager) throws IOException {
         this.server = HttpServer.create(new InetSocketAddress(port), 0);
         this.webRoot = webRoot;
         this.authApi = authApi;
         this.analysisApi = analysisApi;
         this.adminApi = adminApi;
+        this.replayApi = replayApi;
         this.sessionManager = sessionManager;
         this.server.createContext("/", this::handle);
     }
@@ -70,6 +77,11 @@ final class HttpFileServer {
         if (path.startsWith("/api/analysis/")) {
             if (!checkAuth(exchange, path)) return;
             analysisApi.handle(path, exchange);
+            return;
+        }
+        if (path.startsWith("/api/replay/")) {
+            if (!checkAuth(exchange, path)) return;
+            replayApi.handle(path, exchange);
             return;
         }
         if (isWhitelisted(path)) { serveStatic(exchange, path); return; }

@@ -170,7 +170,9 @@ public class MoveExecutor {
         stuckCount = 0;
         bb.popNextRouteStep(carId);
         bb.setCarPosition(carId, nextPos);
-        illuminateAndHeat(nextPos, tick);
+        if (illuminateAndHeat(nextPos, tick)) {
+            bb.incrementCarEffectiveSteps(carId);
+        }
         bb.incrementCarSteps(carId);
         bb.appendCarHistory(carId, nextPos, tick);
         finalizeMove(tick, nextPos);
@@ -197,11 +199,12 @@ public class MoveExecutor {
                 carId, blockedPos.x(), blockedPos.y(), tick);
     }
 
-    private void illuminateAndHeat(Point center, int tick) {
+    private boolean illuminateAndHeat(Point center, int tick) {
         int row = center.y();
         int col = center.x();
-        bb.recordExploration(tick, row, col);
+        boolean newlyExplored = bb.recordExploration(tick, row, col);
         bb.incrementMapHeat(row, col);
+        return newlyExplored;
     }
 
     /** 移动失败或让出节拍时通知 Controller 释放 TICK_MOVE 槽位 */

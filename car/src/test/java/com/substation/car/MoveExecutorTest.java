@@ -90,6 +90,38 @@ class MoveExecutorTest {
     }
 
     @Test
+    void executeMove_countsEffectiveStepsOnlyOnUnexploredCells() {
+        bb.setCarPosition(TEST_CAR, new Point(5, 10));
+        bb.setCarStatus(TEST_CAR, CarStatus.READY);
+        bb.setMapViewBit(10, 5, true);
+        bb.pushRoute(TEST_CAR, List.of(new Point(5, 11), new Point(5, 12)));
+
+        executor.executeMove(1);
+
+        assertEquals(1, bb.getCarSteps(TEST_CAR));
+        assertEquals(1, bb.getCarEffectiveSteps(TEST_CAR));
+
+        executor.executeMove(2);
+
+        assertEquals(2, bb.getCarSteps(TEST_CAR));
+        assertEquals(2, bb.getCarEffectiveSteps(TEST_CAR));
+    }
+
+    @Test
+    void executeMove_skipsEffectiveStepOnAlreadyExploredCell() {
+        bb.setCarPosition(TEST_CAR, new Point(5, 10));
+        bb.setCarStatus(TEST_CAR, CarStatus.READY);
+        bb.setMapViewBit(10, 5, true);
+        bb.setMapViewBit(11, 5, true);
+        bb.pushRoute(TEST_CAR, List.of(new Point(5, 11)));
+
+        executor.executeMove(1);
+
+        assertEquals(1, bb.getCarSteps(TEST_CAR));
+        assertEquals(0, bb.getCarEffectiveSteps(TEST_CAR));
+    }
+
+    @Test
     void executeLastMove_READYtoIDLE() {
         // 只剩最后一步
         bb.setCarPosition(TEST_CAR, new Point(10, 10));

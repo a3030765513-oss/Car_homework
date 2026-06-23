@@ -129,6 +129,25 @@ class StatusDispatcherTest {
         assertTrue(bb.getCarRoute("Car006").isEmpty());
     }
 
+    @Test
+    void routePlannedWithSupervisionStaysReadyAndKeepsRoute() {
+        registerCar("Car007", new Point(5, 5), CarStatus.WAITING_ROUTE);
+        bb.setCarTarget("Car007", new Point(10, 10));
+        bb.pushRoute("Car007", java.util.List.of(
+            new Point(6, 5), new Point(7, 5), new Point(8, 5)));
+        dispatcher.onTaskReady();
+        dispatcher.onRoutePlanned("Car007", true);
+
+        assertEquals(CarStatus.READY, bb.getCarStatus("Car007").orElseThrow());
+        assertEquals(3, bb.getCarRoute("Car007").size());
+
+        dispatcher.dispatch();
+        dispatcher.dispatch();
+
+        assertEquals(3, bb.getCarRoute("Car007").size(),
+            "监督等待期间不应重复规划导致路线被清空或替换");
+    }
+
     private void registerCar(String carId, Point pos, CarStatus status) {
         bb.setCarPosition(carId, pos);
         bb.setCarStatus(carId, status);

@@ -70,7 +70,7 @@ public class ConsoleDemo {
             int rate = viewer.getExplorationRate();
             clearScreen();
             render(viewer, rate);
-            if (rate >= 99) {
+            if (rate >= 100) {
                 System.out.println("\n>>> 探索完成！探索率 = " + rate + "%");
                 running = false;
             }

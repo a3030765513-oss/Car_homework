@@ -80,33 +80,31 @@
   </div>
 </div>
 
+<script src="js/auth.js?v=11"></script>
 <script>
 (function () {
   'use strict';
-  var token = localStorage.getItem('auth_token');
-  if (!token) { window.location.href = '/login.html'; }
 
-  fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } })
-    .then(function(r) { return r.json(); })
-    .then(function(user) {
-      if (!user || !user.success) { localStorage.removeItem('auth_token'); window.location.href = '/login.html'; return; }
+  Auth.checkAuth().then(function (user) {
+    if (!user) {
+      return;
+    }
+    var roleNames = { admin: '管理员', simulator: '仿真员', analyst: '统计分析员' };
+    document.getElementById('dash-role').textContent =
+      user.displayName || roleNames[user.role] || user.role;
 
-      var roleNames = { admin: '管理员', simulator: '仿真员', analyst: '统计分析员' };
-      document.getElementById('dash-role').textContent =
-        user.displayName || roleNames[user.role] || user.role;
-
-      var btns = '', html = '';
-      if (user.role === 'admin') {
-        btns += '<a href="index.html" class="dash-btn sim">🎮 仿真控制</a>';
-        btns += '<a href="analysis.html" class="dash-btn analysis">📊 统计分析</a>';
-        btns += '<a href="user-management.html" class="dash-btn manage">👥 用户管理</a>';
-      } else if (user.role === 'simulator') {
-        btns += '<a href="index.html" class="dash-btn sim">🎮 仿真控制</a>';
-      } else if (user.role === 'analyst') {
-        btns += '<a href="analysis.html" class="dash-btn analysis">📊 统计分析</a>';
-      }
-      document.getElementById('dash-btns').innerHTML = btns;
-    });
+    var btns = '';
+    if (user.role === 'admin') {
+      btns += '<a href="index.html" class="dash-btn sim">🎮 仿真控制</a>';
+      btns += '<a href="analysis.html" class="dash-btn analysis">📊 统计分析</a>';
+      btns += '<a href="user-management.html" class="dash-btn manage">👥 用户管理</a>';
+    } else if (user.role === 'simulator') {
+      btns += '<a href="index.html" class="dash-btn sim">🎮 仿真控制</a>';
+    } else if (user.role === 'analyst') {
+      btns += '<a href="analysis.html" class="dash-btn analysis">📊 统计分析</a>';
+    }
+    document.getElementById('dash-btns').innerHTML = btns;
+  });
 
   // 修改密码弹窗
   var cpwModal = document.getElementById('cpw-modal');
@@ -122,7 +120,10 @@
     if (newPw !== cfmPw) { errEl.textContent = '两次新密码不一致'; return; }
     fetch('/api/auth/change-password', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + (Auth.getToken() || '')
+      },
       body: JSON.stringify({ oldPassword: oldPw, newPassword: newPw })
     }).then(function(r){ return r.json(); })
     .then(function(d){
@@ -132,10 +133,7 @@
   });
 
   document.getElementById('dash-logout').addEventListener('click', function () {
-    var t = localStorage.getItem('auth_token');
-    fetch('/api/auth/logout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + (t||'') } });
-    localStorage.removeItem('auth_token');
-    window.location.href = '/login.html';
+    Auth.logout();
   });
 })();
 </script>

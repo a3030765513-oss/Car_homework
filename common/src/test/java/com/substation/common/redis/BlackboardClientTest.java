@@ -127,6 +127,17 @@ class BlackboardClientTest {
     }
 
     @Test
+    void carEffectiveSteps() {
+        assertEquals(0, bb.getCarEffectiveSteps("Car001"));
+
+        bb.setCarEffectiveSteps("Car001", 7);
+        assertEquals(7, bb.getCarEffectiveSteps("Car001"));
+
+        bb.incrementCarEffectiveSteps("Car001");
+        assertEquals(8, bb.getCarEffectiveSteps("Car001"));
+    }
+
+    @Test
     void blockedTick() {
         assertEquals(-1, bb.getBlockedTick("Car001"));
 
@@ -301,5 +312,22 @@ class BlackboardClientTest {
         assertTrue(loaded[10][50]);
         assertTrue(loaded[80][80]);
         assertFalse(loaded[0][0]);
+    }
+
+    @Test
+    void clearSimulationState_preservesAuthSession() {
+        try (Jedis jedis = pool.getResource()) {
+            jedis.setex("auth:session:test-token", 1800, "{\"username\":\"admin\"}");
+        }
+        bb.setCarStatus("Car001", CarStatus.IDLE);
+        bb.setMapViewBit(1, 1, true);
+
+        bb.clearSimulationState();
+
+        try (Jedis jedis = pool.getResource()) {
+            assertNotNull(jedis.get("auth:session:test-token"));
+            assertNull(jedis.get("Car001:Status"));
+            assertFalse(bb.getMapViewBit(1, 1));
+        }
     }
 }

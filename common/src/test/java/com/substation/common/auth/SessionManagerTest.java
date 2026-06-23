@@ -1,6 +1,7 @@
 package com.substation.common.auth;
 
 import com.substation.common.auth.model.SessionInfo;
+import com.substation.common.auth.model.SessionValidation;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -73,5 +74,24 @@ class SessionManagerTest {
         assertNull(SessionManager.extractToken(null));
         assertNull(SessionManager.extractToken("Basic abc123"));
         assertNull(SessionManager.extractToken(""));
+    }
+
+    @Test
+    void newLoginKicksPreviousSession() {
+        String firstToken = sessionManager.createSession("alice", "simulator");
+        String secondToken = sessionManager.createSession("alice", "simulator");
+
+        assertNotEquals(firstToken, secondToken);
+        assertTrue(sessionManager.validateDetailed(firstToken).isKicked());
+        assertTrue(sessionManager.validateDetailed(secondToken).isValid());
+    }
+
+    @Test
+    void logoutClearsUserSessionMapping() {
+        String token = sessionManager.createSession("bob", "analyst");
+        assertTrue(sessionManager.validate(token).isPresent());
+
+        sessionManager.destroySession(token);
+        assertEquals(SessionValidation.Status.NOT_FOUND, sessionManager.validateDetailed(token).status());
     }
 }
