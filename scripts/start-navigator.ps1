@@ -1,4 +1,4 @@
-# 仅启动 Navigator（可在多台机器运行以扩展算力）
+# Extra Navigator instances (any machine; scales via RabbitMQ competing consumers)
 param(
     [int]$Count = 1
 )
@@ -17,4 +17,4 @@ for ($i = 1; $i -le $Count; $i++) {
     Start-Sleep -Milliseconds 300
 }
 
-Write-Host "$Count 个 Navigator 已启动。"
+Write-Host "$Count Navigator instance(s) started."

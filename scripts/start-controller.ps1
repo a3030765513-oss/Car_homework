@@ -1,4 +1,4 @@
-# Person A：仅启动 Controller（须最后执行）
+# Person A: start Controller (must be last)
 . "$PSScriptRoot\_common.ps1"
 $projectRoot = Get-ProjectRoot
 $config = Read-DeployConfig -ProjectRoot $projectRoot

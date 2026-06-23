@@ -1,13 +1,13 @@
-# Person C：TaskConfigurator、Navigator、TargetPlanner、StrategySupervisor
+# Person C: TaskConfigurator, Navigator, TargetPlanner, StrategySupervisor
 . "$PSScriptRoot\_common.ps1"
 $projectRoot = Get-ProjectRoot
 $config = Read-DeployConfig -ProjectRoot $projectRoot
 
-Write-Host "========== Person C / 规划模块 =========="
+Write-Host "========== Person C / Planner =========="
 Show-InfraSummary -Config $config
 
 if ($config.role -ne "planner") {
-    Write-Warning "当前 role=$($config.role)，建议 Person C 使用 role=planner（可运行 setup-config.ps1 -Role planner）"
+    Write-Warning "role=$($config.role); recommended: setup-config.ps1 -Role planner"
 }
 
 Start-ModuleWindow -Title "TaskConfigurator" -ProjectRoot $projectRoot `
@@ -21,4 +21,4 @@ Start-ModuleWindow -Title "TargetPlanner" -ProjectRoot $projectRoot `
 Start-ModuleWindow -Title "StrategySupervisor" -ProjectRoot $projectRoot `
     -ModuleName "strategy-supervisor" -MainClass "com.substation.strategysupervisor.StrategySupervisorMain"
 
-Write-Host "4 个规划模块已分窗启动（连接参数来自 deploy\infra.local.json）。"
+Write-Host "4 planner modules started (config from deploy\infra.local.json)."

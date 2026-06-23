@@ -19,12 +19,12 @@ function Ensure-DeployConfig {
 
     $examplePath = Join-Path $ProjectRoot "deploy\infra.example.json"
     if (-not (Test-Path $examplePath)) {
-        throw "缺少 deploy\infra.example.json"
+        throw "Missing deploy\infra.example.json"
     }
 
     Copy-Item $examplePath $localPath
-    Write-Host "已创建 deploy\infra.local.json（默认 localhost）。"
-    Write-Host "分布式联调请编辑 redisHost / mqHost / role，或运行 scripts\setup-config.ps1 -Remote -InfraHost <IP_A>"
+    Write-Host "Created deploy\infra.local.json (localhost defaults)."
+    Write-Host "For distributed mode: edit redisHost/mqHost or run scripts\setup-config.ps1"
     return $localPath
 }
 
@@ -50,7 +50,7 @@ function Start-ModuleWindow {
     }
 
     Start-Process cmd -ArgumentList '/k', $command
-    Write-Host "已启动: $Title"
+    Write-Host "Started: $Title"
 }
 
 function Show-InfraSummary {

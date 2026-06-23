@@ -1,13 +1,13 @@
-# Person B：小车进程（carId 列表来自 deploy/infra.local.json 的 cars）
+# Person B: car processes (IDs from deploy/infra.local.json "cars" array)
 . "$PSScriptRoot\_common.ps1"
 $projectRoot = Get-ProjectRoot
 $config = Read-DeployConfig -ProjectRoot $projectRoot
 
-Write-Host "========== Person B / 小车 =========="
+Write-Host "========== Person B / Cars =========="
 Show-InfraSummary -Config $config
 
 if ($config.role -ne "car") {
-    Write-Warning "当前 role=$($config.role)，建议 Person B 使用 role=car（可运行 setup-config.ps1 -Role car）"
+    Write-Warning "role=$($config.role); recommended: setup-config.ps1 -Role car"
 }
 
 $carIds = @($config.cars)
@@ -21,4 +21,4 @@ foreach ($carId in $carIds) {
     Start-Sleep -Milliseconds 500
 }
 
-Write-Host "$($carIds.Count) 个小车进程已分窗启动。"
+Write-Host "$($carIds.Count) car process(es) started."
