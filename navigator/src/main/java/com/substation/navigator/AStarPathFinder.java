@@ -24,11 +24,9 @@ final class AStarPathFinder implements PathPlanner {
             return List.of();
         }
 
+        boolean[][] blocked = bb.loadBlockedMapWithCars();
         Point[][] parent = new Point[height][width];
         int[][] gScore = createGScoreMatrix(height, width);
-
-        // 预先从黑板读取完整障碍物矩阵，避免扩展循环中逐格调用 isBlocked
-        boolean[][] blocked = readBlockedMap(bb, width, height);
 
         gScore[start.y()][start.x()] = 0;
         PriorityQueue<Node> openSet = new PriorityQueue<>(
@@ -45,16 +43,6 @@ final class AStarPathFinder implements PathPlanner {
             expandNode(current, gScore, parent, openSet, blocked, width, height, target);
         }
         return List.of();
-    }
-
-    private boolean[][] readBlockedMap(BlackboardClient bb, int width, int height) {
-        boolean[][] blocked = new boolean[height][width];
-        for (int r = 0; r < height; r++) {
-            for (int c = 0; c < width; c++) {
-                blocked[r][c] = bb.isBlocked(r, c);
-            }
-        }
-        return blocked;
     }
 
     private int[][] createGScoreMatrix(int height, int width) {

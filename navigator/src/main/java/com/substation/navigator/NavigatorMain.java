@@ -20,21 +20,31 @@ import java.util.concurrent.TimeoutException;
 public class NavigatorMain {
 
     private static final Logger log = LoggerFactory.getLogger(NavigatorMain.class);
-    private static final String REDIS_HOST = "localhost";
-    private static final int REDIS_PORT = Integer.parseInt(
-        System.getenv().getOrDefault("REDIS_PORT", "6379"));
-    private static final String MQ_HOST = "localhost";
-    private static final int MQ_PORT = Integer.parseInt(
-        System.getenv().getOrDefault("MQ_PORT", "5672"));
+    private static final int INITIAL_W = BlackboardClient.DEFAULT_WIDTH;
+    private static final int INITIAL_H = BlackboardClient.DEFAULT_HEIGHT;
     private static final String MQ_USER = "guest";
     private static final String MQ_PASS = "guest";
-    private static final int INITIAL_MAP_SIZE = 30;
     private static final String DEFAULT_ALGORITHM = "BFS";
 
-    public static void main(String[] args) throws IOException, TimeoutException {
-        BlackboardClient bb = new BlackboardClient(REDIS_HOST, REDIS_PORT,
-            INITIAL_MAP_SIZE, INITIAL_MAP_SIZE);
-        MessageBus messageBus = new MessageBus(MQ_HOST, MQ_PORT, MQ_USER, MQ_PASS);
+    private final String redisHost;
+    private final int redisPort;
+    private final String mqHost;
+    private final int mqPort;
+    private BlackboardClient bb;
+    private MessageBus messageBus;
+
+    /** 供 Launcher 调用的构造函数 */
+    public NavigatorMain(String redisHost, int redisPort, String mqHost, int mqPort) {
+        this.redisHost = redisHost;
+        this.redisPort = redisPort;
+        this.mqHost = mqHost;
+        this.mqPort = mqPort;
+    }
+
+    /** 启动路径规划服务：连接中间件、声明队列、订阅 PLAN_ROUTE。返回不阻塞 */
+    public void start() throws IOException, TimeoutException {
+        bb = new BlackboardClient(redisHost, redisPort, INITIAL_W, INITIAL_H);
+        messageBus = new MessageBus(mqHost, mqPort, MQ_USER, MQ_PASS);
         messageBus.connect();
         messageBus.declareNavigatorQueue();
 
@@ -53,12 +63,13 @@ public class NavigatorMain {
             String carId = msg.getString("carId");
             JSONObject data = msg.getJSONObject("data");
             String algorithm = extractAlgorithm(data);
+            boolean supervised = data != null && data.getBooleanValue("supervised", false);
 
-            log.info("[Navigator] 收到 PLAN_ROUTE carId={} algorithm={} tick={}",
-                carId, algorithm, tick);
+            log.info("[Navigator] 收到 PLAN_ROUTE carId={} algorithm={} tick={}{}",
+                carId, algorithm, tick, supervised ? " 经过监督器优化" : "");
 
             try {
-                handlePlanRoute(bb, messageBus, carId, algorithm, tick);
+                handlePlanRoute(bb, messageBus, carId, algorithm, supervised, tick);
             } catch (Exception e) {
                 log.error("[Navigator] 规划失败 carId={}", carId, e);
                 sendRoutePlanned(messageBus, carId, false, 0, tick);
@@ -67,23 +78,23 @@ public class NavigatorMain {
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             log.info("[Navigator] 关闭中...");
-            messageBus.close();
-            bb.close();
+            if (messageBus != null) messageBus.close();
+            if (bb != null) bb.close();
         }));
+    }
 
+    /** 独立运行入口 */
+    public static void main(String[] args) throws IOException, TimeoutException {
+        new NavigatorMain("localhost", 6379, "localhost", 5672).start();
         synchronized (NavigatorMain.class) {
-            try {
-                NavigatorMain.class.wait();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+            try { NavigatorMain.class.wait(); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
         }
     }
 
     // ==================== 消息处理 ====================
 
     private static void handlePlanRoute(BlackboardClient bb, MessageBus messageBus,
-                                         String carId, String algorithm, int tick)
+                                         String carId, String algorithm, boolean supervised, int tick)
             throws IOException {
         Optional<Point> posOpt = bb.getCarPosition(carId);
         Optional<Point> targetOpt = bb.getCarTarget(carId);
@@ -106,9 +117,17 @@ public class NavigatorMain {
             return;
         }
 
-        bb.clearRoute(carId);
+        // 写前复查位置：车若已移动则起点不准，放弃本次规划
+        Point nowPos = bb.getCarPosition(carId).orElse(null);
+        if (nowPos == null || !nowPos.equals(start)) {
+            log.warn("[Navigator] carId={} 规划期间车已移动 start=({},{}) now=({},{}) 放弃",
+                carId, start.x(), start.y(), nowPos != null ? nowPos.x() : -1, nowPos != null ? nowPos.y() : -1);
+            sendRoutePlanned(messageBus, carId, false, 0, tick);
+            return;
+        }
         bb.pushRoute(carId, route);
-        log.info("[Navigator] carId={} 路径规划成功 长度={}", carId, route.size());
+        log.info("[Navigator] carId={} 路径规划成功 长度={}{}",
+            carId, route.size(), supervised ? " 经过监督器优化" : "");
         sendRoutePlanned(messageBus, carId, true, route.size(), tick);
     }
 

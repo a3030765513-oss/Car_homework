@@ -11,31 +11,38 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
 
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeoutException;
 
 public class TaskConfiguratorMain {
 
     private static final Logger log = LoggerFactory.getLogger(TaskConfiguratorMain.class);
-    private static final String REDIS_HOST = "localhost";
-    private static final int REDIS_PORT = Integer.parseInt(
-        System.getenv().getOrDefault("REDIS_PORT", "6379"));
-    private static final String MQ_HOST = "localhost";
-    private static final int MQ_PORT = Integer.parseInt(
-        System.getenv().getOrDefault("MQ_PORT", "5672"));
+    private static final int INITIAL_W = BlackboardClient.DEFAULT_WIDTH;
+    private static final int INITIAL_H = BlackboardClient.DEFAULT_HEIGHT;
     private static final String MQ_USER = "guest";
     private static final String MQ_PASS = "guest";
-    private static final int INITIAL_MAP_SIZE = 30;
 
-    public static void main(String[] args) throws IOException, TimeoutException {
-        BlackboardClient bb = new BlackboardClient(REDIS_HOST, REDIS_PORT,
-            INITIAL_MAP_SIZE, INITIAL_MAP_SIZE);
-        MessageBus messageBus = new MessageBus(MQ_HOST, MQ_PORT, MQ_USER, MQ_PASS);
+    private final String redisHost;
+    private final int redisPort;
+    private final String mqHost;
+    private final int mqPort;
+    private BlackboardClient bb;
+    private MessageBus messageBus;
+
+    /** 供 Launcher 调用的构造函数 */
+    public TaskConfiguratorMain(String redisHost, int redisPort, String mqHost, int mqPort) {
+        this.redisHost = redisHost;
+        this.redisPort = redisPort;
+        this.mqHost = mqHost;
+        this.mqPort = mqPort;
+    }
+
+    /** 启动任务配置服务：连接中间件、声明队列、订阅 FORWARD_CONFIG/FORWARD_RESET。返回不阻塞 */
+    public void start() throws IOException, TimeoutException {
+        bb = new BlackboardClient(redisHost, redisPort, INITIAL_W, INITIAL_H);
+        messageBus = new MessageBus(mqHost, mqPort, MQ_USER, MQ_PASS);
         messageBus.connect();
         messageBus.declareTaskConfigQueue();
 
@@ -50,9 +57,9 @@ public class TaskConfiguratorMain {
 
             try {
                 if (MessageTypes.FORWARD_CONFIG.equals(type)) {
-                    handleConfig(bb, initializer, messageBus, data, tick);
+                    handleConfig(initializer, data, tick);
                 } else if (MessageTypes.FORWARD_RESET.equals(type)) {
-                    handleReset(bb, messageBus, tick);
+                    handleReset(tick);
                 } else {
                     log.warn("[TaskConfigurator] 未知消息类型: {}", type);
                 }
@@ -63,56 +70,46 @@ public class TaskConfiguratorMain {
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             log.info("[TaskConfigurator] 关闭中...");
-            messageBus.close();
-            bb.close();
+            if (messageBus != null) messageBus.close();
+            if (bb != null) bb.close();
         }));
+    }
 
+    /** 独立运行入口 */
+    public static void main(String[] args) throws IOException, TimeoutException {
+        new TaskConfiguratorMain("localhost", 6379, "localhost", 5672).start();
         synchronized (TaskConfiguratorMain.class) {
-            try {
-                TaskConfiguratorMain.class.wait();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+            try { TaskConfiguratorMain.class.wait(); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
         }
     }
 
     @SuppressWarnings("unchecked")
-    private static void handleConfig(BlackboardClient bb, TaskInitializer initializer,
-                                      MessageBus messageBus, JSONObject data, int tick)
+    private void handleConfig(TaskInitializer initializer, JSONObject data, int tick)
             throws IOException {
         Map<String, Object> config = data != null
             ? data.toJavaObject(Map.class) : Map.of();
 
-        selectiveClear(bb);
+        selectiveClear();
 
         initializer.initialize(bb, config);
         log.info("[TaskConfigurator] 初始化完成");
 
         String reply = MessageBuilder.build(MessageTypes.TASK_READY, tick);
         messageBus.publish(QueueNames.CONTROLLER_CMD, reply);
-        log.info("[TaskConfigurator] 已发送 TASK_READY");
+        log.info("[TaskConfigurator] 已发送 TASK_READY，车辆数={}", configCarCount(bb));
     }
 
-    private static void handleReset(BlackboardClient bb, MessageBus messageBus,
-                                     int tick) throws IOException {
-        selectiveClear(bb);
-        log.info("[TaskConfigurator] 已重置黑板");
-
-        String reply = MessageBuilder.build(MessageTypes.TASK_READY, tick);
-        messageBus.publish(QueueNames.CONTROLLER_CMD, reply);
+    private int configCarCount(BlackboardClient client) {
+        return client.discoverCarIds().size();
     }
 
-    private static void selectiveClear(BlackboardClient bb) {
-        JedisPool pool = bb.getJedisPool();
-        try (Jedis jedis = pool.getResource()) {
-            Set<String> keys = new HashSet<>(jedis.keys("Car*"));
-            keys.add("mapView");
-            keys.add("mapBlock");
-            keys.add("mapHeat");
-            keys.add("TaskConfig");
-            if (!keys.isEmpty()) {
-                jedis.del(keys.toArray(new String[0]));
-            }
+    private void handleReset(int tick) {
+        log.info("[TaskConfigurator] 已重置黑板，等待用户点击开始");
+    }
+
+    private void selectiveClear() {
+        try (Jedis jedis = bb.getJedisPool().getResource()) {
+            jedis.flushDB();
         }
     }
 }

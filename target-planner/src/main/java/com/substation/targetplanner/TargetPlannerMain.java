@@ -21,25 +21,35 @@ import java.util.concurrent.TimeoutException;
 public class TargetPlannerMain {
 
     private static final Logger log = LoggerFactory.getLogger(TargetPlannerMain.class);
-    private static final String REDIS_HOST = "localhost";
-    private static final int REDIS_PORT = Integer.parseInt(
-        System.getenv().getOrDefault("REDIS_PORT", "6379"));
-    private static final String MQ_HOST = "localhost";
-    private static final int MQ_PORT = Integer.parseInt(
-        System.getenv().getOrDefault("MQ_PORT", "5672"));
+    private static final int INITIAL_W = BlackboardClient.DEFAULT_WIDTH;
+    private static final int INITIAL_H = BlackboardClient.DEFAULT_HEIGHT;
     private static final String MQ_USER = "guest";
     private static final String MQ_PASS = "guest";
-    private static final int INITIAL_MAP_SIZE = 30;
+
+    private final String redisHost;
+    private final int redisPort;
+    private final String mqHost;
+    private final int mqPort;
+    private BlackboardClient bb;
+    private MessageBus messageBus;
 
     /** 同一 tick 内已分配的目标集合，防止多车被分到同一格子 */
-    private static final Set<Point> allocatedTargets = new HashSet<>();
-    /** 当前处理中的 tick 号，用于在新 tick 开始时清空已分配集合 */
-    private static int currentTick = -1;
+    private final Set<Point> allocatedTargets = new HashSet<>();
+    /** 当前处理中的 tick 号 */
+    private int currentTick = -1;
 
-    public static void main(String[] args) throws IOException, TimeoutException {
-        BlackboardClient bb = new BlackboardClient(REDIS_HOST, REDIS_PORT,
-            INITIAL_MAP_SIZE, INITIAL_MAP_SIZE);
-        MessageBus messageBus = new MessageBus(MQ_HOST, MQ_PORT, MQ_USER, MQ_PASS);
+    /** 供 Launcher 调用的构造函数 */
+    public TargetPlannerMain(String redisHost, int redisPort, String mqHost, int mqPort) {
+        this.redisHost = redisHost;
+        this.redisPort = redisPort;
+        this.mqHost = mqHost;
+        this.mqPort = mqPort;
+    }
+
+    /** 启动目标分配服务：连接中间件、声明队列、订阅 ASSIGN_TARGET。返回不阻塞 */
+    public void start() throws IOException, TimeoutException {
+        bb = new BlackboardClient(redisHost, redisPort, INITIAL_W, INITIAL_H);
+        messageBus = new MessageBus(mqHost, mqPort, MQ_USER, MQ_PASS);
         messageBus.connect();
         messageBus.declareTargetPlannerQueue();
 
@@ -60,34 +70,32 @@ public class TargetPlannerMain {
             log.info("[TargetPlanner] 收到 ASSIGN_TARGET carId={} tick={}", carId, tick);
 
             try {
-                handleAssignTarget(bb, allocator, messageBus, carId, tick);
+                handleAssignTarget(allocator, carId, tick);
             } catch (Exception e) {
                 log.error("[TargetPlanner] 分配失败 carId={}", carId, e);
-                sendFailureReply(messageBus, carId, tick);
+                sendFailureReply(carId, tick);
             }
         });
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             log.info("[TargetPlanner] 关闭中...");
-            messageBus.close();
-            bb.close();
+            if (messageBus != null) messageBus.close();
+            if (bb != null) bb.close();
         }));
+    }
 
+    /** 独立运行入口 */
+    public static void main(String[] args) throws IOException, TimeoutException {
+        new TargetPlannerMain("localhost", 6379, "localhost", 5672).start();
         synchronized (TargetPlannerMain.class) {
-            try {
-                TargetPlannerMain.class.wait();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+            try { TargetPlannerMain.class.wait(); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
         }
     }
 
     // ==================== 消息处理 ====================
 
-    private static void handleAssignTarget(BlackboardClient bb,
-                                            GreedyTargetAllocator allocator,
-                                            MessageBus messageBus,
-                                            String carId, int tick) throws IOException {
+    private void handleAssignTarget(GreedyTargetAllocator allocator, String carId,
+                                     int tick) throws IOException {
         if (tick != currentTick) {
             allocatedTargets.clear();
             currentTick = tick;
@@ -96,26 +104,25 @@ public class TargetPlannerMain {
         Optional<Point> posOpt = bb.getCarPosition(carId);
         if (posOpt.isEmpty()) {
             log.warn("[TargetPlanner] carId={} 位置不存在，跳过分配", carId);
-            sendFailureReply(messageBus, carId, tick);
+            sendFailureReply(carId, tick);
             return;
         }
 
         Point currentPos = posOpt.get();
-        Optional<Point> target = allocator.allocate(currentPos, bb, allocatedTargets);
+        Optional<Point> target = allocator.allocate(carId, currentPos, bb, allocatedTargets);
 
         if (target.isPresent()) {
             bb.setCarTarget(carId, target.get());
             log.info("[TargetPlanner] carId={} → 目标({},{})", carId,
                 target.get().x(), target.get().y());
-            sendSuccessReply(messageBus, carId, target.get(), tick);
+            sendSuccessReply(carId, target.get(), tick);
         } else {
             log.info("[TargetPlanner] carId={} 暂无可分配目标", carId);
-            sendFailureReply(messageBus, carId, tick);
+            sendFailureReply(carId, tick);
         }
     }
 
-    private static void sendSuccessReply(MessageBus messageBus, String carId,
-                                          Point target, int tick) throws IOException {
+    private void sendSuccessReply(String carId, Point target, int tick) throws IOException {
         Map<String, Object> data = Map.of(
             "carId", carId,
             "success", true,
@@ -125,8 +132,7 @@ public class TargetPlannerMain {
         messageBus.publish(QueueNames.CONTROLLER_CMD, reply);
     }
 
-    private static void sendFailureReply(MessageBus messageBus, String carId,
-                                          int tick) {
+    private void sendFailureReply(String carId, int tick) {
         try {
             Map<String, Object> data = Map.of("carId", carId, "success", false);
             String reply = MessageBuilder.build(MessageTypes.TARGET_ASSIGNED, tick, carId, data);
