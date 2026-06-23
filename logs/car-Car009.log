@@ -1,0 +1,2238 @@
+Picked up JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8 -Dsun.jnu.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8
+18:33:19.077 [CarMain] INFO  ╔══════════════════════════════════════╗
+18:33:19.092 [CarMain] INFO  ║  Car009                   模块启动中...
+18:33:19.097 [CarMain] INFO  ║  Redis: localhost:6379                      
+18:33:19.097 [CarMain] INFO  ║  RabbitMQ: localhost:5672
+18:33:19.097 [CarMain] INFO  ╚══════════════════════════════════════╝
+18:33:19.508 [CarMain] INFO  [Car009] 动态添加：跳过 TaskConfigurator 等待，直接自初始化
+18:33:19.826 [CarMain] INFO  [Car009] 自初始化完成，初始位置: (78,4)
+18:33:19.971 [CarMain] INFO  [Car009] 启动完成，等待 TICK_MOVE 消息
+18:33:53.901 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=5
+18:33:53.959 [MoveExecutor] INFO  [Car009] tick=5 预约成功(16,18)
+18:33:53.993 [MoveExecutor] INFO  [Car009] 移动到(16,18)，tick=5
+18:33:54.402 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=6
+18:33:54.413 [MoveExecutor] INFO  [Car009] tick=6 预约成功(16,17)
+18:33:54.437 [MoveExecutor] INFO  [Car009] 移动到(16,17)，tick=6
+18:33:54.920 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=7
+18:33:54.926 [MoveExecutor] INFO  [Car009] tick=7 预约成功(16,16)
+18:33:54.961 [MoveExecutor] INFO  [Car009] 移动到(16,16)，tick=7
+18:33:55.438 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=8
+18:33:55.447 [MoveExecutor] INFO  [Car009] tick=8 预约成功(16,15)
+18:33:55.471 [MoveExecutor] INFO  [Car009] 移动到(16,15)，tick=8
+18:33:55.956 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=9
+18:33:55.961 [MoveExecutor] INFO  [Car009] tick=9 预约成功(16,14)
+18:33:55.980 [MoveExecutor] INFO  [Car009] 移动到(16,14)，tick=9
+18:33:56.480 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=10
+18:33:56.485 [MoveExecutor] INFO  [Car009] tick=10 预约成功(16,13)
+18:33:56.506 [MoveExecutor] INFO  [Car009] 移动到(16,13)，tick=10
+18:33:57.001 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=11
+18:33:57.007 [MoveExecutor] INFO  [Car009] tick=11 预约成功(16,12)
+18:33:57.028 [MoveExecutor] INFO  [Car009] 移动到(16,12)，tick=11
+18:33:57.519 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=12
+18:33:57.524 [MoveExecutor] INFO  [Car009] tick=12 预约成功(16,11)
+18:33:57.545 [MoveExecutor] INFO  [Car009] 移动到(16,11)，tick=12
+18:33:58.039 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=13
+18:33:58.043 [MoveExecutor] INFO  [Car009] tick=13 预约成功(16,10)
+18:33:58.062 [MoveExecutor] INFO  [Car009] 移动到(16,10)，tick=13
+18:33:58.559 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=14
+18:33:58.562 [MoveExecutor] INFO  [Car009] tick=14 预约成功(15,10)
+18:33:58.580 [MoveExecutor] INFO  [Car009] 移动到(15,10)，tick=14
+18:33:59.087 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=15
+18:33:59.092 [MoveExecutor] INFO  [Car009] tick=15 预约成功(15,9)
+18:33:59.116 [MoveExecutor] INFO  [Car009] 移动到(15,9)，tick=15
+18:33:59.610 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=16
+18:33:59.616 [MoveExecutor] INFO  [Car009] tick=16 预约成功(15,8)
+18:33:59.642 [MoveExecutor] INFO  [Car009] 移动到(15,8)，tick=16
+18:34:00.127 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=17
+18:34:00.132 [MoveExecutor] INFO  [Car009] tick=17 预约成功(15,7)
+18:34:00.154 [MoveExecutor] INFO  [Car009] 移动到(15,7)，tick=17
+18:34:00.647 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=18
+18:34:00.651 [MoveExecutor] INFO  [Car009] tick=18 预约成功(14,7)
+18:34:00.670 [MoveExecutor] INFO  [Car009] 移动到(14,7)，tick=18
+18:34:01.165 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=19
+18:34:01.169 [MoveExecutor] INFO  [Car009] tick=19 预约成功(13,7)
+18:34:01.184 [MoveExecutor] INFO  [Car009] 移动到(13,7)，tick=19
+18:34:01.686 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=20
+18:34:01.690 [MoveExecutor] INFO  [Car009] tick=20 预约成功(13,6)
+18:34:01.707 [MoveExecutor] INFO  [Car009] 移动到(13,6)，tick=20
+18:34:02.209 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=21
+18:34:02.214 [MoveExecutor] INFO  [Car009] tick=21 预约成功(13,5)
+18:34:02.232 [MoveExecutor] INFO  [Car009] 移动到(13,5)，tick=21
+18:34:02.727 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=22
+18:34:02.731 [MoveExecutor] INFO  [Car009] tick=22 预约成功(12,5)
+18:34:02.746 [MoveExecutor] INFO  [Car009] 移动到(12,5)，tick=22
+18:34:03.246 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=23
+18:34:03.256 [MoveExecutor] INFO  [Car009] tick=23 预约成功(12,4)
+18:34:03.284 [MoveExecutor] INFO  [Car009] 移动到(12,4)，tick=23
+18:34:03.773 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=24
+18:34:03.777 [MoveExecutor] INFO  [Car009] tick=24 预约成功(12,3)
+18:34:03.805 [MoveExecutor] INFO  [Car009] 移动到(12,3)，tick=24
+18:34:04.289 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=25
+18:34:04.293 [MoveExecutor] INFO  [Car009] tick=25 预约成功(11,3)
+18:34:04.310 [MoveExecutor] INFO  [Car009] 移动到(11,3)，tick=25
+18:34:04.815 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=26
+18:34:04.819 [MoveExecutor] INFO  [Car009] tick=26 预约成功(10,3)
+18:34:04.835 [MoveExecutor] INFO  [Car009] 移动到(10,3)，tick=26
+18:34:05.340 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=27
+18:34:05.345 [MoveExecutor] INFO  [Car009] tick=27 预约成功(9,3)
+18:34:05.360 [MoveExecutor] INFO  [Car009] 移动到(9,3)，tick=27
+18:34:05.863 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=28
+18:34:05.867 [MoveExecutor] INFO  [Car009] tick=28 预约成功(8,3)
+18:34:05.883 [MoveExecutor] INFO  [Car009] 移动到(8,3)，tick=28
+18:34:06.385 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=29
+18:34:06.389 [MoveExecutor] INFO  [Car009] tick=29 预约成功(7,3)
+18:34:06.405 [MoveExecutor] INFO  [Car009] 移动到(7,3)，tick=29
+18:34:06.900 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=30
+18:34:06.905 [MoveExecutor] INFO  [Car009] tick=30 预约成功(6,3)
+18:34:06.922 [MoveExecutor] INFO  [Car009] 移动到(6,3)，tick=30
+18:34:07.419 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=31
+18:34:07.423 [MoveExecutor] INFO  [Car009] tick=31 预约成功(5,3)
+18:34:07.440 [MoveExecutor] INFO  [Car009] 移动到(5,3)，tick=31
+18:34:07.947 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=32
+18:34:07.951 [MoveExecutor] INFO  [Car009] tick=32 预约成功(4,3)
+18:34:07.965 [MoveExecutor] INFO  [Car009] 路径走完，最终位置(4,3)，tick=32
+18:34:09.538 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=35
+18:34:09.541 [MoveExecutor] INFO  [Car009] tick=35 预约成功(4,4)
+18:34:09.558 [MoveExecutor] INFO  [Car009] 移动到(4,4)，tick=35
+18:34:10.062 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=36
+18:34:10.067 [MoveExecutor] INFO  [Car009] tick=36 预约成功(4,5)
+18:34:10.083 [MoveExecutor] INFO  [Car009] 移动到(4,5)，tick=36
+18:34:10.586 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=37
+18:34:10.589 [MoveExecutor] INFO  [Car009] tick=37 预约成功(4,6)
+18:34:10.606 [MoveExecutor] INFO  [Car009] 移动到(4,6)，tick=37
+18:34:11.107 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=38
+18:34:11.110 [MoveExecutor] INFO  [Car009] tick=38 预约成功(5,6)
+18:34:11.126 [MoveExecutor] INFO  [Car009] 移动到(5,6)，tick=38
+18:34:11.631 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=39
+18:34:11.635 [MoveExecutor] INFO  [Car009] tick=39 预约成功(5,7)
+18:34:11.656 [MoveExecutor] INFO  [Car009] 移动到(5,7)，tick=39
+18:34:12.162 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=40
+18:34:12.166 [MoveExecutor] INFO  [Car009] tick=40 预约成功(5,8)
+18:34:12.183 [MoveExecutor] INFO  [Car009] 移动到(5,8)，tick=40
+18:34:12.699 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=41
+18:34:12.704 [MoveExecutor] INFO  [Car009] tick=41 预约成功(5,9)
+18:34:12.722 [MoveExecutor] INFO  [Car009] 移动到(5,9)，tick=41
+18:34:13.225 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=42
+18:34:13.231 [MoveExecutor] INFO  [Car009] tick=42 预约成功(5,10)
+18:34:13.252 [MoveExecutor] INFO  [Car009] 移动到(5,10)，tick=42
+18:34:13.740 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=43
+18:34:13.745 [MoveExecutor] INFO  [Car009] tick=43 预约成功(5,11)
+18:34:13.759 [MoveExecutor] INFO  [Car009] 移动到(5,11)，tick=43
+18:34:14.262 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=44
+18:34:14.265 [MoveExecutor] INFO  [Car009] tick=44 预约成功(5,12)
+18:34:14.292 [MoveExecutor] INFO  [Car009] 移动到(5,12)，tick=44
+18:34:14.789 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=45
+18:34:14.792 [MoveExecutor] INFO  [Car009] tick=45 预约成功(5,13)
+18:34:14.807 [MoveExecutor] INFO  [Car009] 移动到(5,13)，tick=45
+18:34:15.305 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=46
+18:34:15.309 [MoveExecutor] INFO  [Car009] tick=46 预约成功(5,14)
+18:34:15.331 [MoveExecutor] INFO  [Car009] 移动到(5,14)，tick=46
+18:34:15.826 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=47
+18:34:15.831 [MoveExecutor] INFO  [Car009] tick=47 预约成功(5,15)
+18:34:15.848 [MoveExecutor] INFO  [Car009] 移动到(5,15)，tick=47
+18:34:16.363 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=48
+18:34:16.367 [MoveExecutor] INFO  [Car009] tick=48 预约成功(5,16)
+18:34:16.385 [MoveExecutor] INFO  [Car009] 移动到(5,16)，tick=48
+18:34:16.889 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=49
+18:34:16.894 [MoveExecutor] INFO  [Car009] tick=49 预约成功(5,17)
+18:34:16.908 [MoveExecutor] INFO  [Car009] 移动到(5,17)，tick=49
+18:34:17.410 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=50
+18:34:17.422 [MoveExecutor] INFO  [Car009] tick=50 预约成功(5,18)
+18:34:17.449 [MoveExecutor] INFO  [Car009] 移动到(5,18)，tick=50
+18:34:17.936 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=51
+18:34:17.941 [MoveExecutor] INFO  [Car009] tick=51 预约成功(5,19)
+18:34:17.956 [MoveExecutor] INFO  [Car009] 移动到(5,19)，tick=51
+18:34:18.465 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=52
+18:34:18.468 [MoveExecutor] INFO  [Car009] tick=52 预约成功(5,20)
+18:34:18.488 [MoveExecutor] INFO  [Car009] 移动到(5,20)，tick=52
+18:34:18.995 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=53
+18:34:18.998 [MoveExecutor] INFO  [Car009] tick=53 预约成功(6,20)
+18:34:19.019 [MoveExecutor] INFO  [Car009] 移动到(6,20)，tick=53
+18:34:19.522 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=54
+18:34:19.525 [MoveExecutor] INFO  [Car009] tick=54 预约成功(7,20)
+18:34:19.542 [MoveExecutor] INFO  [Car009] 移动到(7,20)，tick=54
+18:34:20.049 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=55
+18:34:20.052 [MoveExecutor] INFO  [Car009] tick=55 预约成功(8,20)
+18:34:20.071 [MoveExecutor] INFO  [Car009] 移动到(8,20)，tick=55
+18:34:20.566 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=56
+18:34:20.570 [MoveExecutor] INFO  [Car009] tick=56 预约成功(9,20)
+18:34:20.589 [MoveExecutor] INFO  [Car009] 移动到(9,20)，tick=56
+18:34:21.090 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=57
+18:34:21.098 [MoveExecutor] INFO  [Car009] tick=57 预约成功(10,20)
+18:34:21.124 [MoveExecutor] INFO  [Car009] 移动到(10,20)，tick=57
+18:34:21.619 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=58
+18:34:21.623 [MoveExecutor] INFO  [Car009] tick=58 预约成功(11,20)
+18:34:21.638 [MoveExecutor] INFO  [Car009] 移动到(11,20)，tick=58
+18:34:22.140 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=59
+18:34:22.150 [MoveExecutor] INFO  [Car009] tick=59 预约成功(11,21)
+18:34:22.170 [MoveExecutor] INFO  [Car009] 移动到(11,21)，tick=59
+18:34:22.668 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=60
+18:34:22.675 [MoveExecutor] INFO  [Car009] tick=60 预约成功(12,21)
+18:34:22.700 [MoveExecutor] INFO  [Car009] 移动到(12,21)，tick=60
+18:34:23.183 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=61
+18:34:23.188 [MoveExecutor] INFO  [Car009] tick=61 预约成功(13,21)
+18:34:23.201 [MoveExecutor] INFO  [Car009] 移动到(13,21)，tick=61
+18:34:23.712 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=62
+18:34:23.718 [MoveExecutor] WARN  [Car009] tick=62 预约失败(14,21) 第1次，退回READY
+18:34:24.231 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=63
+18:34:24.236 [MoveExecutor] INFO  [Car009] tick=63 预约成功(14,21)
+18:34:24.241 [MoveExecutor] WARN  [Car009] tick=63 目标(14,21)被占据 第2次，退回READY
+18:34:24.753 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=64
+18:34:24.757 [MoveExecutor] INFO  [Car009] tick=64 预约成功(14,21)
+18:34:24.761 [MoveExecutor] WARN  [Car009] tick=64 目标(14,21)被占据 第3次，退回READY
+18:34:24.762 [MoveExecutor] WARN  [Car009] tick=64 目标(14,21)连续卡住3次，切BLOCKED
+18:34:27.377 [CarAgent] DEBUG [Car009] 收到消息 type=BLOCKED_TIMEOUT, tick=69
+18:34:27.378 [CarAgent] WARN  [Car009] 收到 BLOCKED_TIMEOUT，阻塞超时已由 Controller 处理
+18:34:27.380 [CarAgent] INFO  [Car009] 当前状态: 空闲，等待重新分配目标
+18:34:28.950 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=72
+18:34:28.954 [MoveExecutor] INFO  [Car009] tick=72 预约成功(13,20)
+18:34:28.966 [MoveExecutor] INFO  [Car009] 移动到(13,20)，tick=72
+18:34:29.478 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=73
+18:34:29.482 [MoveExecutor] INFO  [Car009] tick=73 预约成功(13,19)
+18:34:29.498 [MoveExecutor] INFO  [Car009] 移动到(13,19)，tick=73
+18:34:30.001 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=74
+18:34:30.005 [MoveExecutor] INFO  [Car009] tick=74 预约成功(13,18)
+18:34:30.021 [MoveExecutor] INFO  [Car009] 移动到(13,18)，tick=74
+18:34:30.522 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=75
+18:34:30.526 [MoveExecutor] INFO  [Car009] tick=75 预约成功(13,17)
+18:34:30.543 [MoveExecutor] INFO  [Car009] 移动到(13,17)，tick=75
+18:34:31.038 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=76
+18:34:31.041 [MoveExecutor] INFO  [Car009] tick=76 预约成功(13,16)
+18:34:31.057 [MoveExecutor] INFO  [Car009] 移动到(13,16)，tick=76
+18:34:31.559 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=77
+18:34:31.562 [MoveExecutor] INFO  [Car009] tick=77 预约成功(13,15)
+18:34:31.576 [MoveExecutor] INFO  [Car009] 移动到(13,15)，tick=77
+18:34:32.084 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=78
+18:34:32.088 [MoveExecutor] INFO  [Car009] tick=78 预约成功(13,14)
+18:34:32.110 [MoveExecutor] INFO  [Car009] 移动到(13,14)，tick=78
+18:34:32.600 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=79
+18:34:32.605 [MoveExecutor] WARN  [Car009] tick=79 预约失败(13,13) 第1次，退回READY
+18:34:33.119 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=80
+18:34:33.123 [MoveExecutor] INFO  [Car009] tick=80 预约成功(13,13)
+18:34:33.127 [MoveExecutor] WARN  [Car009] tick=80 目标(13,13)被占据 第2次，退回READY
+18:34:33.639 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=81
+18:34:33.644 [MoveExecutor] INFO  [Car009] tick=81 预约成功(13,13)
+18:34:33.661 [MoveExecutor] INFO  [Car009] 移动到(13,13)，tick=81
+18:34:34.176 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=82
+18:34:34.181 [MoveExecutor] INFO  [Car009] tick=82 预约成功(12,13)
+18:34:34.199 [MoveExecutor] INFO  [Car009] 移动到(12,13)，tick=82
+18:34:34.700 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=83
+18:34:34.705 [MoveExecutor] INFO  [Car009] tick=83 预约成功(12,12)
+18:34:34.723 [MoveExecutor] INFO  [Car009] 移动到(12,12)，tick=83
+18:34:35.224 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=84
+18:34:35.228 [MoveExecutor] INFO  [Car009] tick=84 预约成功(12,11)
+18:34:35.250 [MoveExecutor] INFO  [Car009] 移动到(12,11)，tick=84
+18:34:35.754 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=85
+18:34:35.759 [MoveExecutor] INFO  [Car009] tick=85 预约成功(12,10)
+18:34:35.774 [MoveExecutor] INFO  [Car009] 移动到(12,10)，tick=85
+18:34:36.315 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=86
+18:34:36.319 [MoveExecutor] INFO  [Car009] tick=86 预约成功(12,9)
+18:34:36.334 [MoveExecutor] INFO  [Car009] 移动到(12,9)，tick=86
+18:34:36.834 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=87
+18:34:36.838 [MoveExecutor] INFO  [Car009] tick=87 预约成功(12,8)
+18:34:36.868 [MoveExecutor] INFO  [Car009] 移动到(12,8)，tick=87
+18:34:37.368 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=88
+18:34:37.371 [MoveExecutor] INFO  [Car009] tick=88 预约成功(12,7)
+18:34:37.400 [MoveExecutor] INFO  [Car009] 移动到(12,7)，tick=88
+18:34:37.901 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=89
+18:34:37.906 [MoveExecutor] INFO  [Car009] tick=89 预约成功(11,7)
+18:34:37.923 [MoveExecutor] INFO  [Car009] 移动到(11,7)，tick=89
+18:34:38.425 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=90
+18:34:38.428 [MoveExecutor] INFO  [Car009] tick=90 预约成功(11,6)
+18:34:38.446 [MoveExecutor] INFO  [Car009] 移动到(11,6)，tick=90
+18:34:38.954 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=91
+18:34:38.960 [MoveExecutor] INFO  [Car009] tick=91 预约成功(11,5)
+18:34:38.978 [MoveExecutor] INFO  [Car009] 移动到(11,5)，tick=91
+18:34:39.472 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=92
+18:34:39.476 [MoveExecutor] INFO  [Car009] tick=92 预约成功(11,4)
+18:34:39.493 [MoveExecutor] INFO  [Car009] 移动到(11,4)，tick=92
+18:34:39.995 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=93
+18:34:39.999 [MoveExecutor] INFO  [Car009] tick=93 预约成功(11,3)
+18:34:40.016 [MoveExecutor] INFO  [Car009] 移动到(11,3)，tick=93
+18:34:40.518 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=94
+18:34:40.522 [MoveExecutor] INFO  [Car009] tick=94 预约成功(11,2)
+18:34:40.539 [MoveExecutor] INFO  [Car009] 移动到(11,2)，tick=94
+18:34:41.040 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=95
+18:34:41.044 [MoveExecutor] INFO  [Car009] tick=95 预约成功(11,1)
+18:34:41.059 [MoveExecutor] INFO  [Car009] 移动到(11,1)，tick=95
+18:34:41.563 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=96
+18:34:41.567 [MoveExecutor] INFO  [Car009] tick=96 预约成功(11,0)
+18:34:41.584 [MoveExecutor] INFO  [Car009] 移动到(11,0)，tick=96
+18:34:42.080 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=97
+18:34:42.084 [MoveExecutor] INFO  [Car009] tick=97 预约成功(10,0)
+18:34:42.099 [MoveExecutor] INFO  [Car009] 移动到(10,0)，tick=97
+18:34:42.602 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=98
+18:34:42.607 [MoveExecutor] INFO  [Car009] tick=98 预约成功(9,0)
+18:34:42.623 [MoveExecutor] INFO  [Car009] 移动到(9,0)，tick=98
+18:34:43.123 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=99
+18:34:43.126 [MoveExecutor] INFO  [Car009] tick=99 预约成功(8,0)
+18:34:43.143 [MoveExecutor] INFO  [Car009] 移动到(8,0)，tick=99
+18:34:43.650 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=100
+18:34:43.654 [MoveExecutor] INFO  [Car009] tick=100 预约成功(7,0)
+18:34:43.669 [MoveExecutor] INFO  [Car009] 移动到(7,0)，tick=100
+18:34:44.170 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=101
+18:34:44.174 [MoveExecutor] INFO  [Car009] tick=101 预约成功(6,0)
+18:34:44.190 [MoveExecutor] INFO  [Car009] 移动到(6,0)，tick=101
+18:34:44.692 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=102
+18:34:44.695 [MoveExecutor] INFO  [Car009] tick=102 预约成功(5,0)
+18:34:44.713 [MoveExecutor] INFO  [Car009] 移动到(5,0)，tick=102
+18:34:45.233 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=103
+18:34:45.237 [MoveExecutor] INFO  [Car009] tick=103 预约成功(4,0)
+18:34:45.253 [MoveExecutor] INFO  [Car009] 移动到(4,0)，tick=103
+18:34:45.749 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=104
+18:34:45.753 [MoveExecutor] INFO  [Car009] tick=104 预约成功(3,0)
+18:34:45.765 [MoveExecutor] INFO  [Car009] 移动到(3,0)，tick=104
+18:34:46.271 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=105
+18:34:46.274 [MoveExecutor] INFO  [Car009] tick=105 预约成功(3,1)
+18:34:46.288 [MoveExecutor] INFO  [Car009] 移动到(3,1)，tick=105
+18:34:46.794 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=106
+18:34:46.797 [MoveExecutor] INFO  [Car009] tick=106 预约成功(2,1)
+18:34:46.811 [MoveExecutor] INFO  [Car009] 移动到(2,1)，tick=106
+18:34:47.315 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=107
+18:34:47.319 [MoveExecutor] INFO  [Car009] tick=107 预约成功(1,1)
+18:34:47.331 [MoveExecutor] INFO  [Car009] 路径走完，最终位置(1,1)，tick=107
+18:34:48.903 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=110
+18:34:48.907 [MoveExecutor] INFO  [Car009] tick=110 预约成功(1,0)
+18:34:48.920 [MoveExecutor] INFO  [Car009] 移动到(1,0)，tick=110
+18:34:49.422 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=111
+18:34:49.426 [MoveExecutor] INFO  [Car009] tick=111 预约成功(2,0)
+18:34:49.437 [MoveExecutor] INFO  [Car009] 移动到(2,0)，tick=111
+18:34:49.948 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=112
+18:34:49.952 [MoveExecutor] INFO  [Car009] tick=112 预约成功(3,0)
+18:34:49.978 [MoveExecutor] INFO  [Car009] 移动到(3,0)，tick=112
+18:34:50.465 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=113
+18:34:50.469 [MoveExecutor] INFO  [Car009] tick=113 预约成功(4,0)
+18:34:50.483 [MoveExecutor] INFO  [Car009] 移动到(4,0)，tick=113
+18:34:50.987 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=114
+18:34:50.990 [MoveExecutor] INFO  [Car009] tick=114 预约成功(5,0)
+18:34:51.004 [MoveExecutor] INFO  [Car009] 移动到(5,0)，tick=114
+18:34:51.506 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=115
+18:34:51.510 [MoveExecutor] INFO  [Car009] tick=115 预约成功(5,1)
+18:34:51.524 [MoveExecutor] INFO  [Car009] 移动到(5,1)，tick=115
+18:34:52.029 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=116
+18:34:52.033 [MoveExecutor] INFO  [Car009] tick=116 预约成功(5,2)
+18:34:52.049 [MoveExecutor] INFO  [Car009] 移动到(5,2)，tick=116
+18:34:52.554 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=117
+18:34:52.557 [MoveExecutor] INFO  [Car009] tick=117 预约成功(5,3)
+18:34:52.574 [MoveExecutor] INFO  [Car009] 移动到(5,3)，tick=117
+18:34:53.070 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=118
+18:34:53.073 [MoveExecutor] INFO  [Car009] tick=118 预约成功(5,4)
+18:34:53.087 [MoveExecutor] INFO  [Car009] 移动到(5,4)，tick=118
+18:34:53.592 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=119
+18:34:53.596 [MoveExecutor] INFO  [Car009] tick=119 预约成功(5,5)
+18:34:53.609 [MoveExecutor] INFO  [Car009] 移动到(5,5)，tick=119
+18:34:54.108 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=120
+18:34:54.111 [MoveExecutor] INFO  [Car009] tick=120 预约成功(5,6)
+18:34:54.124 [MoveExecutor] INFO  [Car009] 移动到(5,6)，tick=120
+18:34:54.640 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=121
+18:34:54.649 [MoveExecutor] INFO  [Car009] tick=121 预约成功(5,7)
+18:34:54.669 [MoveExecutor] INFO  [Car009] 移动到(5,7)，tick=121
+18:34:55.165 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=122
+18:34:55.170 [MoveExecutor] INFO  [Car009] tick=122 预约成功(5,8)
+18:34:55.186 [MoveExecutor] INFO  [Car009] 移动到(5,8)，tick=122
+18:34:55.691 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=123
+18:34:55.695 [MoveExecutor] INFO  [Car009] tick=123 预约成功(5,9)
+18:34:55.712 [MoveExecutor] INFO  [Car009] 移动到(5,9)，tick=123
+18:34:56.210 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=124
+18:34:56.213 [MoveExecutor] INFO  [Car009] tick=124 预约成功(5,10)
+18:34:56.231 [MoveExecutor] INFO  [Car009] 移动到(5,10)，tick=124
+18:34:56.736 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=125
+18:34:56.742 [MoveExecutor] INFO  [Car009] tick=125 预约成功(5,11)
+18:34:56.758 [MoveExecutor] INFO  [Car009] 移动到(5,11)，tick=125
+18:34:57.258 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=126
+18:34:57.261 [MoveExecutor] INFO  [Car009] tick=126 预约成功(5,12)
+18:34:57.281 [MoveExecutor] INFO  [Car009] 移动到(5,12)，tick=126
+18:34:57.790 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=127
+18:34:57.794 [MoveExecutor] INFO  [Car009] tick=127 预约成功(5,13)
+18:34:57.810 [MoveExecutor] INFO  [Car009] 移动到(5,13)，tick=127
+18:34:58.306 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=128
+18:34:58.312 [MoveExecutor] INFO  [Car009] tick=128 预约成功(5,14)
+18:34:58.333 [MoveExecutor] INFO  [Car009] 移动到(5,14)，tick=128
+18:34:58.828 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=129
+18:34:58.832 [MoveExecutor] INFO  [Car009] tick=129 预约成功(5,15)
+18:34:58.845 [MoveExecutor] INFO  [Car009] 移动到(5,15)，tick=129
+18:34:59.357 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=130
+18:34:59.360 [MoveExecutor] INFO  [Car009] tick=130 预约成功(5,16)
+18:34:59.374 [MoveExecutor] INFO  [Car009] 移动到(5,16)，tick=130
+18:34:59.884 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=131
+18:34:59.886 [MoveExecutor] INFO  [Car009] tick=131 预约成功(5,17)
+18:34:59.900 [MoveExecutor] INFO  [Car009] 移动到(5,17)，tick=131
+18:35:00.410 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=132
+18:35:00.414 [MoveExecutor] INFO  [Car009] tick=132 预约成功(5,18)
+18:35:00.440 [MoveExecutor] INFO  [Car009] 移动到(5,18)，tick=132
+18:35:00.943 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=133
+18:35:00.946 [MoveExecutor] INFO  [Car009] tick=133 预约成功(5,19)
+18:35:00.962 [MoveExecutor] INFO  [Car009] 移动到(5,19)，tick=133
+18:35:01.465 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=134
+18:35:01.469 [MoveExecutor] INFO  [Car009] tick=134 预约成功(5,20)
+18:35:01.482 [MoveExecutor] INFO  [Car009] 移动到(5,20)，tick=134
+18:35:01.993 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=135
+18:35:01.996 [MoveExecutor] INFO  [Car009] tick=135 预约成功(5,21)
+18:35:02.013 [MoveExecutor] INFO  [Car009] 移动到(5,21)，tick=135
+18:35:02.508 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=136
+18:35:02.513 [MoveExecutor] INFO  [Car009] tick=136 预约成功(6,21)
+18:35:02.526 [MoveExecutor] INFO  [Car009] 移动到(6,21)，tick=136
+18:35:03.033 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=137
+18:35:03.038 [MoveExecutor] INFO  [Car009] tick=137 预约成功(6,22)
+18:35:03.058 [MoveExecutor] INFO  [Car009] 移动到(6,22)，tick=137
+18:35:03.555 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=138
+18:35:03.558 [MoveExecutor] INFO  [Car009] tick=138 预约成功(6,23)
+18:35:03.570 [MoveExecutor] INFO  [Car009] 移动到(6,23)，tick=138
+18:35:04.083 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=139
+18:35:04.088 [MoveExecutor] INFO  [Car009] tick=139 预约成功(6,24)
+18:35:04.124 [MoveExecutor] INFO  [Car009] 移动到(6,24)，tick=139
+18:35:04.601 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=140
+18:35:04.605 [MoveExecutor] INFO  [Car009] tick=140 预约成功(6,25)
+18:35:04.623 [MoveExecutor] INFO  [Car009] 移动到(6,25)，tick=140
+18:35:05.117 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=141
+18:35:05.121 [MoveExecutor] INFO  [Car009] tick=141 预约成功(6,26)
+18:35:05.136 [MoveExecutor] INFO  [Car009] 移动到(6,26)，tick=141
+18:35:05.639 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=142
+18:35:05.643 [MoveExecutor] INFO  [Car009] tick=142 预约成功(6,27)
+18:35:05.659 [MoveExecutor] INFO  [Car009] 移动到(6,27)，tick=142
+18:35:06.161 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=143
+18:35:06.166 [MoveExecutor] INFO  [Car009] tick=143 预约成功(6,28)
+18:35:06.182 [MoveExecutor] INFO  [Car009] 移动到(6,28)，tick=143
+18:35:06.693 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=144
+18:35:06.696 [MoveExecutor] INFO  [Car009] tick=144 预约成功(6,29)
+18:35:06.719 [MoveExecutor] INFO  [Car009] 移动到(6,29)，tick=144
+18:35:07.219 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=145
+18:35:07.225 [MoveExecutor] INFO  [Car009] tick=145 预约成功(7,29)
+18:35:07.241 [MoveExecutor] INFO  [Car009] 移动到(7,29)，tick=145
+18:35:07.740 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=146
+18:35:07.745 [MoveExecutor] INFO  [Car009] tick=146 预约成功(8,29)
+18:35:07.766 [MoveExecutor] INFO  [Car009] 移动到(8,29)，tick=146
+18:35:08.264 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=147
+18:35:08.266 [MoveExecutor] INFO  [Car009] tick=147 预约成功(9,29)
+18:35:08.283 [MoveExecutor] INFO  [Car009] 移动到(9,29)，tick=147
+18:35:08.788 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=148
+18:35:08.791 [MoveExecutor] INFO  [Car009] tick=148 预约成功(10,29)
+18:35:08.810 [MoveExecutor] INFO  [Car009] 移动到(10,29)，tick=148
+18:35:09.305 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=149
+18:35:09.309 [MoveExecutor] INFO  [Car009] tick=149 预约成功(11,29)
+18:35:09.324 [MoveExecutor] INFO  [Car009] 移动到(11,29)，tick=149
+18:35:09.827 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=150
+18:35:09.830 [MoveExecutor] INFO  [Car009] tick=150 预约成功(12,29)
+18:35:09.843 [MoveExecutor] INFO  [Car009] 移动到(12,29)，tick=150
+18:35:10.347 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=151
+18:35:10.350 [MoveExecutor] INFO  [Car009] tick=151 预约成功(13,29)
+18:35:10.363 [MoveExecutor] INFO  [Car009] 移动到(13,29)，tick=151
+18:35:10.867 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=152
+18:35:10.872 [MoveExecutor] INFO  [Car009] tick=152 预约成功(14,29)
+18:35:10.885 [MoveExecutor] INFO  [Car009] 移动到(14,29)，tick=152
+18:35:11.397 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=153
+18:35:11.402 [MoveExecutor] INFO  [Car009] tick=153 预约成功(15,29)
+18:35:11.416 [MoveExecutor] INFO  [Car009] 移动到(15,29)，tick=153
+18:35:11.918 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=154
+18:35:11.921 [MoveExecutor] INFO  [Car009] tick=154 预约成功(16,29)
+18:35:11.935 [MoveExecutor] INFO  [Car009] 移动到(16,29)，tick=154
+18:35:12.436 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=155
+18:35:12.443 [MoveExecutor] INFO  [Car009] tick=155 预约成功(17,29)
+18:35:12.461 [MoveExecutor] INFO  [Car009] 移动到(17,29)，tick=155
+18:35:12.954 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=156
+18:35:12.958 [MoveExecutor] INFO  [Car009] tick=156 预约成功(18,29)
+18:35:12.972 [MoveExecutor] INFO  [Car009] 移动到(18,29)，tick=156
+18:35:13.479 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=157
+18:35:13.483 [MoveExecutor] INFO  [Car009] tick=157 预约成功(19,29)
+18:35:13.502 [MoveExecutor] INFO  [Car009] 移动到(19,29)，tick=157
+18:35:13.998 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=158
+18:35:14.002 [MoveExecutor] INFO  [Car009] tick=158 预约成功(20,29)
+18:35:14.015 [MoveExecutor] INFO  [Car009] 路径走完，最终位置(20,29)，tick=158
+18:35:15.560 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=161
+18:35:15.563 [MoveExecutor] INFO  [Car009] tick=161 预约成功(20,28)
+18:35:15.575 [MoveExecutor] INFO  [Car009] 移动到(20,28)，tick=161
+18:35:16.085 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=162
+18:35:16.091 [MoveExecutor] INFO  [Car009] tick=162 预约成功(20,27)
+18:35:16.109 [MoveExecutor] INFO  [Car009] 移动到(20,27)，tick=162
+18:35:16.610 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=163
+18:35:16.613 [MoveExecutor] INFO  [Car009] tick=163 预约成功(20,26)
+18:35:16.627 [MoveExecutor] INFO  [Car009] 移动到(20,26)，tick=163
+18:35:17.146 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=164
+18:35:17.150 [MoveExecutor] INFO  [Car009] tick=164 预约成功(19,26)
+18:35:17.179 [MoveExecutor] INFO  [Car009] 移动到(19,26)，tick=164
+18:35:17.663 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=165
+18:35:17.667 [MoveExecutor] INFO  [Car009] tick=165 预约成功(18,26)
+18:35:17.680 [MoveExecutor] INFO  [Car009] 移动到(18,26)，tick=165
+18:35:18.185 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=166
+18:35:18.193 [MoveExecutor] INFO  [Car009] tick=166 预约成功(17,26)
+18:35:18.216 [MoveExecutor] INFO  [Car009] 移动到(17,26)，tick=166
+18:35:18.706 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=167
+18:35:18.709 [MoveExecutor] INFO  [Car009] tick=167 预约成功(16,26)
+18:35:18.723 [MoveExecutor] INFO  [Car009] 移动到(16,26)，tick=167
+18:35:19.230 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=168
+18:35:19.233 [MoveExecutor] INFO  [Car009] tick=168 预约成功(15,26)
+18:35:19.246 [MoveExecutor] INFO  [Car009] 移动到(15,26)，tick=168
+18:35:19.752 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=169
+18:35:19.756 [MoveExecutor] INFO  [Car009] tick=169 预约成功(15,25)
+18:35:19.768 [MoveExecutor] INFO  [Car009] 移动到(15,25)，tick=169
+18:35:20.276 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=170
+18:35:20.280 [MoveExecutor] INFO  [Car009] tick=170 预约成功(15,24)
+18:35:20.296 [MoveExecutor] INFO  [Car009] 移动到(15,24)，tick=170
+18:35:20.801 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=171
+18:35:20.807 [MoveExecutor] INFO  [Car009] tick=171 预约成功(15,23)
+18:35:20.828 [MoveExecutor] INFO  [Car009] 移动到(15,23)，tick=171
+18:35:21.323 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=172
+18:35:21.327 [MoveExecutor] INFO  [Car009] tick=172 预约成功(15,22)
+18:35:21.340 [MoveExecutor] INFO  [Car009] 移动到(15,22)，tick=172
+18:35:21.845 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=173
+18:35:21.848 [MoveExecutor] INFO  [Car009] tick=173 预约成功(15,21)
+18:35:21.872 [MoveExecutor] INFO  [Car009] 移动到(15,21)，tick=173
+18:35:22.363 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=174
+18:35:22.367 [MoveExecutor] INFO  [Car009] tick=174 预约成功(15,20)
+18:35:22.383 [MoveExecutor] INFO  [Car009] 移动到(15,20)，tick=174
+18:35:22.886 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=175
+18:35:22.889 [MoveExecutor] INFO  [Car009] tick=175 预约成功(15,19)
+18:35:22.906 [MoveExecutor] INFO  [Car009] 移动到(15,19)，tick=175
+18:35:23.404 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=176
+18:35:23.407 [MoveExecutor] INFO  [Car009] tick=176 预约成功(15,18)
+18:35:23.421 [MoveExecutor] INFO  [Car009] 移动到(15,18)，tick=176
+18:35:23.931 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=177
+18:35:23.934 [MoveExecutor] INFO  [Car009] tick=177 预约成功(15,17)
+18:35:23.947 [MoveExecutor] INFO  [Car009] 移动到(15,17)，tick=177
+18:35:24.449 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=178
+18:35:24.452 [MoveExecutor] INFO  [Car009] tick=178 预约成功(15,16)
+18:35:24.465 [MoveExecutor] INFO  [Car009] 移动到(15,16)，tick=178
+18:35:24.966 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=179
+18:35:24.970 [MoveExecutor] INFO  [Car009] tick=179 预约成功(15,15)
+18:35:24.983 [MoveExecutor] INFO  [Car009] 移动到(15,15)，tick=179
+18:35:25.495 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=180
+18:35:25.525 [MoveExecutor] INFO  [Car009] tick=180 预约成功(15,14)
+18:35:25.544 [MoveExecutor] INFO  [Car009] 移动到(15,14)，tick=180
+18:35:26.029 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=181
+18:35:26.033 [MoveExecutor] INFO  [Car009] tick=181 预约成功(15,13)
+18:35:26.044 [MoveExecutor] INFO  [Car009] 移动到(15,13)，tick=181
+18:35:26.549 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=182
+18:35:26.552 [MoveExecutor] INFO  [Car009] tick=182 预约成功(14,13)
+18:35:26.567 [MoveExecutor] INFO  [Car009] 移动到(14,13)，tick=182
+18:35:27.069 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=183
+18:35:27.073 [MoveExecutor] INFO  [Car009] tick=183 预约成功(13,13)
+18:35:27.087 [MoveExecutor] INFO  [Car009] 移动到(13,13)，tick=183
+18:35:27.592 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=184
+18:35:27.596 [MoveExecutor] INFO  [Car009] tick=184 预约成功(12,13)
+18:35:27.608 [MoveExecutor] INFO  [Car009] 移动到(12,13)，tick=184
+18:35:28.111 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=185
+18:35:28.115 [MoveExecutor] INFO  [Car009] tick=185 预约成功(12,12)
+18:35:28.127 [MoveExecutor] INFO  [Car009] 移动到(12,12)，tick=185
+18:35:28.633 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=186
+18:35:28.637 [MoveExecutor] INFO  [Car009] tick=186 预约成功(12,11)
+18:35:28.653 [MoveExecutor] INFO  [Car009] 移动到(12,11)，tick=186
+18:35:29.155 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=187
+18:35:29.158 [MoveExecutor] INFO  [Car009] tick=187 预约成功(12,10)
+18:35:29.174 [MoveExecutor] INFO  [Car009] 移动到(12,10)，tick=187
+18:35:29.674 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=188
+18:35:29.677 [MoveExecutor] INFO  [Car009] tick=188 预约成功(12,9)
+18:35:29.690 [MoveExecutor] INFO  [Car009] 移动到(12,9)，tick=188
+18:35:30.214 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=189
+18:35:30.218 [MoveExecutor] INFO  [Car009] tick=189 预约成功(12,8)
+18:35:30.237 [MoveExecutor] INFO  [Car009] 移动到(12,8)，tick=189
+18:35:30.737 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=190
+18:35:30.741 [MoveExecutor] INFO  [Car009] tick=190 预约成功(11,8)
+18:35:30.759 [MoveExecutor] INFO  [Car009] 移动到(11,8)，tick=190
+18:35:31.264 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=191
+18:35:31.266 [MoveExecutor] INFO  [Car009] tick=191 预约成功(10,8)
+18:35:31.278 [MoveExecutor] INFO  [Car009] 移动到(10,8)，tick=191
+18:35:31.797 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=192
+18:35:31.800 [MoveExecutor] INFO  [Car009] tick=192 预约成功(9,8)
+18:35:31.813 [MoveExecutor] INFO  [Car009] 移动到(9,8)，tick=192
+18:35:58.245 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=11
+18:35:58.249 [MoveExecutor] INFO  [Car009] tick=11 预约成功(30,12)
+18:35:58.263 [MoveExecutor] INFO  [Car009] 移动到(30,12)，tick=11
+18:35:58.782 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=12
+18:35:58.785 [MoveExecutor] INFO  [Car009] tick=12 预约成功(30,13)
+18:35:58.802 [MoveExecutor] INFO  [Car009] 移动到(30,13)，tick=12
+18:35:59.322 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=13
+18:35:59.325 [MoveExecutor] INFO  [Car009] tick=13 预约成功(30,14)
+18:35:59.339 [MoveExecutor] INFO  [Car009] 移动到(30,14)，tick=13
+18:35:59.855 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=14
+18:35:59.859 [MoveExecutor] INFO  [Car009] tick=14 预约成功(30,15)
+18:35:59.873 [MoveExecutor] INFO  [Car009] 移动到(30,15)，tick=14
+18:36:00.375 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=15
+18:36:00.379 [MoveExecutor] INFO  [Car009] tick=15 预约成功(30,16)
+18:36:00.399 [MoveExecutor] INFO  [Car009] 移动到(30,16)，tick=15
+18:36:00.894 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=16
+18:36:00.899 [MoveExecutor] INFO  [Car009] tick=16 预约成功(30,17)
+18:36:00.917 [MoveExecutor] INFO  [Car009] 移动到(30,17)，tick=16
+18:36:01.418 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=17
+18:36:01.421 [MoveExecutor] INFO  [Car009] tick=17 预约成功(30,18)
+18:36:01.437 [MoveExecutor] INFO  [Car009] 移动到(30,18)，tick=17
+18:36:01.940 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=18
+18:36:01.944 [MoveExecutor] INFO  [Car009] tick=18 预约成功(30,19)
+18:36:01.962 [MoveExecutor] INFO  [Car009] 移动到(30,19)，tick=18
+18:36:02.476 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=19
+18:36:02.480 [MoveExecutor] INFO  [Car009] tick=19 预约成功(30,20)
+18:36:02.500 [MoveExecutor] INFO  [Car009] 移动到(30,20)，tick=19
+18:36:03.002 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=20
+18:36:03.005 [MoveExecutor] INFO  [Car009] tick=20 预约成功(30,21)
+18:36:03.023 [MoveExecutor] INFO  [Car009] 移动到(30,21)，tick=20
+18:36:03.528 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=21
+18:36:03.532 [MoveExecutor] INFO  [Car009] tick=21 预约成功(29,21)
+18:36:03.553 [MoveExecutor] INFO  [Car009] 移动到(29,21)，tick=21
+18:36:04.071 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=22
+18:36:04.077 [MoveExecutor] INFO  [Car009] tick=22 预约成功(29,22)
+18:36:04.102 [MoveExecutor] INFO  [Car009] 移动到(29,22)，tick=22
+18:36:04.597 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=23
+18:36:04.605 [MoveExecutor] INFO  [Car009] tick=23 预约成功(29,23)
+18:36:04.633 [MoveExecutor] INFO  [Car009] 移动到(29,23)，tick=23
+18:36:05.116 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=24
+18:36:05.119 [MoveExecutor] INFO  [Car009] tick=24 预约成功(29,24)
+18:36:05.137 [MoveExecutor] INFO  [Car009] 移动到(29,24)，tick=24
+18:36:32.905 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=28
+18:36:32.908 [MoveExecutor] INFO  [Car009] tick=28 预约成功(39,22)
+18:36:32.926 [MoveExecutor] INFO  [Car009] 移动到(39,22)，tick=28
+18:36:33.425 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=29
+18:36:33.429 [MoveExecutor] INFO  [Car009] tick=29 预约成功(39,23)
+18:36:33.443 [MoveExecutor] INFO  [Car009] 移动到(39,23)，tick=29
+18:36:33.950 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=30
+18:36:33.953 [MoveExecutor] INFO  [Car009] tick=30 预约成功(39,24)
+18:36:33.966 [MoveExecutor] INFO  [Car009] 移动到(39,24)，tick=30
+18:36:34.476 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=31
+18:36:34.479 [MoveExecutor] INFO  [Car009] tick=31 预约成功(38,24)
+18:36:34.494 [MoveExecutor] INFO  [Car009] 移动到(38,24)，tick=31
+18:36:34.999 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=32
+18:36:35.003 [MoveExecutor] INFO  [Car009] tick=32 预约成功(37,24)
+18:36:35.019 [MoveExecutor] INFO  [Car009] 移动到(37,24)，tick=32
+18:36:35.535 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=33
+18:36:35.538 [MoveExecutor] INFO  [Car009] tick=33 预约成功(36,24)
+18:36:35.554 [MoveExecutor] INFO  [Car009] 移动到(36,24)，tick=33
+18:36:36.075 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=34
+18:36:36.081 [MoveExecutor] INFO  [Car009] tick=34 预约成功(35,24)
+18:36:36.096 [MoveExecutor] INFO  [Car009] 移动到(35,24)，tick=34
+18:36:36.610 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=35
+18:36:36.614 [MoveExecutor] INFO  [Car009] tick=35 预约成功(34,24)
+18:36:36.629 [MoveExecutor] INFO  [Car009] 移动到(34,24)，tick=35
+18:36:37.144 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=36
+18:36:37.147 [MoveExecutor] INFO  [Car009] tick=36 预约成功(33,24)
+18:36:37.161 [MoveExecutor] INFO  [Car009] 移动到(33,24)，tick=36
+18:36:37.668 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=37
+18:36:37.672 [MoveExecutor] INFO  [Car009] tick=37 预约成功(32,24)
+18:36:37.691 [MoveExecutor] INFO  [Car009] 移动到(32,24)，tick=37
+18:36:38.194 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=38
+18:36:38.198 [MoveExecutor] INFO  [Car009] tick=38 预约成功(31,24)
+18:36:38.214 [MoveExecutor] INFO  [Car009] 移动到(31,24)，tick=38
+18:36:38.730 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=39
+18:36:38.733 [MoveExecutor] INFO  [Car009] tick=39 预约成功(30,24)
+18:36:38.749 [MoveExecutor] INFO  [Car009] 移动到(30,24)，tick=39
+18:36:39.271 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=40
+18:36:39.273 [MoveExecutor] INFO  [Car009] tick=40 预约成功(29,24)
+18:36:39.301 [MoveExecutor] INFO  [Car009] 移动到(29,24)，tick=40
+18:36:39.797 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=41
+18:36:39.801 [MoveExecutor] INFO  [Car009] tick=41 预约成功(28,24)
+18:36:39.821 [MoveExecutor] INFO  [Car009] 移动到(28,24)，tick=41
+18:36:40.313 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=42
+18:36:40.317 [MoveExecutor] INFO  [Car009] tick=42 预约成功(28,25)
+18:36:40.334 [MoveExecutor] INFO  [Car009] 移动到(28,25)，tick=42
+18:36:40.835 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=43
+18:36:40.840 [MoveExecutor] INFO  [Car009] tick=43 预约成功(27,25)
+18:36:40.860 [MoveExecutor] INFO  [Car009] 移动到(27,25)，tick=43
+18:36:41.358 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=44
+18:36:41.362 [MoveExecutor] INFO  [Car009] tick=44 预约成功(26,25)
+18:36:41.376 [MoveExecutor] INFO  [Car009] 移动到(26,25)，tick=44
+18:36:41.871 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=45
+18:36:41.874 [MoveExecutor] INFO  [Car009] tick=45 预约成功(25,25)
+18:36:41.887 [MoveExecutor] INFO  [Car009] 移动到(25,25)，tick=45
+18:36:42.394 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=46
+18:36:42.397 [MoveExecutor] INFO  [Car009] tick=46 预约成功(24,25)
+18:36:42.412 [MoveExecutor] INFO  [Car009] 移动到(24,25)，tick=46
+18:36:42.913 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=47
+18:36:42.917 [MoveExecutor] INFO  [Car009] tick=47 预约成功(24,26)
+18:36:42.931 [MoveExecutor] INFO  [Car009] 移动到(24,26)，tick=47
+18:36:43.430 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=48
+18:36:43.433 [MoveExecutor] INFO  [Car009] tick=48 预约成功(24,27)
+18:36:43.450 [MoveExecutor] INFO  [Car009] 移动到(24,27)，tick=48
+18:36:43.950 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=49
+18:36:43.953 [MoveExecutor] INFO  [Car009] tick=49 预约成功(24,28)
+18:36:43.972 [MoveExecutor] INFO  [Car009] 移动到(24,28)，tick=49
+18:36:44.481 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=50
+18:36:44.485 [MoveExecutor] INFO  [Car009] tick=50 预约成功(24,29)
+18:36:44.500 [MoveExecutor] INFO  [Car009] 移动到(24,29)，tick=50
+18:36:44.997 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=51
+18:36:45.001 [MoveExecutor] INFO  [Car009] tick=51 预约成功(24,30)
+18:36:45.015 [MoveExecutor] INFO  [Car009] 移动到(24,30)，tick=51
+18:36:45.520 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=52
+18:36:45.526 [MoveExecutor] INFO  [Car009] tick=52 预约成功(24,31)
+18:36:45.553 [MoveExecutor] INFO  [Car009] 移动到(24,31)，tick=52
+18:36:46.036 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=53
+18:36:46.039 [MoveExecutor] INFO  [Car009] tick=53 预约成功(24,32)
+18:36:46.056 [MoveExecutor] INFO  [Car009] 移动到(24,32)，tick=53
+18:36:46.558 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=54
+18:36:46.562 [MoveExecutor] INFO  [Car009] tick=54 预约成功(24,33)
+18:36:46.575 [MoveExecutor] INFO  [Car009] 移动到(24,33)，tick=54
+18:36:47.085 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=55
+18:36:47.088 [MoveExecutor] INFO  [Car009] tick=55 预约成功(23,33)
+18:36:47.103 [MoveExecutor] INFO  [Car009] 移动到(23,33)，tick=55
+18:36:47.616 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=56
+18:36:47.621 [MoveExecutor] INFO  [Car009] tick=56 预约成功(23,34)
+18:36:47.637 [MoveExecutor] INFO  [Car009] 移动到(23,34)，tick=56
+18:36:48.133 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=57
+18:36:48.137 [MoveExecutor] INFO  [Car009] tick=57 预约成功(23,35)
+18:36:48.154 [MoveExecutor] INFO  [Car009] 移动到(23,35)，tick=57
+18:36:48.666 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=58
+18:36:48.670 [MoveExecutor] INFO  [Car009] tick=58 预约成功(23,36)
+18:36:48.686 [MoveExecutor] INFO  [Car009] 移动到(23,36)，tick=58
+18:36:49.176 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=59
+18:36:49.179 [MoveExecutor] INFO  [Car009] tick=59 预约成功(23,37)
+18:36:49.194 [MoveExecutor] INFO  [Car009] 移动到(23,37)，tick=59
+18:36:49.699 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=60
+18:36:49.702 [MoveExecutor] INFO  [Car009] tick=60 预约成功(23,38)
+18:36:49.716 [MoveExecutor] INFO  [Car009] 移动到(23,38)，tick=60
+18:36:50.220 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=61
+18:36:50.223 [MoveExecutor] INFO  [Car009] tick=61 预约成功(23,39)
+18:36:50.237 [MoveExecutor] INFO  [Car009] 移动到(23,39)，tick=61
+18:36:50.743 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=62
+18:36:50.746 [MoveExecutor] INFO  [Car009] tick=62 预约成功(22,39)
+18:36:50.761 [MoveExecutor] INFO  [Car009] 移动到(22,39)，tick=62
+18:36:51.262 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=63
+18:36:51.265 [MoveExecutor] INFO  [Car009] tick=63 预约成功(22,40)
+18:36:51.280 [MoveExecutor] INFO  [Car009] 移动到(22,40)，tick=63
+18:36:51.786 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=64
+18:36:51.790 [MoveExecutor] INFO  [Car009] tick=64 预约成功(22,41)
+18:36:51.806 [MoveExecutor] INFO  [Car009] 移动到(22,41)，tick=64
+18:36:52.305 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=65
+18:36:52.308 [MoveExecutor] INFO  [Car009] tick=65 预约成功(22,42)
+18:36:52.322 [MoveExecutor] INFO  [Car009] 移动到(22,42)，tick=65
+18:36:52.830 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=66
+18:36:52.833 [MoveExecutor] INFO  [Car009] tick=66 预约成功(22,43)
+18:36:52.854 [MoveExecutor] INFO  [Car009] 移动到(22,43)，tick=66
+18:36:53.351 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=67
+18:36:53.355 [MoveExecutor] INFO  [Car009] tick=67 预约成功(22,44)
+18:36:53.371 [MoveExecutor] INFO  [Car009] 移动到(22,44)，tick=67
+18:36:53.871 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=68
+18:36:53.874 [MoveExecutor] INFO  [Car009] tick=68 预约成功(22,45)
+18:36:53.889 [MoveExecutor] INFO  [Car009] 移动到(22,45)，tick=68
+18:36:54.396 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=69
+18:36:54.399 [MoveExecutor] INFO  [Car009] tick=69 预约成功(22,46)
+18:36:54.414 [MoveExecutor] INFO  [Car009] 移动到(22,46)，tick=69
+18:36:54.919 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=70
+18:36:54.923 [MoveExecutor] INFO  [Car009] tick=70 预约成功(22,47)
+18:36:54.936 [MoveExecutor] INFO  [Car009] 移动到(22,47)，tick=70
+18:36:55.439 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=71
+18:36:55.442 [MoveExecutor] INFO  [Car009] tick=71 预约成功(21,47)
+18:36:55.456 [MoveExecutor] INFO  [Car009] 移动到(21,47)，tick=71
+18:36:55.956 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=72
+18:36:55.960 [MoveExecutor] INFO  [Car009] tick=72 预约成功(20,47)
+18:36:55.975 [MoveExecutor] INFO  [Car009] 移动到(20,47)，tick=72
+18:36:56.485 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=73
+18:36:56.488 [MoveExecutor] INFO  [Car009] tick=73 预约成功(20,48)
+18:36:56.506 [MoveExecutor] INFO  [Car009] 移动到(20,48)，tick=73
+18:36:57.005 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=74
+18:36:57.009 [MoveExecutor] INFO  [Car009] tick=74 预约成功(20,49)
+18:36:57.025 [MoveExecutor] INFO  [Car009] 移动到(20,49)，tick=74
+18:36:57.523 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=75
+18:36:57.527 [MoveExecutor] INFO  [Car009] tick=75 预约成功(20,50)
+18:36:57.539 [MoveExecutor] INFO  [Car009] 移动到(20,50)，tick=75
+18:36:58.052 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=76
+18:36:58.055 [MoveExecutor] INFO  [Car009] tick=76 预约成功(20,51)
+18:36:58.074 [MoveExecutor] INFO  [Car009] 移动到(20,51)，tick=76
+18:36:58.581 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=77
+18:36:58.584 [MoveExecutor] INFO  [Car009] tick=77 预约成功(20,52)
+18:36:58.600 [MoveExecutor] INFO  [Car009] 移动到(20,52)，tick=77
+18:36:59.105 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=78
+18:36:59.108 [MoveExecutor] INFO  [Car009] tick=78 预约成功(20,53)
+18:36:59.122 [MoveExecutor] INFO  [Car009] 移动到(20,53)，tick=78
+18:36:59.626 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=79
+18:36:59.633 [MoveExecutor] INFO  [Car009] tick=79 预约成功(20,54)
+18:36:59.649 [MoveExecutor] INFO  [Car009] 移动到(20,54)，tick=79
+18:37:00.151 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=80
+18:37:00.155 [MoveExecutor] INFO  [Car009] tick=80 预约成功(19,54)
+18:37:00.169 [MoveExecutor] INFO  [Car009] 移动到(19,54)，tick=80
+18:37:00.672 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=81
+18:37:00.676 [MoveExecutor] INFO  [Car009] tick=81 预约成功(18,54)
+18:37:00.691 [MoveExecutor] INFO  [Car009] 移动到(18,54)，tick=81
+18:37:01.188 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=82
+18:37:01.193 [MoveExecutor] INFO  [Car009] tick=82 预约成功(17,54)
+18:37:01.208 [MoveExecutor] INFO  [Car009] 移动到(17,54)，tick=82
+18:37:01.722 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=83
+18:37:01.724 [MoveExecutor] INFO  [Car009] tick=83 预约成功(16,54)
+18:37:01.739 [MoveExecutor] INFO  [Car009] 移动到(16,54)，tick=83
+18:37:02.250 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=84
+18:37:02.253 [MoveExecutor] INFO  [Car009] tick=84 预约成功(15,54)
+18:37:02.267 [MoveExecutor] INFO  [Car009] 移动到(15,54)，tick=84
+18:37:02.772 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=85
+18:37:02.775 [MoveExecutor] INFO  [Car009] tick=85 预约成功(15,55)
+18:37:02.790 [MoveExecutor] INFO  [Car009] 移动到(15,55)，tick=85
+18:37:03.293 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=86
+18:37:03.296 [MoveExecutor] INFO  [Car009] tick=86 预约成功(14,55)
+18:37:03.312 [MoveExecutor] INFO  [Car009] 移动到(14,55)，tick=86
+18:37:03.818 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=87
+18:37:03.821 [MoveExecutor] INFO  [Car009] tick=87 预约成功(13,55)
+18:37:03.838 [MoveExecutor] INFO  [Car009] 移动到(13,55)，tick=87
+18:37:04.346 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=88
+18:37:04.350 [MoveExecutor] INFO  [Car009] tick=88 预约成功(13,56)
+18:37:04.368 [MoveExecutor] INFO  [Car009] 移动到(13,56)，tick=88
+18:37:04.878 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=89
+18:37:04.881 [MoveExecutor] INFO  [Car009] tick=89 预约成功(12,56)
+18:37:04.896 [MoveExecutor] INFO  [Car009] 移动到(12,56)，tick=89
+18:37:05.398 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=90
+18:37:05.404 [MoveExecutor] INFO  [Car009] tick=90 预约成功(11,56)
+18:37:05.418 [MoveExecutor] INFO  [Car009] 移动到(11,56)，tick=90
+18:37:05.922 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=91
+18:37:05.925 [MoveExecutor] INFO  [Car009] tick=91 预约成功(11,57)
+18:37:05.941 [MoveExecutor] INFO  [Car009] 移动到(11,57)，tick=91
+18:37:06.441 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=92
+18:37:06.444 [MoveExecutor] INFO  [Car009] tick=92 预约成功(10,57)
+18:37:06.458 [MoveExecutor] INFO  [Car009] 移动到(10,57)，tick=92
+18:37:06.966 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=93
+18:37:06.970 [MoveExecutor] INFO  [Car009] tick=93 预约成功(9,57)
+18:37:06.984 [MoveExecutor] INFO  [Car009] 移动到(9,57)，tick=93
+18:37:07.492 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=94
+18:37:07.496 [MoveExecutor] INFO  [Car009] tick=94 预约成功(8,57)
+18:37:07.516 [MoveExecutor] INFO  [Car009] 移动到(8,57)，tick=94
+18:37:08.030 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=95
+18:37:08.035 [MoveExecutor] INFO  [Car009] tick=95 预约成功(8,56)
+18:37:08.050 [MoveExecutor] INFO  [Car009] 移动到(8,56)，tick=95
+18:37:08.551 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=96
+18:37:08.554 [MoveExecutor] INFO  [Car009] tick=96 预约成功(7,56)
+18:37:08.568 [MoveExecutor] INFO  [Car009] 移动到(7,56)，tick=96
+18:37:09.086 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=97
+18:37:09.088 [MoveExecutor] INFO  [Car009] tick=97 预约成功(6,56)
+18:37:09.103 [MoveExecutor] INFO  [Car009] 移动到(6,56)，tick=97
+18:37:09.605 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=98
+18:37:09.607 [MoveExecutor] INFO  [Car009] tick=98 预约成功(6,55)
+18:37:09.619 [MoveExecutor] INFO  [Car009] 路径走完，最终位置(6,55)，tick=98
+18:37:14.361 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=107
+18:37:14.365 [MoveExecutor] INFO  [Car009] tick=107 预约成功(6,56)
+18:37:14.381 [MoveExecutor] INFO  [Car009] 移动到(6,56)，tick=107
+18:37:14.892 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=108
+18:37:14.896 [MoveExecutor] INFO  [Car009] tick=108 预约成功(6,57)
+18:37:14.912 [MoveExecutor] INFO  [Car009] 移动到(6,57)，tick=108
+18:37:15.415 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=109
+18:37:15.418 [MoveExecutor] INFO  [Car009] tick=109 预约成功(7,57)
+18:37:15.433 [MoveExecutor] INFO  [Car009] 移动到(7,57)，tick=109
+18:37:15.933 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=110
+18:37:15.937 [MoveExecutor] INFO  [Car009] tick=110 预约成功(8,57)
+18:37:15.952 [MoveExecutor] INFO  [Car009] 移动到(8,57)，tick=110
+18:37:16.453 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=111
+18:37:16.457 [MoveExecutor] INFO  [Car009] tick=111 预约成功(9,57)
+18:37:16.475 [MoveExecutor] INFO  [Car009] 移动到(9,57)，tick=111
+18:37:16.980 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=112
+18:37:16.985 [MoveExecutor] INFO  [Car009] tick=112 预约成功(10,57)
+18:37:17.012 [MoveExecutor] INFO  [Car009] 移动到(10,57)，tick=112
+18:37:17.510 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=113
+18:37:17.514 [MoveExecutor] INFO  [Car009] tick=113 预约成功(10,56)
+18:37:17.531 [MoveExecutor] INFO  [Car009] 移动到(10,56)，tick=113
+18:37:18.049 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=114
+18:37:18.052 [MoveExecutor] INFO  [Car009] tick=114 预约成功(11,56)
+18:37:18.069 [MoveExecutor] INFO  [Car009] 移动到(11,56)，tick=114
+18:37:18.574 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=115
+18:37:18.577 [MoveExecutor] INFO  [Car009] tick=115 预约成功(11,55)
+18:37:18.591 [MoveExecutor] INFO  [Car009] 移动到(11,55)，tick=115
+18:37:19.093 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=116
+18:37:19.096 [MoveExecutor] INFO  [Car009] tick=116 预约成功(11,54)
+18:37:19.110 [MoveExecutor] INFO  [Car009] 移动到(11,54)，tick=116
+18:37:19.612 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=117
+18:37:19.615 [MoveExecutor] INFO  [Car009] tick=117 预约成功(11,53)
+18:37:19.628 [MoveExecutor] INFO  [Car009] 移动到(11,53)，tick=117
+18:37:20.131 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=118
+18:37:20.135 [MoveExecutor] INFO  [Car009] tick=118 预约成功(11,52)
+18:37:20.149 [MoveExecutor] INFO  [Car009] 移动到(11,52)，tick=118
+18:37:20.657 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=119
+18:37:20.660 [MoveExecutor] INFO  [Car009] tick=119 预约成功(11,51)
+18:37:20.677 [MoveExecutor] INFO  [Car009] 移动到(11,51)，tick=119
+18:37:21.176 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=120
+18:37:21.180 [MoveExecutor] INFO  [Car009] tick=120 预约成功(11,50)
+18:37:21.195 [MoveExecutor] INFO  [Car009] 移动到(11,50)，tick=120
+18:37:21.694 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=121
+18:37:21.701 [MoveExecutor] INFO  [Car009] tick=121 预约成功(11,49)
+18:37:21.716 [MoveExecutor] INFO  [Car009] 移动到(11,49)，tick=121
+18:37:22.215 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=122
+18:37:22.217 [MoveExecutor] INFO  [Car009] tick=122 预约成功(11,48)
+18:37:22.229 [MoveExecutor] INFO  [Car009] 移动到(11,48)，tick=122
+18:37:22.736 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=123
+18:37:22.740 [MoveExecutor] INFO  [Car009] tick=123 预约成功(11,47)
+18:37:22.752 [MoveExecutor] INFO  [Car009] 移动到(11,47)，tick=123
+18:37:23.260 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=124
+18:37:23.263 [MoveExecutor] INFO  [Car009] tick=124 预约成功(11,46)
+18:37:23.276 [MoveExecutor] INFO  [Car009] 移动到(11,46)，tick=124
+18:37:23.781 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=125
+18:37:23.783 [MoveExecutor] INFO  [Car009] tick=125 预约成功(11,45)
+18:37:23.798 [MoveExecutor] INFO  [Car009] 移动到(11,45)，tick=125
+18:37:24.301 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=126
+18:37:24.303 [MoveExecutor] INFO  [Car009] tick=126 预约成功(11,44)
+18:37:24.316 [MoveExecutor] INFO  [Car009] 移动到(11,44)，tick=126
+18:37:24.827 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=127
+18:37:24.831 [MoveExecutor] INFO  [Car009] tick=127 预约成功(11,43)
+18:37:24.844 [MoveExecutor] INFO  [Car009] 移动到(11,43)，tick=127
+18:37:25.349 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=128
+18:37:25.351 [MoveExecutor] INFO  [Car009] tick=128 预约成功(11,42)
+18:37:25.364 [MoveExecutor] INFO  [Car009] 移动到(11,42)，tick=128
+18:37:25.868 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=129
+18:37:25.871 [MoveExecutor] INFO  [Car009] tick=129 预约成功(11,41)
+18:37:25.888 [MoveExecutor] INFO  [Car009] 移动到(11,41)，tick=129
+18:37:26.385 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=130
+18:37:26.388 [MoveExecutor] INFO  [Car009] tick=130 预约成功(11,40)
+18:37:26.409 [MoveExecutor] INFO  [Car009] 移动到(11,40)，tick=130
+18:37:26.911 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=131
+18:37:26.914 [MoveExecutor] INFO  [Car009] tick=131 预约成功(11,39)
+18:37:26.927 [MoveExecutor] INFO  [Car009] 移动到(11,39)，tick=131
+18:37:27.428 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=132
+18:37:27.431 [MoveExecutor] INFO  [Car009] tick=132 预约成功(11,38)
+18:37:27.447 [MoveExecutor] INFO  [Car009] 移动到(11,38)，tick=132
+18:37:27.952 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=133
+18:37:27.955 [MoveExecutor] INFO  [Car009] tick=133 预约成功(11,37)
+18:37:27.969 [MoveExecutor] INFO  [Car009] 移动到(11,37)，tick=133
+18:37:28.475 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=134
+18:37:28.477 [MoveExecutor] INFO  [Car009] tick=134 预约成功(11,36)
+18:37:28.490 [MoveExecutor] INFO  [Car009] 移动到(11,36)，tick=134
+18:37:28.998 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=135
+18:37:29.001 [MoveExecutor] INFO  [Car009] tick=135 预约成功(11,35)
+18:37:29.017 [MoveExecutor] INFO  [Car009] 移动到(11,35)，tick=135
+18:37:29.521 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=136
+18:37:29.524 [MoveExecutor] INFO  [Car009] tick=136 预约成功(11,34)
+18:37:29.543 [MoveExecutor] INFO  [Car009] 移动到(11,34)，tick=136
+18:37:30.049 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=137
+18:37:30.053 [MoveExecutor] INFO  [Car009] tick=137 预约成功(11,33)
+18:37:30.068 [MoveExecutor] INFO  [Car009] 移动到(11,33)，tick=137
+18:37:30.585 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=138
+18:37:30.588 [MoveExecutor] INFO  [Car009] tick=138 预约成功(11,32)
+18:37:30.606 [MoveExecutor] INFO  [Car009] 移动到(11,32)，tick=138
+18:37:31.102 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=139
+18:37:31.105 [MoveExecutor] INFO  [Car009] tick=139 预约成功(11,31)
+18:37:31.120 [MoveExecutor] INFO  [Car009] 移动到(11,31)，tick=139
+18:37:31.626 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=140
+18:37:31.629 [MoveExecutor] INFO  [Car009] tick=140 预约成功(11,30)
+18:37:31.642 [MoveExecutor] INFO  [Car009] 移动到(11,30)，tick=140
+18:37:32.146 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=141
+18:37:32.149 [MoveExecutor] INFO  [Car009] tick=141 预约成功(11,29)
+18:37:32.163 [MoveExecutor] INFO  [Car009] 移动到(11,29)，tick=141
+18:37:32.662 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=142
+18:37:32.665 [MoveExecutor] INFO  [Car009] tick=142 预约成功(11,28)
+18:37:32.680 [MoveExecutor] INFO  [Car009] 移动到(11,28)，tick=142
+18:37:33.188 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=143
+18:37:33.191 [MoveExecutor] INFO  [Car009] tick=143 预约成功(11,27)
+18:37:33.204 [MoveExecutor] INFO  [Car009] 移动到(11,27)，tick=143
+18:37:33.722 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=144
+18:37:33.725 [MoveExecutor] INFO  [Car009] tick=144 预约成功(11,26)
+18:37:33.741 [MoveExecutor] INFO  [Car009] 移动到(11,26)，tick=144
+18:37:34.252 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=145
+18:37:34.257 [MoveExecutor] INFO  [Car009] tick=145 预约成功(11,25)
+18:37:34.272 [MoveExecutor] INFO  [Car009] 移动到(11,25)，tick=145
+18:37:34.808 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=146
+18:37:34.812 [MoveExecutor] INFO  [Car009] tick=146 预约成功(11,24)
+18:37:34.825 [MoveExecutor] INFO  [Car009] 移动到(11,24)，tick=146
+18:37:35.307 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=147
+18:37:35.311 [MoveExecutor] INFO  [Car009] tick=147 预约成功(11,23)
+18:37:35.324 [MoveExecutor] INFO  [Car009] 移动到(11,23)，tick=147
+18:37:35.830 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=148
+18:37:35.837 [MoveExecutor] INFO  [Car009] tick=148 预约成功(12,23)
+18:37:35.855 [MoveExecutor] INFO  [Car009] 移动到(12,23)，tick=148
+18:37:36.349 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=149
+18:37:36.352 [MoveExecutor] INFO  [Car009] tick=149 预约成功(12,22)
+18:37:36.365 [MoveExecutor] INFO  [Car009] 移动到(12,22)，tick=149
+18:37:36.870 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=150
+18:37:36.874 [MoveExecutor] INFO  [Car009] tick=150 预约成功(12,21)
+18:37:36.887 [MoveExecutor] INFO  [Car009] 移动到(12,21)，tick=150
+18:37:37.394 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=151
+18:37:37.403 [MoveExecutor] INFO  [Car009] tick=151 预约成功(12,20)
+18:37:37.430 [MoveExecutor] INFO  [Car009] 移动到(12,20)，tick=151
+18:37:37.919 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=152
+18:37:37.923 [MoveExecutor] INFO  [Car009] tick=152 预约成功(13,20)
+18:37:37.940 [MoveExecutor] INFO  [Car009] 移动到(13,20)，tick=152
+18:37:38.450 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=153
+18:37:38.460 [MoveExecutor] INFO  [Car009] tick=153 预约成功(13,19)
+18:37:38.474 [MoveExecutor] INFO  [Car009] 移动到(13,19)，tick=153
+18:37:38.971 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=154
+18:37:38.975 [MoveExecutor] INFO  [Car009] tick=154 预约成功(13,18)
+18:37:38.992 [MoveExecutor] INFO  [Car009] 移动到(13,18)，tick=154
+18:37:39.492 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=155
+18:37:39.495 [MoveExecutor] INFO  [Car009] tick=155 预约成功(14,18)
+18:37:39.510 [MoveExecutor] INFO  [Car009] 移动到(14,18)，tick=155
+18:37:40.012 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=156
+18:37:40.015 [MoveExecutor] INFO  [Car009] tick=156 预约成功(14,17)
+18:37:40.028 [MoveExecutor] INFO  [Car009] 移动到(14,17)，tick=156
+18:37:40.532 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=157
+18:37:40.534 [MoveExecutor] INFO  [Car009] tick=157 预约成功(14,16)
+18:37:40.547 [MoveExecutor] INFO  [Car009] 移动到(14,16)，tick=157
+18:37:41.055 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=158
+18:37:41.060 [MoveExecutor] INFO  [Car009] tick=158 预约成功(14,15)
+18:37:41.084 [MoveExecutor] INFO  [Car009] 移动到(14,15)，tick=158
+18:37:41.573 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=159
+18:37:41.576 [MoveExecutor] INFO  [Car009] tick=159 预约成功(14,14)
+18:37:41.590 [MoveExecutor] INFO  [Car009] 移动到(14,14)，tick=159
+18:37:42.106 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=160
+18:37:42.109 [MoveExecutor] INFO  [Car009] tick=160 预约成功(14,13)
+18:37:42.123 [MoveExecutor] INFO  [Car009] 移动到(14,13)，tick=160
+18:37:42.637 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=161
+18:37:42.641 [MoveExecutor] INFO  [Car009] tick=161 预约成功(15,13)
+18:37:42.655 [MoveExecutor] INFO  [Car009] 移动到(15,13)，tick=161
+18:37:43.178 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=162
+18:37:43.181 [MoveExecutor] INFO  [Car009] tick=162 预约成功(16,13)
+18:37:43.195 [MoveExecutor] INFO  [Car009] 移动到(16,13)，tick=162
+18:37:43.713 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=163
+18:37:43.716 [MoveExecutor] INFO  [Car009] tick=163 预约成功(16,12)
+18:37:43.731 [MoveExecutor] INFO  [Car009] 移动到(16,12)，tick=163
+18:37:44.227 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=164
+18:37:44.230 [MoveExecutor] INFO  [Car009] tick=164 预约成功(16,11)
+18:37:44.242 [MoveExecutor] INFO  [Car009] 移动到(16,11)，tick=164
+18:37:44.749 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=165
+18:37:44.751 [MoveExecutor] INFO  [Car009] tick=165 预约成功(17,11)
+18:37:44.765 [MoveExecutor] INFO  [Car009] 移动到(17,11)，tick=165
+18:37:45.273 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=166
+18:37:45.277 [MoveExecutor] INFO  [Car009] tick=166 预约成功(18,11)
+18:37:45.289 [MoveExecutor] INFO  [Car009] 移动到(18,11)，tick=166
+18:37:45.792 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=167
+18:37:45.796 [MoveExecutor] INFO  [Car009] tick=167 预约成功(19,11)
+18:37:45.810 [MoveExecutor] INFO  [Car009] 移动到(19,11)，tick=167
+18:37:46.313 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=168
+18:37:46.317 [MoveExecutor] INFO  [Car009] tick=168 预约成功(19,10)
+18:37:46.330 [MoveExecutor] INFO  [Car009] 移动到(19,10)，tick=168
+18:37:46.838 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=169
+18:37:46.841 [MoveExecutor] INFO  [Car009] tick=169 预约成功(20,10)
+18:37:46.868 [MoveExecutor] INFO  [Car009] 移动到(20,10)，tick=169
+18:37:47.358 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=170
+18:37:47.363 [MoveExecutor] INFO  [Car009] tick=170 预约成功(21,10)
+18:37:47.382 [MoveExecutor] INFO  [Car009] 移动到(21,10)，tick=170
+18:37:47.881 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=171
+18:37:47.884 [MoveExecutor] INFO  [Car009] tick=171 预约成功(22,10)
+18:37:47.898 [MoveExecutor] INFO  [Car009] 移动到(22,10)，tick=171
+18:37:48.402 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=172
+18:37:48.410 [MoveExecutor] INFO  [Car009] tick=172 预约成功(23,10)
+18:37:48.431 [MoveExecutor] INFO  [Car009] 移动到(23,10)，tick=172
+18:37:48.923 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=173
+18:37:48.927 [MoveExecutor] INFO  [Car009] tick=173 预约成功(24,10)
+18:37:48.939 [MoveExecutor] INFO  [Car009] 移动到(24,10)，tick=173
+18:37:49.447 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=174
+18:37:49.450 [MoveExecutor] INFO  [Car009] tick=174 预约成功(25,10)
+18:37:49.465 [MoveExecutor] INFO  [Car009] 移动到(25,10)，tick=174
+18:37:49.973 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=175
+18:37:49.976 [MoveExecutor] INFO  [Car009] tick=175 预约成功(26,10)
+18:37:49.990 [MoveExecutor] INFO  [Car009] 移动到(26,10)，tick=175
+18:37:50.494 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=176
+18:37:50.498 [MoveExecutor] INFO  [Car009] tick=176 预约成功(27,10)
+18:37:50.513 [MoveExecutor] INFO  [Car009] 移动到(27,10)，tick=176
+18:37:51.016 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=177
+18:37:51.021 [MoveExecutor] INFO  [Car009] tick=177 预约成功(28,10)
+18:37:51.035 [MoveExecutor] INFO  [Car009] 移动到(28,10)，tick=177
+18:37:51.540 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=178
+18:37:51.549 [MoveExecutor] INFO  [Car009] tick=178 预约成功(29,10)
+18:37:51.568 [MoveExecutor] INFO  [Car009] 移动到(29,10)，tick=178
+18:37:52.062 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=179
+18:37:52.064 [MoveExecutor] INFO  [Car009] tick=179 预约成功(29,9)
+18:37:52.088 [MoveExecutor] INFO  [Car009] 移动到(29,9)，tick=179
+18:37:52.587 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=180
+18:37:52.590 [MoveExecutor] INFO  [Car009] tick=180 预约成功(30,9)
+18:37:52.605 [MoveExecutor] INFO  [Car009] 移动到(30,9)，tick=180
+18:37:53.116 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=181
+18:37:53.119 [MoveExecutor] INFO  [Car009] tick=181 预约成功(31,9)
+18:37:53.133 [MoveExecutor] INFO  [Car009] 移动到(31,9)，tick=181
+18:37:53.636 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=182
+18:37:53.639 [MoveExecutor] INFO  [Car009] tick=182 预约成功(32,9)
+18:37:53.651 [MoveExecutor] INFO  [Car009] 移动到(32,9)，tick=182
+18:37:54.156 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=183
+18:37:54.161 [MoveExecutor] INFO  [Car009] tick=183 预约成功(32,8)
+18:37:54.173 [MoveExecutor] INFO  [Car009] 移动到(32,8)，tick=183
+18:37:54.678 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=184
+18:37:54.681 [MoveExecutor] INFO  [Car009] tick=184 预约成功(33,8)
+18:37:54.697 [MoveExecutor] INFO  [Car009] 移动到(33,8)，tick=184
+18:37:55.198 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=185
+18:37:55.201 [MoveExecutor] INFO  [Car009] tick=185 预约成功(34,8)
+18:37:55.214 [MoveExecutor] INFO  [Car009] 移动到(34,8)，tick=185
+18:37:55.727 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=186
+18:37:55.732 [MoveExecutor] INFO  [Car009] tick=186 预约成功(35,8)
+18:37:55.748 [MoveExecutor] INFO  [Car009] 移动到(35,8)，tick=186
+18:37:56.250 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=187
+18:37:56.255 [MoveExecutor] INFO  [Car009] tick=187 预约成功(36,8)
+18:37:56.284 [MoveExecutor] INFO  [Car009] 移动到(36,8)，tick=187
+18:37:56.778 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=188
+18:37:56.781 [MoveExecutor] INFO  [Car009] tick=188 预约成功(37,8)
+18:37:56.806 [MoveExecutor] INFO  [Car009] 移动到(37,8)，tick=188
+18:37:57.298 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=189
+18:37:57.301 [MoveExecutor] INFO  [Car009] tick=189 预约成功(38,8)
+18:37:57.315 [MoveExecutor] INFO  [Car009] 移动到(38,8)，tick=189
+18:37:57.823 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=190
+18:37:57.827 [MoveExecutor] INFO  [Car009] tick=190 预约成功(39,8)
+18:37:57.843 [MoveExecutor] INFO  [Car009] 移动到(39,8)，tick=190
+18:37:58.346 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=191
+18:37:58.349 [MoveExecutor] INFO  [Car009] tick=191 预约成功(40,8)
+18:37:58.362 [MoveExecutor] INFO  [Car009] 移动到(40,8)，tick=191
+18:37:58.865 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=192
+18:37:58.869 [MoveExecutor] INFO  [Car009] tick=192 预约成功(41,8)
+18:37:58.883 [MoveExecutor] INFO  [Car009] 移动到(41,8)，tick=192
+18:38:47.055 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=45
+18:38:47.059 [MoveExecutor] INFO  [Car009] tick=45 预约成功(43,5)
+18:38:47.091 [MoveExecutor] INFO  [Car009] 移动到(43,5)，tick=45
+18:38:47.585 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=46
+18:38:47.590 [MoveExecutor] INFO  [Car009] tick=46 预约成功(43,6)
+18:38:47.603 [MoveExecutor] INFO  [Car009] 移动到(43,6)，tick=46
+18:38:48.109 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=47
+18:38:48.112 [MoveExecutor] INFO  [Car009] tick=47 预约成功(42,6)
+18:38:48.125 [MoveExecutor] INFO  [Car009] 移动到(42,6)，tick=47
+18:38:48.655 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=48
+18:38:48.659 [MoveExecutor] INFO  [Car009] tick=48 预约成功(41,6)
+18:38:48.673 [MoveExecutor] INFO  [Car009] 移动到(41,6)，tick=48
+18:38:49.180 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=49
+18:38:49.182 [MoveExecutor] INFO  [Car009] tick=49 预约成功(40,6)
+18:38:49.197 [MoveExecutor] INFO  [Car009] 移动到(40,6)，tick=49
+18:38:49.703 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=50
+18:38:49.707 [MoveExecutor] INFO  [Car009] tick=50 预约成功(40,7)
+18:38:49.721 [MoveExecutor] INFO  [Car009] 移动到(40,7)，tick=50
+18:38:50.230 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=51
+18:38:50.233 [MoveExecutor] INFO  [Car009] tick=51 预约成功(40,8)
+18:38:50.250 [MoveExecutor] INFO  [Car009] 移动到(40,8)，tick=51
+18:38:50.768 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=52
+18:38:50.772 [MoveExecutor] INFO  [Car009] tick=52 预约成功(40,9)
+18:38:50.788 [MoveExecutor] INFO  [Car009] 移动到(40,9)，tick=52
+18:38:51.303 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=53
+18:38:51.305 [MoveExecutor] INFO  [Car009] tick=53 预约成功(40,10)
+18:38:51.324 [MoveExecutor] INFO  [Car009] 移动到(40,10)，tick=53
+18:39:06.381 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=6
+18:39:06.383 [MoveExecutor] INFO  [Car009] tick=6 预约成功(10,10)
+18:39:06.398 [MoveExecutor] INFO  [Car009] 移动到(10,10)，tick=6
+18:39:06.908 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=7
+18:39:06.912 [MoveExecutor] INFO  [Car009] tick=7 预约成功(10,11)
+18:39:06.927 [MoveExecutor] INFO  [Car009] 移动到(10,11)，tick=7
+18:39:07.424 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=8
+18:39:07.428 [MoveExecutor] INFO  [Car009] tick=8 预约成功(10,12)
+18:39:07.443 [MoveExecutor] INFO  [Car009] 移动到(10,12)，tick=8
+18:39:07.947 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=9
+18:39:07.951 [MoveExecutor] INFO  [Car009] tick=9 预约成功(10,13)
+18:39:07.965 [MoveExecutor] INFO  [Car009] 移动到(10,13)，tick=9
+18:39:08.471 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=10
+18:39:08.475 [MoveExecutor] INFO  [Car009] tick=10 预约成功(10,14)
+18:39:08.491 [MoveExecutor] INFO  [Car009] 移动到(10,14)，tick=10
+18:39:08.987 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=11
+18:39:08.989 [MoveExecutor] INFO  [Car009] tick=11 预约成功(10,15)
+18:39:09.003 [MoveExecutor] INFO  [Car009] 移动到(10,15)，tick=11
+18:39:09.507 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=12
+18:39:09.511 [MoveExecutor] INFO  [Car009] tick=12 预约成功(10,16)
+18:39:09.528 [MoveExecutor] INFO  [Car009] 移动到(10,16)，tick=12
+18:39:10.031 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=13
+18:39:10.035 [MoveExecutor] INFO  [Car009] tick=13 预约成功(10,17)
+18:39:10.049 [MoveExecutor] INFO  [Car009] 移动到(10,17)，tick=13
+18:39:10.551 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=14
+18:39:10.554 [MoveExecutor] INFO  [Car009] tick=14 预约成功(10,18)
+18:39:10.567 [MoveExecutor] INFO  [Car009] 移动到(10,18)，tick=14
+18:39:11.072 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=15
+18:39:11.076 [MoveExecutor] INFO  [Car009] tick=15 预约成功(10,19)
+18:39:11.088 [MoveExecutor] INFO  [Car009] 移动到(10,19)，tick=15
+18:39:11.598 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=16
+18:39:11.601 [MoveExecutor] INFO  [Car009] tick=16 预约成功(10,20)
+18:39:11.614 [MoveExecutor] INFO  [Car009] 移动到(10,20)，tick=16
+18:39:12.123 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=17
+18:39:12.125 [MoveExecutor] INFO  [Car009] tick=17 预约成功(10,21)
+18:39:12.149 [MoveExecutor] INFO  [Car009] 移动到(10,21)，tick=17
+18:39:12.643 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=18
+18:39:12.647 [MoveExecutor] INFO  [Car009] tick=18 预约成功(10,22)
+18:39:12.661 [MoveExecutor] INFO  [Car009] 移动到(10,22)，tick=18
+18:39:13.167 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=19
+18:39:13.170 [MoveExecutor] INFO  [Car009] tick=19 预约成功(10,23)
+18:39:13.191 [MoveExecutor] INFO  [Car009] 移动到(10,23)，tick=19
+18:39:13.692 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=20
+18:39:13.695 [MoveExecutor] INFO  [Car009] tick=20 预约成功(10,24)
+18:39:13.708 [MoveExecutor] INFO  [Car009] 移动到(10,24)，tick=20
+18:39:14.216 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=21
+18:39:14.219 [MoveExecutor] INFO  [Car009] tick=21 预约成功(10,25)
+18:39:14.233 [MoveExecutor] INFO  [Car009] 移动到(10,25)，tick=21
+18:39:14.738 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=22
+18:39:14.743 [MoveExecutor] INFO  [Car009] tick=22 预约成功(10,26)
+18:39:14.749 [MoveExecutor] WARN  [Car009] tick=22 目标(10,26)被占据 第1次，退回READY
+18:39:15.258 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=23
+18:39:15.262 [MoveExecutor] INFO  [Car009] tick=23 预约成功(10,26)
+18:39:15.266 [MoveExecutor] WARN  [Car009] tick=23 目标(10,26)被占据 第2次，退回READY
+18:39:15.778 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=24
+18:39:15.781 [MoveExecutor] INFO  [Car009] tick=24 预约成功(10,26)
+18:39:15.786 [MoveExecutor] WARN  [Car009] tick=24 目标(10,26)被占据 第3次，退回READY
+18:39:15.786 [MoveExecutor] WARN  [Car009] tick=24 目标(10,26)连续卡住3次，切BLOCKED
+18:39:41.569 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=19
+18:39:41.572 [MoveExecutor] INFO  [Car009] tick=19 预约成功(21,7)
+18:39:41.586 [MoveExecutor] INFO  [Car009] 移动到(21,7)，tick=19
+18:39:42.102 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=20
+18:39:42.105 [MoveExecutor] INFO  [Car009] tick=20 预约成功(21,8)
+18:39:42.119 [MoveExecutor] INFO  [Car009] 移动到(21,8)，tick=20
+18:39:42.631 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=21
+18:39:42.634 [MoveExecutor] INFO  [Car009] tick=21 预约成功(20,8)
+18:39:42.647 [MoveExecutor] INFO  [Car009] 移动到(20,8)，tick=21
+18:39:43.185 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=22
+18:39:43.189 [MoveExecutor] INFO  [Car009] tick=22 预约成功(20,9)
+18:39:43.209 [MoveExecutor] INFO  [Car009] 移动到(20,9)，tick=22
+18:39:43.719 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=23
+18:39:43.723 [MoveExecutor] INFO  [Car009] tick=23 预约成功(20,10)
+18:39:43.738 [MoveExecutor] INFO  [Car009] 移动到(20,10)，tick=23
+18:39:44.255 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=24
+18:39:44.258 [MoveExecutor] INFO  [Car009] tick=24 预约成功(20,11)
+18:39:44.272 [MoveExecutor] INFO  [Car009] 移动到(20,11)，tick=24
+18:39:44.780 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=25
+18:39:44.784 [MoveExecutor] INFO  [Car009] tick=25 预约成功(19,11)
+18:39:44.804 [MoveExecutor] INFO  [Car009] 移动到(19,11)，tick=25
+18:39:45.312 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=26
+18:39:45.315 [MoveExecutor] INFO  [Car009] tick=26 预约成功(18,11)
+18:39:45.329 [MoveExecutor] INFO  [Car009] 移动到(18,11)，tick=26
+18:39:45.838 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=27
+18:39:45.841 [MoveExecutor] INFO  [Car009] tick=27 预约成功(18,12)
+18:39:45.868 [MoveExecutor] INFO  [Car009] 移动到(18,12)，tick=27
+18:39:46.370 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=28
+18:39:46.373 [MoveExecutor] INFO  [Car009] tick=28 预约成功(18,13)
+18:39:46.387 [MoveExecutor] INFO  [Car009] 移动到(18,13)，tick=28
+18:39:46.888 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=29
+18:39:46.899 [MoveExecutor] INFO  [Car009] tick=29 预约成功(19,13)
+18:39:46.923 [MoveExecutor] INFO  [Car009] 移动到(19,13)，tick=29
+18:39:47.411 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=30
+18:39:47.414 [MoveExecutor] INFO  [Car009] tick=30 预约成功(19,14)
+18:39:47.432 [MoveExecutor] INFO  [Car009] 移动到(19,14)，tick=30
+18:39:47.937 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=31
+18:39:47.945 [MoveExecutor] INFO  [Car009] tick=31 预约成功(19,15)
+18:39:47.960 [MoveExecutor] INFO  [Car009] 移动到(19,15)，tick=31
+18:39:48.466 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=32
+18:39:48.470 [MoveExecutor] INFO  [Car009] tick=32 预约成功(19,16)
+18:39:48.490 [MoveExecutor] INFO  [Car009] 移动到(19,16)，tick=32
+18:39:48.989 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=33
+18:39:48.993 [MoveExecutor] INFO  [Car009] tick=33 预约成功(19,17)
+18:39:49.010 [MoveExecutor] INFO  [Car009] 移动到(19,17)，tick=33
+18:39:49.525 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=34
+18:39:49.530 [MoveExecutor] INFO  [Car009] tick=34 预约成功(19,18)
+18:39:49.546 [MoveExecutor] INFO  [Car009] 移动到(19,18)，tick=34
+18:39:50.051 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=35
+18:39:50.055 [MoveExecutor] INFO  [Car009] tick=35 预约成功(19,19)
+18:39:50.072 [MoveExecutor] INFO  [Car009] 移动到(19,19)，tick=35
+18:39:50.581 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=36
+18:39:50.585 [MoveExecutor] INFO  [Car009] tick=36 预约成功(19,20)
+18:39:50.602 [MoveExecutor] INFO  [Car009] 移动到(19,20)，tick=36
+18:39:51.097 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=37
+18:39:51.100 [MoveExecutor] INFO  [Car009] tick=37 预约成功(19,21)
+18:39:51.114 [MoveExecutor] INFO  [Car009] 移动到(19,21)，tick=37
+18:39:51.623 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=38
+18:39:51.626 [MoveExecutor] INFO  [Car009] tick=38 预约成功(19,22)
+18:39:51.649 [MoveExecutor] INFO  [Car009] 移动到(19,22)，tick=38
+18:39:52.151 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=39
+18:39:52.153 [MoveExecutor] INFO  [Car009] tick=39 预约成功(19,23)
+18:39:52.168 [MoveExecutor] INFO  [Car009] 移动到(19,23)，tick=39
+18:39:52.679 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=40
+18:39:52.683 [MoveExecutor] INFO  [Car009] tick=40 预约成功(19,24)
+18:39:52.697 [MoveExecutor] INFO  [Car009] 移动到(19,24)，tick=40
+18:39:53.207 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=41
+18:39:53.210 [MoveExecutor] INFO  [Car009] tick=41 预约成功(19,25)
+18:39:53.227 [MoveExecutor] INFO  [Car009] 移动到(19,25)，tick=41
+18:39:53.742 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=42
+18:39:53.745 [MoveExecutor] INFO  [Car009] tick=42 预约成功(19,26)
+18:39:53.760 [MoveExecutor] INFO  [Car009] 移动到(19,26)，tick=42
+18:39:54.283 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=43
+18:39:54.289 [MoveExecutor] INFO  [Car009] tick=43 预约成功(19,27)
+18:39:54.308 [MoveExecutor] INFO  [Car009] 移动到(19,27)，tick=43
+18:39:54.810 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=44
+18:39:54.814 [MoveExecutor] INFO  [Car009] tick=44 预约成功(19,28)
+18:39:54.829 [MoveExecutor] INFO  [Car009] 移动到(19,28)，tick=44
+18:39:55.335 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=45
+18:39:55.338 [MoveExecutor] INFO  [Car009] tick=45 预约成功(19,29)
+18:39:55.355 [MoveExecutor] INFO  [Car009] 移动到(19,29)，tick=45
+18:39:55.869 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=46
+18:39:55.873 [MoveExecutor] INFO  [Car009] tick=46 预约成功(19,30)
+18:39:55.890 [MoveExecutor] INFO  [Car009] 移动到(19,30)，tick=46
+18:39:56.402 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=47
+18:39:56.410 [MoveExecutor] INFO  [Car009] tick=47 预约成功(19,31)
+18:39:56.434 [MoveExecutor] INFO  [Car009] 移动到(19,31)，tick=47
+18:39:56.920 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=48
+18:39:56.924 [MoveExecutor] INFO  [Car009] tick=48 预约成功(18,31)
+18:39:56.937 [MoveExecutor] INFO  [Car009] 移动到(18,31)，tick=48
+18:39:57.466 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=49
+18:39:57.475 [MoveExecutor] INFO  [Car009] tick=49 预约成功(18,32)
+18:39:57.496 [MoveExecutor] INFO  [Car009] 移动到(18,32)，tick=49
+18:39:57.990 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=50
+18:39:57.995 [MoveExecutor] INFO  [Car009] tick=50 预约成功(18,33)
+18:39:58.017 [MoveExecutor] INFO  [Car009] 移动到(18,33)，tick=50
+18:39:58.504 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=51
+18:39:58.508 [MoveExecutor] INFO  [Car009] tick=51 预约成功(18,34)
+18:39:58.523 [MoveExecutor] INFO  [Car009] 移动到(18,34)，tick=51
+18:39:59.025 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=52
+18:39:59.031 [MoveExecutor] INFO  [Car009] tick=52 预约成功(18,35)
+18:39:59.054 [MoveExecutor] INFO  [Car009] 移动到(18,35)，tick=52
+18:39:59.548 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=53
+18:39:59.551 [MoveExecutor] INFO  [Car009] tick=53 预约成功(18,36)
+18:39:59.566 [MoveExecutor] INFO  [Car009] 移动到(18,36)，tick=53
+18:40:00.068 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=54
+18:40:00.071 [MoveExecutor] INFO  [Car009] tick=54 预约成功(17,36)
+18:40:00.088 [MoveExecutor] INFO  [Car009] 移动到(17,36)，tick=54
+18:40:00.587 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=55
+18:40:00.590 [MoveExecutor] INFO  [Car009] tick=55 预约成功(17,37)
+18:40:00.605 [MoveExecutor] INFO  [Car009] 移动到(17,37)，tick=55
+18:40:01.106 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=56
+18:40:01.110 [MoveExecutor] INFO  [Car009] tick=56 预约成功(17,38)
+18:40:01.133 [MoveExecutor] INFO  [Car009] 移动到(17,38)，tick=56
+18:40:01.633 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=57
+18:40:01.637 [MoveExecutor] INFO  [Car009] tick=57 预约成功(17,39)
+18:40:01.653 [MoveExecutor] INFO  [Car009] 移动到(17,39)，tick=57
+18:40:02.148 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=58
+18:40:02.151 [MoveExecutor] INFO  [Car009] tick=58 预约成功(17,40)
+18:40:02.166 [MoveExecutor] INFO  [Car009] 移动到(17,40)，tick=58
+18:40:02.671 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=59
+18:40:02.674 [MoveExecutor] INFO  [Car009] tick=59 预约成功(17,41)
+18:40:02.690 [MoveExecutor] INFO  [Car009] 移动到(17,41)，tick=59
+18:40:03.190 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=60
+18:40:03.194 [MoveExecutor] INFO  [Car009] tick=60 预约成功(17,42)
+18:40:03.210 [MoveExecutor] INFO  [Car009] 移动到(17,42)，tick=60
+18:40:03.710 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=61
+18:40:03.713 [MoveExecutor] INFO  [Car009] tick=61 预约成功(17,43)
+18:40:03.729 [MoveExecutor] INFO  [Car009] 移动到(17,43)，tick=61
+18:40:04.234 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=62
+18:40:04.237 [MoveExecutor] INFO  [Car009] tick=62 预约成功(17,44)
+18:40:04.252 [MoveExecutor] INFO  [Car009] 移动到(17,44)，tick=62
+18:40:04.754 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=63
+18:40:04.757 [MoveExecutor] INFO  [Car009] tick=63 预约成功(16,44)
+18:40:04.771 [MoveExecutor] INFO  [Car009] 移动到(16,44)，tick=63
+18:40:05.273 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=64
+18:40:05.276 [MoveExecutor] INFO  [Car009] tick=64 预约成功(16,45)
+18:40:05.290 [MoveExecutor] INFO  [Car009] 移动到(16,45)，tick=64
+18:40:05.811 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=65
+18:40:05.816 [MoveExecutor] INFO  [Car009] tick=65 预约成功(16,46)
+18:40:05.831 [MoveExecutor] INFO  [Car009] 移动到(16,46)，tick=65
+18:40:06.333 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=66
+18:40:06.337 [MoveExecutor] INFO  [Car009] tick=66 预约成功(15,46)
+18:40:06.351 [MoveExecutor] INFO  [Car009] 移动到(15,46)，tick=66
+18:40:06.852 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=67
+18:40:06.856 [MoveExecutor] INFO  [Car009] tick=67 预约成功(15,47)
+18:40:06.869 [MoveExecutor] INFO  [Car009] 移动到(15,47)，tick=67
+18:40:07.383 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=68
+18:40:07.387 [MoveExecutor] INFO  [Car009] tick=68 预约成功(15,48)
+18:40:07.406 [MoveExecutor] INFO  [Car009] 移动到(15,48)，tick=68
+18:40:07.912 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=69
+18:40:07.915 [MoveExecutor] INFO  [Car009] tick=69 预约成功(15,49)
+18:40:07.931 [MoveExecutor] INFO  [Car009] 移动到(15,49)，tick=69
+18:40:08.436 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=70
+18:40:08.439 [MoveExecutor] INFO  [Car009] tick=70 预约成功(15,50)
+18:40:08.454 [MoveExecutor] INFO  [Car009] 移动到(15,50)，tick=70
+18:40:08.958 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=71
+18:40:08.962 [MoveExecutor] INFO  [Car009] tick=71 预约成功(14,50)
+18:40:08.979 [MoveExecutor] INFO  [Car009] 移动到(14,50)，tick=71
+18:40:09.477 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=72
+18:40:09.481 [MoveExecutor] INFO  [Car009] tick=72 预约成功(14,51)
+18:40:09.496 [MoveExecutor] INFO  [Car009] 移动到(14,51)，tick=72
+18:40:10.001 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=73
+18:40:10.005 [MoveExecutor] INFO  [Car009] tick=73 预约成功(14,52)
+18:40:10.021 [MoveExecutor] INFO  [Car009] 移动到(14,52)，tick=73
+18:40:10.521 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=74
+18:40:10.524 [MoveExecutor] WARN  [Car009] tick=74 预约失败(13,52) 第1次，退回READY
+18:40:11.036 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=75
+18:40:11.040 [MoveExecutor] INFO  [Car009] tick=75 预约成功(13,52)
+18:40:11.043 [MoveExecutor] WARN  [Car009] tick=75 目标(13,52)被占据 第2次，退回READY
+18:40:11.561 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=76
+18:40:11.564 [MoveExecutor] INFO  [Car009] tick=76 预约成功(13,52)
+18:40:11.583 [MoveExecutor] INFO  [Car009] 移动到(13,52)，tick=76
+18:40:12.095 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=77
+18:40:12.098 [MoveExecutor] INFO  [Car009] tick=77 预约成功(12,52)
+18:40:12.115 [MoveExecutor] INFO  [Car009] 移动到(12,52)，tick=77
+18:40:12.623 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=78
+18:40:12.625 [MoveExecutor] INFO  [Car009] tick=78 预约成功(11,52)
+18:40:12.642 [MoveExecutor] INFO  [Car009] 移动到(11,52)，tick=78
+18:40:13.140 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=79
+18:40:13.143 [MoveExecutor] INFO  [Car009] tick=79 预约成功(11,53)
+18:40:13.157 [MoveExecutor] INFO  [Car009] 移动到(11,53)，tick=79
+18:40:13.663 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=80
+18:40:13.666 [MoveExecutor] INFO  [Car009] tick=80 预约成功(11,54)
+18:40:13.683 [MoveExecutor] INFO  [Car009] 移动到(11,54)，tick=80
+18:40:14.199 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=81
+18:40:14.203 [MoveExecutor] INFO  [Car009] tick=81 预约成功(11,55)
+18:40:14.219 [MoveExecutor] INFO  [Car009] 移动到(11,55)，tick=81
+18:40:14.714 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=82
+18:40:14.718 [MoveExecutor] INFO  [Car009] tick=82 预约成功(11,56)
+18:40:14.731 [MoveExecutor] INFO  [Car009] 移动到(11,56)，tick=82
+18:40:15.246 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=83
+18:40:15.249 [MoveExecutor] INFO  [Car009] tick=83 预约成功(11,57)
+18:40:15.273 [MoveExecutor] INFO  [Car009] 移动到(11,57)，tick=83
+18:40:15.762 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=84
+18:40:15.766 [MoveExecutor] INFO  [Car009] tick=84 预约成功(10,57)
+18:40:15.785 [MoveExecutor] INFO  [Car009] 移动到(10,57)，tick=84
+18:40:16.284 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=85
+18:40:16.286 [MoveExecutor] INFO  [Car009] tick=85 预约成功(9,57)
+18:40:16.301 [MoveExecutor] INFO  [Car009] 移动到(9,57)，tick=85
+18:40:16.808 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=86
+18:40:16.812 [MoveExecutor] INFO  [Car009] tick=86 预约成功(8,57)
+18:40:16.829 [MoveExecutor] INFO  [Car009] 移动到(8,57)，tick=86
+18:40:17.336 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=87
+18:40:17.339 [MoveExecutor] INFO  [Car009] tick=87 预约成功(7,57)
+18:40:17.353 [MoveExecutor] INFO  [Car009] 移动到(7,57)，tick=87
+18:40:17.861 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=88
+18:40:17.864 [MoveExecutor] INFO  [Car009] tick=88 预约成功(6,57)
+18:40:17.898 [MoveExecutor] INFO  [Car009] 移动到(6,57)，tick=88
+18:40:18.376 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=89
+18:40:18.380 [MoveExecutor] INFO  [Car009] tick=89 预约成功(6,58)
+18:40:18.397 [MoveExecutor] INFO  [Car009] 移动到(6,58)，tick=89
+18:40:18.910 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=90
+18:40:18.913 [MoveExecutor] INFO  [Car009] tick=90 预约成功(5,58)
+18:40:18.926 [MoveExecutor] INFO  [Car009] 移动到(5,58)，tick=90
+18:40:19.435 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=91
+18:40:19.439 [MoveExecutor] INFO  [Car009] tick=91 预约成功(4,58)
+18:40:19.452 [MoveExecutor] INFO  [Car009] 移动到(4,58)，tick=91
+18:40:19.961 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=92
+18:40:19.964 [MoveExecutor] INFO  [Car009] tick=92 预约成功(3,58)
+18:40:19.992 [MoveExecutor] INFO  [Car009] 移动到(3,58)，tick=92
+18:40:20.486 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=93
+18:40:20.488 [MoveExecutor] INFO  [Car009] tick=93 预约成功(2,58)
+18:40:20.505 [MoveExecutor] INFO  [Car009] 移动到(2,58)，tick=93
+18:40:21.017 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=94
+18:40:21.021 [MoveExecutor] INFO  [Car009] tick=94 预约成功(1,58)
+18:40:21.034 [MoveExecutor] INFO  [Car009] 路径走完，最终位置(1,58)，tick=94
+18:40:25.308 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=102
+18:40:25.312 [MoveExecutor] INFO  [Car009] tick=102 预约成功(1,57)
+18:40:25.331 [MoveExecutor] INFO  [Car009] 移动到(1,57)，tick=102
+18:40:25.842 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=103
+18:40:25.846 [MoveExecutor] INFO  [Car009] tick=103 预约成功(2,57)
+18:40:25.861 [MoveExecutor] INFO  [Car009] 移动到(2,57)，tick=103
+18:40:26.369 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=104
+18:40:26.374 [MoveExecutor] INFO  [Car009] tick=104 预约成功(2,56)
+18:40:26.397 [MoveExecutor] INFO  [Car009] 移动到(2,56)，tick=104
+18:40:26.886 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=105
+18:40:26.890 [MoveExecutor] INFO  [Car009] tick=105 预约成功(2,55)
+18:40:26.903 [MoveExecutor] INFO  [Car009] 移动到(2,55)，tick=105
+18:40:27.408 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=106
+18:40:27.411 [MoveExecutor] INFO  [Car009] tick=106 预约成功(3,55)
+18:40:27.426 [MoveExecutor] INFO  [Car009] 移动到(3,55)，tick=106
+18:40:27.934 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=107
+18:40:27.938 [MoveExecutor] INFO  [Car009] tick=107 预约成功(4,55)
+18:40:27.951 [MoveExecutor] INFO  [Car009] 移动到(4,55)，tick=107
+18:40:28.456 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=108
+18:40:28.459 [MoveExecutor] INFO  [Car009] tick=108 预约成功(4,54)
+18:40:28.474 [MoveExecutor] INFO  [Car009] 移动到(4,54)，tick=108
+18:40:28.973 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=109
+18:40:28.977 [MoveExecutor] INFO  [Car009] tick=109 预约成功(5,54)
+18:40:28.992 [MoveExecutor] INFO  [Car009] 移动到(5,54)，tick=109
+18:40:29.507 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=110
+18:40:29.509 [MoveExecutor] INFO  [Car009] tick=110 预约成功(5,53)
+18:40:29.527 [MoveExecutor] INFO  [Car009] 移动到(5,53)，tick=110
+18:40:30.034 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=111
+18:40:30.037 [MoveExecutor] INFO  [Car009] tick=111 预约成功(6,53)
+18:40:30.056 [MoveExecutor] INFO  [Car009] 移动到(6,53)，tick=111
+18:40:30.549 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=112
+18:40:30.552 [MoveExecutor] INFO  [Car009] tick=112 预约成功(6,52)
+18:40:30.566 [MoveExecutor] INFO  [Car009] 移动到(6,52)，tick=112
+18:40:31.071 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=113
+18:40:31.074 [MoveExecutor] INFO  [Car009] tick=113 预约成功(6,51)
+18:40:31.091 [MoveExecutor] INFO  [Car009] 移动到(6,51)，tick=113
+18:40:31.591 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=114
+18:40:31.595 [MoveExecutor] INFO  [Car009] tick=114 预约成功(6,50)
+18:40:31.609 [MoveExecutor] INFO  [Car009] 移动到(6,50)，tick=114
+18:40:32.117 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=115
+18:40:32.120 [MoveExecutor] INFO  [Car009] tick=115 预约成功(6,49)
+18:40:32.137 [MoveExecutor] INFO  [Car009] 移动到(6,49)，tick=115
+18:40:32.652 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=116
+18:40:32.655 [MoveExecutor] INFO  [Car009] tick=116 预约成功(6,48)
+18:40:32.671 [MoveExecutor] INFO  [Car009] 移动到(6,48)，tick=116
+18:40:33.184 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=117
+18:40:33.187 [MoveExecutor] INFO  [Car009] tick=117 预约成功(6,47)
+18:40:33.202 [MoveExecutor] INFO  [Car009] 移动到(6,47)，tick=117
+18:40:33.702 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=118
+18:40:33.704 [MoveExecutor] INFO  [Car009] tick=118 预约成功(6,46)
+18:40:33.719 [MoveExecutor] INFO  [Car009] 移动到(6,46)，tick=118
+18:40:34.229 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=119
+18:40:34.233 [MoveExecutor] INFO  [Car009] tick=119 预约成功(7,46)
+18:40:34.246 [MoveExecutor] INFO  [Car009] 移动到(7,46)，tick=119
+18:40:34.750 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=120
+18:40:34.755 [MoveExecutor] INFO  [Car009] tick=120 预约成功(7,45)
+18:40:34.774 [MoveExecutor] INFO  [Car009] 移动到(7,45)，tick=120
+18:40:35.281 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=121
+18:40:35.285 [MoveExecutor] INFO  [Car009] tick=121 预约成功(8,45)
+18:40:35.297 [MoveExecutor] INFO  [Car009] 移动到(8,45)，tick=121
+18:40:35.810 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=122
+18:40:35.815 [MoveExecutor] INFO  [Car009] tick=122 预约成功(9,45)
+18:40:35.832 [MoveExecutor] INFO  [Car009] 移动到(9,45)，tick=122
+18:40:36.340 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=123
+18:40:36.343 [MoveExecutor] INFO  [Car009] tick=123 预约成功(9,44)
+18:40:36.358 [MoveExecutor] INFO  [Car009] 移动到(9,44)，tick=123
+18:40:36.863 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=124
+18:40:36.866 [MoveExecutor] INFO  [Car009] tick=124 预约成功(9,43)
+18:40:36.879 [MoveExecutor] INFO  [Car009] 移动到(9,43)，tick=124
+18:40:37.402 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=125
+18:40:37.406 [MoveExecutor] INFO  [Car009] tick=125 预约成功(9,42)
+18:40:37.414 [MoveExecutor] WARN  [Car009] tick=125 目标(9,42)被占据 第1次，退回READY
+18:40:37.934 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=126
+18:40:37.938 [MoveExecutor] INFO  [Car009] tick=126 预约成功(9,42)
+18:40:37.944 [MoveExecutor] WARN  [Car009] tick=126 目标(9,42)被占据 第2次，退回READY
+18:40:38.464 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=127
+18:40:38.468 [MoveExecutor] INFO  [Car009] tick=127 预约成功(9,42)
+18:40:38.472 [MoveExecutor] WARN  [Car009] tick=127 目标(9,42)被占据 第3次，退回READY
+18:40:38.472 [MoveExecutor] WARN  [Car009] tick=127 目标(9,42)连续卡住3次，切BLOCKED
+18:40:41.108 [CarAgent] DEBUG [Car009] 收到消息 type=BLOCKED_TIMEOUT, tick=132
+18:40:41.108 [CarAgent] WARN  [Car009] 收到 BLOCKED_TIMEOUT，阻塞超时已由 Controller 处理
+18:40:41.109 [CarAgent] INFO  [Car009] 当前状态: 空闲，等待重新分配目标
+18:40:46.432 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=142
+18:40:46.435 [MoveExecutor] INFO  [Car009] tick=142 预约成功(9,42)
+18:40:46.458 [MoveExecutor] INFO  [Car009] 移动到(9,42)，tick=142
+18:40:46.957 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=143
+18:40:46.961 [MoveExecutor] INFO  [Car009] tick=143 预约成功(9,41)
+18:40:46.974 [MoveExecutor] INFO  [Car009] 移动到(9,41)，tick=143
+18:40:47.488 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=144
+18:40:47.492 [MoveExecutor] INFO  [Car009] tick=144 预约成功(9,40)
+18:40:47.519 [MoveExecutor] INFO  [Car009] 移动到(9,40)，tick=144
+18:40:48.016 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=145
+18:40:48.019 [MoveExecutor] INFO  [Car009] tick=145 预约成功(10,40)
+18:40:48.034 [MoveExecutor] INFO  [Car009] 移动到(10,40)，tick=145
+18:40:48.535 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=146
+18:40:48.538 [MoveExecutor] INFO  [Car009] tick=146 预约成功(11,40)
+18:40:48.557 [MoveExecutor] INFO  [Car009] 移动到(11,40)，tick=146
+18:40:49.057 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=147
+18:40:49.060 [MoveExecutor] INFO  [Car009] tick=147 预约成功(12,40)
+18:40:49.074 [MoveExecutor] INFO  [Car009] 移动到(12,40)，tick=147
+18:40:49.577 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=148
+18:40:49.581 [MoveExecutor] INFO  [Car009] tick=148 预约成功(13,40)
+18:40:49.595 [MoveExecutor] INFO  [Car009] 移动到(13,40)，tick=148
+18:40:50.099 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=149
+18:40:50.104 [MoveExecutor] INFO  [Car009] tick=149 预约成功(13,39)
+18:40:50.123 [MoveExecutor] INFO  [Car009] 移动到(13,39)，tick=149
+18:40:50.620 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=150
+18:40:50.622 [MoveExecutor] INFO  [Car009] tick=150 预约成功(13,38)
+18:40:50.635 [MoveExecutor] INFO  [Car009] 移动到(13,38)，tick=150
+18:40:51.141 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=151
+18:40:51.143 [MoveExecutor] INFO  [Car009] tick=151 预约成功(14,38)
+18:40:51.155 [MoveExecutor] INFO  [Car009] 移动到(14,38)，tick=151
+18:40:51.664 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=152
+18:40:51.667 [MoveExecutor] INFO  [Car009] tick=152 预约成功(14,37)
+18:40:51.683 [MoveExecutor] INFO  [Car009] 移动到(14,37)，tick=152
+18:40:52.187 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=153
+18:40:52.191 [MoveExecutor] INFO  [Car009] tick=153 预约成功(14,36)
+18:40:52.209 [MoveExecutor] INFO  [Car009] 移动到(14,36)，tick=153
+18:40:52.706 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=154
+18:40:52.709 [MoveExecutor] INFO  [Car009] tick=154 预约成功(15,36)
+18:40:52.721 [MoveExecutor] INFO  [Car009] 移动到(15,36)，tick=154
+18:40:53.223 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=155
+18:40:53.226 [MoveExecutor] INFO  [Car009] tick=155 预约成功(15,35)
+18:40:53.240 [MoveExecutor] INFO  [Car009] 移动到(15,35)，tick=155
+18:40:53.745 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=156
+18:40:53.748 [MoveExecutor] INFO  [Car009] tick=156 预约成功(15,34)
+18:40:53.762 [MoveExecutor] INFO  [Car009] 移动到(15,34)，tick=156
+18:40:54.270 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=157
+18:40:54.272 [MoveExecutor] INFO  [Car009] tick=157 预约成功(16,34)
+18:40:54.287 [MoveExecutor] INFO  [Car009] 移动到(16,34)，tick=157
+18:40:54.793 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=158
+18:40:54.797 [MoveExecutor] INFO  [Car009] tick=158 预约成功(16,33)
+18:40:54.810 [MoveExecutor] INFO  [Car009] 移动到(16,33)，tick=158
+18:40:55.311 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=159
+18:40:55.314 [MoveExecutor] INFO  [Car009] tick=159 预约成功(16,32)
+18:40:55.326 [MoveExecutor] INFO  [Car009] 移动到(16,32)，tick=159
+18:40:55.832 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=160
+18:40:55.835 [MoveExecutor] INFO  [Car009] tick=160 预约成功(16,31)
+18:40:55.849 [MoveExecutor] INFO  [Car009] 移动到(16,31)，tick=160
+18:40:56.350 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=161
+18:40:56.353 [MoveExecutor] INFO  [Car009] tick=161 预约成功(16,30)
+18:40:56.366 [MoveExecutor] INFO  [Car009] 移动到(16,30)，tick=161
+18:40:56.878 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=162
+18:40:56.881 [MoveExecutor] INFO  [Car009] tick=162 预约成功(16,29)
+18:40:56.906 [MoveExecutor] INFO  [Car009] 移动到(16,29)，tick=162
+18:40:57.407 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=163
+18:40:57.410 [MoveExecutor] INFO  [Car009] tick=163 预约成功(17,29)
+18:40:57.424 [MoveExecutor] INFO  [Car009] 移动到(17,29)，tick=163
+18:40:57.924 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=164
+18:40:57.927 [MoveExecutor] INFO  [Car009] tick=164 预约成功(17,28)
+18:40:57.940 [MoveExecutor] INFO  [Car009] 移动到(17,28)，tick=164
+18:40:58.447 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=165
+18:40:58.453 [MoveExecutor] INFO  [Car009] tick=165 预约成功(18,28)
+18:40:58.469 [MoveExecutor] INFO  [Car009] 移动到(18,28)，tick=165
+18:40:58.965 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=166
+18:40:58.968 [MoveExecutor] INFO  [Car009] tick=166 预约成功(18,27)
+18:40:58.982 [MoveExecutor] INFO  [Car009] 移动到(18,27)，tick=166
+18:40:59.490 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=167
+18:40:59.493 [MoveExecutor] INFO  [Car009] tick=167 预约成功(18,26)
+18:40:59.507 [MoveExecutor] INFO  [Car009] 移动到(18,26)，tick=167
+18:41:00.010 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=168
+18:41:00.015 [MoveExecutor] INFO  [Car009] tick=168 预约成功(18,25)
+18:41:00.031 [MoveExecutor] INFO  [Car009] 移动到(18,25)，tick=168
+18:41:00.532 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=169
+18:41:00.536 [MoveExecutor] INFO  [Car009] tick=169 预约成功(18,24)
+18:41:00.550 [MoveExecutor] INFO  [Car009] 移动到(18,24)，tick=169
+18:41:01.105 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=170
+18:41:01.108 [MoveExecutor] INFO  [Car009] tick=170 预约成功(18,23)
+18:41:01.125 [MoveExecutor] INFO  [Car009] 移动到(18,23)，tick=170
+18:41:01.630 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=171
+18:41:01.634 [MoveExecutor] INFO  [Car009] tick=171 预约成功(18,22)
+18:41:01.647 [MoveExecutor] INFO  [Car009] 移动到(18,22)，tick=171
+18:41:02.151 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=172
+18:41:02.154 [MoveExecutor] INFO  [Car009] tick=172 预约成功(18,21)
+18:41:02.168 [MoveExecutor] INFO  [Car009] 移动到(18,21)，tick=172
+18:41:02.674 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=173
+18:41:02.677 [MoveExecutor] INFO  [Car009] tick=173 预约成功(18,20)
+18:41:02.688 [MoveExecutor] INFO  [Car009] 移动到(18,20)，tick=173
+18:41:03.196 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=174
+18:41:03.199 [MoveExecutor] INFO  [Car009] tick=174 预约成功(18,19)
+18:41:03.212 [MoveExecutor] INFO  [Car009] 移动到(18,19)，tick=174
+18:41:03.721 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=175
+18:41:03.724 [MoveExecutor] INFO  [Car009] tick=175 预约成功(19,19)
+18:41:03.738 [MoveExecutor] INFO  [Car009] 移动到(19,19)，tick=175
+18:41:04.257 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=176
+18:41:04.260 [MoveExecutor] INFO  [Car009] tick=176 预约成功(19,18)
+18:41:04.280 [MoveExecutor] INFO  [Car009] 移动到(19,18)，tick=176
+18:41:04.776 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=177
+18:41:04.779 [MoveExecutor] INFO  [Car009] tick=177 预约成功(19,17)
+18:41:04.793 [MoveExecutor] INFO  [Car009] 移动到(19,17)，tick=177
+18:41:05.311 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=178
+18:41:05.314 [MoveExecutor] INFO  [Car009] tick=178 预约成功(19,16)
+18:41:05.328 [MoveExecutor] INFO  [Car009] 移动到(19,16)，tick=178
+18:41:05.835 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=179
+18:41:05.838 [MoveExecutor] INFO  [Car009] tick=179 预约成功(19,15)
+18:41:05.852 [MoveExecutor] INFO  [Car009] 移动到(19,15)，tick=179
+18:41:06.354 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=180
+18:41:06.357 [MoveExecutor] INFO  [Car009] tick=180 预约成功(19,14)
+18:41:06.371 [MoveExecutor] INFO  [Car009] 移动到(19,14)，tick=180
+18:41:06.874 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=181
+18:41:06.877 [MoveExecutor] INFO  [Car009] tick=181 预约成功(20,14)
+18:41:06.890 [MoveExecutor] INFO  [Car009] 移动到(20,14)，tick=181
+18:41:07.397 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=182
+18:41:07.400 [MoveExecutor] INFO  [Car009] tick=182 预约成功(21,14)
+18:41:07.413 [MoveExecutor] INFO  [Car009] 移动到(21,14)，tick=182
+18:41:07.927 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=183
+18:41:07.930 [MoveExecutor] INFO  [Car009] tick=183 预约成功(21,13)
+18:41:07.944 [MoveExecutor] INFO  [Car009] 移动到(21,13)，tick=183
+18:41:08.456 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=184
+18:41:08.459 [MoveExecutor] INFO  [Car009] tick=184 预约成功(22,13)
+18:41:08.472 [MoveExecutor] INFO  [Car009] 移动到(22,13)，tick=184
+18:41:08.976 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=185
+18:41:08.979 [MoveExecutor] INFO  [Car009] tick=185 预约成功(22,12)
+18:41:08.992 [MoveExecutor] INFO  [Car009] 移动到(22,12)，tick=185
+18:41:09.498 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=186
+18:41:09.501 [MoveExecutor] INFO  [Car009] tick=186 预约成功(23,12)
+18:41:09.514 [MoveExecutor] INFO  [Car009] 移动到(23,12)，tick=186
+18:41:10.024 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=187
+18:41:10.027 [MoveExecutor] INFO  [Car009] tick=187 预约成功(24,12)
+18:41:10.047 [MoveExecutor] INFO  [Car009] 移动到(24,12)，tick=187
+18:41:10.543 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=188
+18:41:10.546 [MoveExecutor] INFO  [Car009] tick=188 预约成功(24,11)
+18:41:10.560 [MoveExecutor] INFO  [Car009] 移动到(24,11)，tick=188
+18:41:11.066 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=189
+18:41:11.069 [MoveExecutor] INFO  [Car009] tick=189 预约成功(25,11)
+18:41:11.083 [MoveExecutor] INFO  [Car009] 移动到(25,11)，tick=189
+18:41:11.593 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=190
+18:41:11.597 [MoveExecutor] INFO  [Car009] tick=190 预约成功(26,11)
+18:41:11.611 [MoveExecutor] INFO  [Car009] 移动到(26,11)，tick=190
+18:41:12.116 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=191
+18:41:12.120 [MoveExecutor] INFO  [Car009] tick=191 预约成功(27,11)
+18:41:12.137 [MoveExecutor] INFO  [Car009] 移动到(27,11)，tick=191
+18:41:12.637 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=192
+18:41:12.640 [MoveExecutor] INFO  [Car009] tick=192 预约成功(28,11)
+18:41:12.659 [MoveExecutor] INFO  [Car009] 移动到(28,11)，tick=192
+18:41:13.157 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=193
+18:41:13.159 [MoveExecutor] INFO  [Car009] tick=193 预约成功(29,11)
+18:41:13.173 [MoveExecutor] INFO  [Car009] 移动到(29,11)，tick=193
+18:41:13.677 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=194
+18:41:13.680 [MoveExecutor] INFO  [Car009] tick=194 预约成功(30,11)
+18:41:13.699 [MoveExecutor] INFO  [Car009] 移动到(30,11)，tick=194
+18:41:14.196 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=195
+18:41:14.200 [MoveExecutor] INFO  [Car009] tick=195 预约成功(31,11)
+18:41:14.213 [MoveExecutor] INFO  [Car009] 移动到(31,11)，tick=195
+18:41:14.719 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=196
+18:41:14.722 [MoveExecutor] INFO  [Car009] tick=196 预约成功(32,11)
+18:41:14.735 [MoveExecutor] INFO  [Car009] 移动到(32,11)，tick=196
+18:41:15.238 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=197
+18:41:15.241 [MoveExecutor] INFO  [Car009] tick=197 预约成功(33,11)
+18:41:15.256 [MoveExecutor] INFO  [Car009] 移动到(33,11)，tick=197
+18:41:15.755 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=198
+18:41:15.758 [MoveExecutor] INFO  [Car009] tick=198 预约成功(34,11)
+18:41:15.774 [MoveExecutor] INFO  [Car009] 移动到(34,11)，tick=198
+18:41:16.275 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=199
+18:41:16.278 [MoveExecutor] INFO  [Car009] tick=199 预约成功(35,11)
+18:41:16.293 [MoveExecutor] INFO  [Car009] 移动到(35,11)，tick=199
+18:41:16.797 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=200
+18:41:16.800 [MoveExecutor] INFO  [Car009] tick=200 预约成功(36,11)
+18:41:16.812 [MoveExecutor] INFO  [Car009] 移动到(36,11)，tick=200
+18:41:17.320 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=201
+18:41:17.324 [MoveExecutor] INFO  [Car009] tick=201 预约成功(37,11)
+18:41:17.342 [MoveExecutor] INFO  [Car009] 移动到(37,11)，tick=201
+18:41:17.849 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=202
+18:41:17.852 [MoveExecutor] INFO  [Car009] tick=202 预约成功(38,11)
+18:41:17.867 [MoveExecutor] INFO  [Car009] 移动到(38,11)，tick=202
+18:41:18.386 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=203
+18:41:18.391 [MoveExecutor] INFO  [Car009] tick=203 预约成功(39,11)
+18:41:18.443 [MoveExecutor] INFO  [Car009] 移动到(39,11)，tick=203
+18:41:18.911 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=204
+18:41:18.914 [MoveExecutor] INFO  [Car009] tick=204 预约成功(40,11)
+18:41:18.930 [MoveExecutor] INFO  [Car009] 移动到(40,11)，tick=204
+18:41:19.435 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=205
+18:41:19.439 [MoveExecutor] INFO  [Car009] tick=205 预约成功(41,11)
+18:41:19.455 [MoveExecutor] INFO  [Car009] 移动到(41,11)，tick=205
+18:41:19.953 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=206
+18:41:19.956 [MoveExecutor] INFO  [Car009] tick=206 预约成功(42,11)
+18:41:19.971 [MoveExecutor] INFO  [Car009] 移动到(42,11)，tick=206
+18:41:20.478 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=207
+18:41:20.482 [MoveExecutor] INFO  [Car009] tick=207 预约成功(43,11)
+18:41:20.499 [MoveExecutor] INFO  [Car009] 移动到(43,11)，tick=207
+18:41:21.005 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=208
+18:41:21.009 [MoveExecutor] INFO  [Car009] tick=208 预约成功(43,10)
+18:41:21.032 [MoveExecutor] INFO  [Car009] 移动到(43,10)，tick=208
+18:41:21.540 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=209
+18:41:21.547 [MoveExecutor] INFO  [Car009] tick=209 预约成功(44,10)
+18:41:21.563 [MoveExecutor] INFO  [Car009] 移动到(44,10)，tick=209
+18:41:22.069 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=210
+18:41:22.073 [MoveExecutor] INFO  [Car009] tick=210 预约成功(44,9)
+18:41:22.089 [MoveExecutor] INFO  [Car009] 移动到(44,9)，tick=210
+18:41:22.614 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=211
+18:41:22.618 [MoveExecutor] INFO  [Car009] tick=211 预约成功(44,8)
+18:41:22.630 [MoveExecutor] INFO  [Car009] 移动到(44,8)，tick=211
+18:41:23.138 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=212
+18:41:23.141 [MoveExecutor] INFO  [Car009] tick=212 预约成功(45,8)
+18:41:23.163 [MoveExecutor] INFO  [Car009] 移动到(45,8)，tick=212
+18:41:23.659 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=213
+18:41:23.662 [MoveExecutor] INFO  [Car009] tick=213 预约成功(46,8)
+18:41:23.677 [MoveExecutor] INFO  [Car009] 移动到(46,8)，tick=213
+18:41:24.199 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=214
+18:41:24.203 [MoveExecutor] INFO  [Car009] tick=214 预约成功(46,7)
+18:41:24.232 [MoveExecutor] INFO  [Car009] 移动到(46,7)，tick=214
+18:41:24.724 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=215
+18:41:24.728 [MoveExecutor] INFO  [Car009] tick=215 预约成功(47,7)
+18:41:24.743 [MoveExecutor] INFO  [Car009] 路径走完，最终位置(47,7)，tick=215
+18:41:28.457 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=222
+18:41:28.460 [MoveExecutor] INFO  [Car009] tick=222 预约成功(47,8)
+18:41:28.475 [MoveExecutor] INFO  [Car009] 移动到(47,8)，tick=222
+18:41:28.978 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=223
+18:41:28.981 [MoveExecutor] INFO  [Car009] tick=223 预约成功(46,8)
+18:41:28.997 [MoveExecutor] INFO  [Car009] 移动到(46,8)，tick=223
+18:41:29.497 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=224
+18:41:29.500 [MoveExecutor] INFO  [Car009] tick=224 预约成功(45,8)
+18:41:29.512 [MoveExecutor] INFO  [Car009] 移动到(45,8)，tick=224
+18:41:30.020 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=225
+18:41:30.028 [MoveExecutor] INFO  [Car009] tick=225 预约成功(45,9)
+18:41:30.046 [MoveExecutor] INFO  [Car009] 移动到(45,9)，tick=225
+18:41:30.540 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=226
+18:41:30.544 [MoveExecutor] INFO  [Car009] tick=226 预约成功(45,10)
+18:41:30.559 [MoveExecutor] INFO  [Car009] 移动到(45,10)，tick=226
+18:41:31.062 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=227
+18:41:31.064 [MoveExecutor] INFO  [Car009] tick=227 预约成功(45,11)
+18:41:31.078 [MoveExecutor] INFO  [Car009] 移动到(45,11)，tick=227
+18:41:31.577 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=228
+18:41:31.580 [MoveExecutor] INFO  [Car009] tick=228 预约成功(45,12)
+18:41:31.594 [MoveExecutor] INFO  [Car009] 移动到(45,12)，tick=228
+18:41:32.100 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=229
+18:41:32.102 [MoveExecutor] INFO  [Car009] tick=229 预约成功(45,13)
+18:41:32.116 [MoveExecutor] INFO  [Car009] 移动到(45,13)，tick=229
+18:41:32.628 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=230
+18:41:32.635 [MoveExecutor] INFO  [Car009] tick=230 预约成功(45,14)
+18:41:32.654 [MoveExecutor] INFO  [Car009] 移动到(45,14)，tick=230
+18:41:33.156 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=231
+18:41:33.159 [MoveExecutor] INFO  [Car009] tick=231 预约成功(45,15)
+18:41:33.173 [MoveExecutor] INFO  [Car009] 移动到(45,15)，tick=231
+18:41:33.678 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=232
+18:41:33.681 [MoveExecutor] INFO  [Car009] tick=232 预约成功(45,16)
+18:41:33.694 [MoveExecutor] INFO  [Car009] 移动到(45,16)，tick=232
+18:41:34.202 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=233
+18:41:34.206 [MoveExecutor] INFO  [Car009] tick=233 预约成功(45,17)
+18:41:34.221 [MoveExecutor] INFO  [Car009] 移动到(45,17)，tick=233
+18:41:34.720 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=234
+18:41:34.723 [MoveExecutor] INFO  [Car009] tick=234 预约成功(45,18)
+18:41:34.736 [MoveExecutor] INFO  [Car009] 移动到(45,18)，tick=234
+18:41:35.237 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=235
+18:41:35.241 [MoveExecutor] INFO  [Car009] tick=235 预约成功(45,19)
+18:41:35.253 [MoveExecutor] INFO  [Car009] 移动到(45,19)，tick=235
+18:41:35.757 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=236
+18:41:35.760 [MoveExecutor] INFO  [Car009] tick=236 预约成功(45,20)
+18:41:35.772 [MoveExecutor] INFO  [Car009] 移动到(45,20)，tick=236
+18:41:36.282 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=237
+18:41:36.286 [MoveExecutor] INFO  [Car009] tick=237 预约成功(44,20)
+18:41:36.299 [MoveExecutor] INFO  [Car009] 移动到(44,20)，tick=237
+18:41:36.805 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=238
+18:41:36.808 [MoveExecutor] INFO  [Car009] tick=238 预约成功(43,20)
+18:41:36.819 [MoveExecutor] INFO  [Car009] 移动到(43,20)，tick=238
+18:41:37.334 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=239
+18:41:37.338 [MoveExecutor] INFO  [Car009] tick=239 预约成功(43,21)
+18:41:37.375 [MoveExecutor] INFO  [Car009] 移动到(43,21)，tick=239
+18:41:37.866 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=240
+18:41:37.870 [MoveExecutor] INFO  [Car009] tick=240 预约成功(43,22)
+18:41:37.885 [MoveExecutor] INFO  [Car009] 移动到(43,22)，tick=240
+18:41:38.387 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=241
+18:41:38.390 [MoveExecutor] INFO  [Car009] tick=241 预约成功(42,22)
+18:41:38.408 [MoveExecutor] INFO  [Car009] 移动到(42,22)，tick=241
+18:41:38.909 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=242
+18:41:38.912 [MoveExecutor] INFO  [Car009] tick=242 预约成功(41,22)
+18:41:38.926 [MoveExecutor] INFO  [Car009] 移动到(41,22)，tick=242
+18:41:39.424 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=243
+18:41:39.427 [MoveExecutor] INFO  [Car009] tick=243 预约成功(41,23)
+18:41:39.439 [MoveExecutor] INFO  [Car009] 移动到(41,23)，tick=243
+18:41:39.949 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=244
+18:41:39.952 [MoveExecutor] INFO  [Car009] tick=244 预约成功(40,23)
+18:41:39.966 [MoveExecutor] INFO  [Car009] 移动到(40,23)，tick=244
+18:41:40.464 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=245
+18:41:40.468 [MoveExecutor] INFO  [Car009] tick=245 预约成功(39,23)
+18:41:40.486 [MoveExecutor] INFO  [Car009] 移动到(39,23)，tick=245
+18:41:40.988 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=246
+18:41:40.991 [MoveExecutor] INFO  [Car009] tick=246 预约成功(38,23)
+18:41:41.005 [MoveExecutor] INFO  [Car009] 移动到(38,23)，tick=246
+18:41:41.504 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=247
+18:41:41.507 [MoveExecutor] INFO  [Car009] tick=247 预约成功(38,24)
+18:41:41.521 [MoveExecutor] INFO  [Car009] 移动到(38,24)，tick=247
+18:41:42.030 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=248
+18:41:42.034 [MoveExecutor] INFO  [Car009] tick=248 预约成功(38,25)
+18:41:42.049 [MoveExecutor] INFO  [Car009] 移动到(38,25)，tick=248
+18:41:42.551 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=249
+18:41:42.554 [MoveExecutor] INFO  [Car009] tick=249 预约成功(38,26)
+18:41:42.570 [MoveExecutor] INFO  [Car009] 移动到(38,26)，tick=249
+18:41:43.074 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=250
+18:41:43.079 [MoveExecutor] INFO  [Car009] tick=250 预约成功(38,27)
+18:41:43.097 [MoveExecutor] INFO  [Car009] 移动到(38,27)，tick=250
+18:41:43.589 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=251
+18:41:43.593 [MoveExecutor] INFO  [Car009] tick=251 预约成功(37,27)
+18:41:43.608 [MoveExecutor] INFO  [Car009] 移动到(37,27)，tick=251
+18:41:44.112 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=252
+18:41:44.116 [MoveExecutor] INFO  [Car009] tick=252 预约成功(37,28)
+18:41:44.131 [MoveExecutor] INFO  [Car009] 移动到(37,28)，tick=252
+18:41:44.631 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=253
+18:41:44.635 [MoveExecutor] INFO  [Car009] tick=253 预约成功(37,29)
+18:41:44.651 [MoveExecutor] INFO  [Car009] 移动到(37,29)，tick=253
+18:41:45.151 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=254
+18:41:45.154 [MoveExecutor] INFO  [Car009] tick=254 预约成功(37,30)
+18:41:45.165 [MoveExecutor] INFO  [Car009] 移动到(37,30)，tick=254
+18:41:45.670 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=255
+18:41:45.673 [MoveExecutor] INFO  [Car009] tick=255 预约成功(37,31)
+18:41:45.686 [MoveExecutor] INFO  [Car009] 移动到(37,31)，tick=255
+18:41:46.197 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=256
+18:41:46.200 [MoveExecutor] INFO  [Car009] tick=256 预约成功(36,31)
+18:41:46.214 [MoveExecutor] INFO  [Car009] 移动到(36,31)，tick=256
+18:41:46.725 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=257
+18:41:46.729 [MoveExecutor] INFO  [Car009] tick=257 预约成功(35,31)
+18:41:46.745 [MoveExecutor] INFO  [Car009] 移动到(35,31)，tick=257
+18:41:47.258 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=258
+18:41:47.262 [MoveExecutor] INFO  [Car009] tick=258 预约成功(34,31)
+18:41:47.289 [MoveExecutor] INFO  [Car009] 移动到(34,31)，tick=258
+18:41:47.773 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=259
+18:41:47.776 [MoveExecutor] INFO  [Car009] tick=259 预约成功(33,31)
+18:41:47.789 [MoveExecutor] INFO  [Car009] 移动到(33,31)，tick=259
+18:41:48.294 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=260
+18:41:48.297 [MoveExecutor] INFO  [Car009] tick=260 预约成功(32,31)
+18:41:48.312 [MoveExecutor] INFO  [Car009] 移动到(32,31)，tick=260
+18:41:48.816 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=261
+18:41:48.819 [MoveExecutor] INFO  [Car009] tick=261 预约成功(32,32)
+18:41:48.831 [MoveExecutor] INFO  [Car009] 移动到(32,32)，tick=261
+18:41:49.340 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=262
+18:41:49.343 [MoveExecutor] INFO  [Car009] tick=262 预约成功(32,33)
+18:41:49.356 [MoveExecutor] INFO  [Car009] 移动到(32,33)，tick=262
+18:41:49.862 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=263
+18:41:49.865 [MoveExecutor] INFO  [Car009] tick=263 预约成功(31,33)
+18:41:49.877 [MoveExecutor] INFO  [Car009] 移动到(31,33)，tick=263
+18:41:50.418 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=264
+18:41:50.421 [MoveExecutor] INFO  [Car009] tick=264 预约成功(31,34)
+18:41:50.435 [MoveExecutor] INFO  [Car009] 移动到(31,34)，tick=264
+18:41:50.933 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=265
+18:41:50.937 [MoveExecutor] INFO  [Car009] tick=265 预约成功(31,35)
+18:41:50.954 [MoveExecutor] INFO  [Car009] 移动到(31,35)，tick=265
+18:41:51.468 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=266
+18:41:51.471 [MoveExecutor] INFO  [Car009] tick=266 预约成功(31,36)
+18:41:51.491 [MoveExecutor] INFO  [Car009] 移动到(31,36)，tick=266
+18:41:51.996 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=267
+18:41:51.999 [MoveExecutor] INFO  [Car009] tick=267 预约成功(30,36)
+18:41:52.013 [MoveExecutor] INFO  [Car009] 移动到(30,36)，tick=267
+18:41:52.515 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=268
+18:41:52.518 [MoveExecutor] INFO  [Car009] tick=268 预约成功(30,37)
+18:41:52.531 [MoveExecutor] INFO  [Car009] 移动到(30,37)，tick=268
+18:41:53.032 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=269
+18:41:53.034 [MoveExecutor] INFO  [Car009] tick=269 预约成功(30,38)
+18:41:53.046 [MoveExecutor] INFO  [Car009] 移动到(30,38)，tick=269
+18:41:53.556 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=270
+18:41:53.558 [MoveExecutor] INFO  [Car009] tick=270 预约成功(29,38)
+18:41:53.573 [MoveExecutor] INFO  [Car009] 移动到(29,38)，tick=270
+18:41:54.077 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=271
+18:41:54.080 [MoveExecutor] INFO  [Car009] tick=271 预约成功(28,38)
+18:41:54.094 [MoveExecutor] INFO  [Car009] 移动到(28,38)，tick=271
+18:41:54.598 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=272
+18:41:54.601 [MoveExecutor] INFO  [Car009] tick=272 预约成功(28,39)
+18:41:54.615 [MoveExecutor] INFO  [Car009] 移动到(28,39)，tick=272
+18:41:55.129 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=273
+18:41:55.137 [MoveExecutor] INFO  [Car009] tick=273 预约成功(28,40)
+18:41:55.151 [MoveExecutor] INFO  [Car009] 移动到(28,40)，tick=273
+18:41:55.653 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=274
+18:41:55.655 [MoveExecutor] INFO  [Car009] tick=274 预约成功(27,40)
+18:41:55.668 [MoveExecutor] INFO  [Car009] 移动到(27,40)，tick=274
+18:41:56.173 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=275
+18:41:56.176 [MoveExecutor] INFO  [Car009] tick=275 预约成功(27,41)
+18:41:56.205 [MoveExecutor] INFO  [Car009] 移动到(27,41)，tick=275
+18:41:56.694 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=276
+18:41:56.697 [MoveExecutor] INFO  [Car009] tick=276 预约成功(26,41)
+18:41:56.713 [MoveExecutor] INFO  [Car009] 移动到(26,41)，tick=276
+18:41:57.218 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=277
+18:41:57.221 [MoveExecutor] INFO  [Car009] tick=277 预约成功(25,41)
+18:41:57.233 [MoveExecutor] INFO  [Car009] 移动到(25,41)，tick=277
+18:41:57.742 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=278
+18:41:57.744 [MoveExecutor] INFO  [Car009] tick=278 预约成功(24,41)
+18:41:57.757 [MoveExecutor] INFO  [Car009] 移动到(24,41)，tick=278
+18:41:58.262 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=279
+18:41:58.264 [MoveExecutor] INFO  [Car009] tick=279 预约成功(23,41)
+18:41:58.277 [MoveExecutor] INFO  [Car009] 移动到(23,41)，tick=279
+18:41:58.780 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=280
+18:41:58.782 [MoveExecutor] INFO  [Car009] tick=280 预约成功(22,41)
+18:41:58.795 [MoveExecutor] INFO  [Car009] 移动到(22,41)，tick=280
+18:41:59.300 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=281
+18:41:59.305 [MoveExecutor] INFO  [Car009] tick=281 预约成功(22,42)
+18:41:59.326 [MoveExecutor] INFO  [Car009] 移动到(22,42)，tick=281
+18:41:59.828 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=282
+18:41:59.831 [MoveExecutor] INFO  [Car009] tick=282 预约成功(21,42)
+18:41:59.850 [MoveExecutor] INFO  [Car009] 移动到(21,42)，tick=282
+18:42:00.350 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=283
+18:42:00.354 [MoveExecutor] INFO  [Car009] tick=283 预约成功(20,42)
+18:42:00.368 [MoveExecutor] INFO  [Car009] 移动到(20,42)，tick=283
+18:42:00.871 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=284
+18:42:00.874 [MoveExecutor] INFO  [Car009] tick=284 预约成功(20,43)
+18:42:00.888 [MoveExecutor] INFO  [Car009] 移动到(20,43)，tick=284
+18:42:01.391 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=285
+18:42:01.394 [MoveExecutor] INFO  [Car009] tick=285 预约成功(19,43)
+18:42:01.408 [MoveExecutor] INFO  [Car009] 移动到(19,43)，tick=285
+18:42:01.908 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=286
+18:42:01.911 [MoveExecutor] INFO  [Car009] tick=286 预约成功(19,44)
+18:42:01.923 [MoveExecutor] INFO  [Car009] 移动到(19,44)，tick=286
+18:42:02.429 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=287
+18:42:02.432 [MoveExecutor] INFO  [Car009] tick=287 预约成功(18,44)
+18:42:02.445 [MoveExecutor] INFO  [Car009] 移动到(18,44)，tick=287
+18:42:02.950 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=288
+18:42:02.953 [MoveExecutor] INFO  [Car009] tick=288 预约成功(17,44)
+18:42:02.966 [MoveExecutor] INFO  [Car009] 移动到(17,44)，tick=288
+18:42:03.478 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=289
+18:42:03.489 [MoveExecutor] INFO  [Car009] tick=289 预约成功(16,44)
+18:42:03.502 [MoveExecutor] INFO  [Car009] 移动到(16,44)，tick=289
+18:42:04.004 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=290
+18:42:04.007 [MoveExecutor] INFO  [Car009] tick=290 预约成功(15,44)
+18:42:04.018 [MoveExecutor] INFO  [Car009] 移动到(15,44)，tick=290
+18:42:04.538 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=291
+18:42:04.544 [MoveExecutor] INFO  [Car009] tick=291 预约成功(14,44)
+18:42:04.566 [MoveExecutor] INFO  [Car009] 移动到(14,44)，tick=291
+18:42:05.063 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=292
+18:42:05.065 [MoveExecutor] INFO  [Car009] tick=292 预约成功(14,45)
+18:42:05.077 [MoveExecutor] INFO  [Car009] 移动到(14,45)，tick=292
+18:42:05.585 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=293
+18:42:05.588 [MoveExecutor] INFO  [Car009] tick=293 预约成功(13,45)
+18:42:05.605 [MoveExecutor] INFO  [Car009] 移动到(13,45)，tick=293
+18:42:06.115 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=294
+18:42:06.119 [MoveExecutor] INFO  [Car009] tick=294 预约成功(12,45)
+18:42:06.136 [MoveExecutor] INFO  [Car009] 移动到(12,45)，tick=294
+18:42:06.630 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=295
+18:42:06.633 [MoveExecutor] INFO  [Car009] tick=295 预约成功(12,46)
+18:42:06.646 [MoveExecutor] INFO  [Car009] 移动到(12,46)，tick=295
+18:42:07.153 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=296
+18:42:07.157 [MoveExecutor] INFO  [Car009] tick=296 预约成功(11,46)
+18:42:07.171 [MoveExecutor] INFO  [Car009] 移动到(11,46)，tick=296
+18:42:07.671 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=297
+18:42:07.674 [MoveExecutor] INFO  [Car009] tick=297 预约成功(10,46)
+18:42:07.678 [MoveExecutor] WARN  [Car009] tick=297 目标(10,46)被占据 第1次，退回READY
+18:42:08.193 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=298
+18:42:08.195 [MoveExecutor] INFO  [Car009] tick=298 预约成功(10,46)
+18:42:08.219 [MoveExecutor] INFO  [Car009] 移动到(10,46)，tick=298
+18:42:08.716 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=299
+18:42:08.718 [MoveExecutor] INFO  [Car009] tick=299 预约成功(9,46)
+18:42:08.730 [MoveExecutor] INFO  [Car009] 移动到(9,46)，tick=299
+18:42:09.240 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=300
+18:42:09.244 [MoveExecutor] INFO  [Car009] tick=300 预约成功(8,46)
+18:42:09.260 [MoveExecutor] INFO  [Car009] 移动到(8,46)，tick=300
+18:42:09.756 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=301
+18:42:09.759 [MoveExecutor] INFO  [Car009] tick=301 预约成功(8,47)
+18:42:09.774 [MoveExecutor] INFO  [Car009] 移动到(8,47)，tick=301
+18:42:10.276 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=302
+18:42:10.278 [MoveExecutor] INFO  [Car009] tick=302 预约成功(7,47)
+18:42:10.290 [MoveExecutor] INFO  [Car009] 移动到(7,47)，tick=302
+18:42:10.802 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=303
+18:42:10.805 [MoveExecutor] INFO  [Car009] tick=303 预约成功(6,47)
+18:42:10.817 [MoveExecutor] INFO  [Car009] 移动到(6,47)，tick=303
+18:42:11.323 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=304
+18:42:11.326 [MoveExecutor] INFO  [Car009] tick=304 预约成功(5,47)
+18:42:11.339 [MoveExecutor] INFO  [Car009] 移动到(5,47)，tick=304
+18:42:11.849 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=305
+18:42:11.852 [MoveExecutor] INFO  [Car009] tick=305 预约成功(4,47)
+18:42:11.868 [MoveExecutor] INFO  [Car009] 移动到(4,47)，tick=305
+18:42:12.376 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=306
+18:42:12.378 [MoveExecutor] INFO  [Car009] tick=306 预约成功(3,47)
+18:42:12.390 [MoveExecutor] INFO  [Car009] 移动到(3,47)，tick=306
+18:42:12.906 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=307
+18:42:12.909 [MoveExecutor] INFO  [Car009] tick=307 预约成功(2,47)
+18:42:12.922 [MoveExecutor] INFO  [Car009] 移动到(2,47)，tick=307
+18:42:13.421 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=308
+18:42:13.425 [MoveExecutor] INFO  [Car009] tick=308 预约成功(1,47)
+18:42:13.440 [MoveExecutor] INFO  [Car009] 移动到(1,47)，tick=308
+18:42:13.942 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=309
+18:42:13.946 [MoveExecutor] INFO  [Car009] tick=309 预约成功(0,47)
+18:42:13.958 [MoveExecutor] INFO  [Car009] 移动到(0,47)，tick=309
+18:42:14.465 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=310
+18:42:14.469 [MoveExecutor] INFO  [Car009] tick=310 预约成功(0,48)
+18:42:14.480 [MoveExecutor] INFO  [Car009] 路径走完，最终位置(0,48)，tick=310
+18:42:16.622 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=314
+18:42:16.626 [MoveExecutor] INFO  [Car009] tick=314 预约成功(0,49)
+18:42:16.652 [MoveExecutor] INFO  [Car009] 移动到(0,49)，tick=314
+18:42:17.142 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=315
+18:42:17.147 [MoveExecutor] INFO  [Car009] tick=315 预约成功(0,50)
+18:42:17.164 [MoveExecutor] INFO  [Car009] 移动到(0,50)，tick=315
+18:42:17.670 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=316
+18:42:17.673 [MoveExecutor] INFO  [Car009] tick=316 预约成功(1,50)
+18:42:17.700 [MoveExecutor] INFO  [Car009] 移动到(1,50)，tick=316
+18:42:18.204 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=317
+18:42:18.207 [MoveExecutor] INFO  [Car009] tick=317 预约成功(2,50)
+18:42:18.221 [MoveExecutor] INFO  [Car009] 移动到(2,50)，tick=317
+18:42:18.733 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=318
+18:42:18.736 [MoveExecutor] INFO  [Car009] tick=318 预约成功(3,50)
+18:42:18.750 [MoveExecutor] INFO  [Car009] 移动到(3,50)，tick=318
+18:42:19.254 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=319
+18:42:19.258 [MoveExecutor] INFO  [Car009] tick=319 预约成功(3,49)
+18:42:19.270 [MoveExecutor] INFO  [Car009] 移动到(3,49)，tick=319
+18:42:19.777 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=320
+18:42:19.780 [MoveExecutor] INFO  [Car009] tick=320 预约成功(3,48)
+18:42:19.793 [MoveExecutor] INFO  [Car009] 移动到(3,48)，tick=320
+18:42:20.298 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=321
+18:42:20.302 [MoveExecutor] INFO  [Car009] tick=321 预约成功(3,47)
+18:42:20.316 [MoveExecutor] INFO  [Car009] 移动到(3,47)，tick=321
+18:42:20.816 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=322
+18:42:20.819 [MoveExecutor] INFO  [Car009] tick=322 预约成功(3,46)
+18:42:20.833 [MoveExecutor] INFO  [Car009] 移动到(3,46)，tick=322
+18:42:21.350 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=323
+18:42:21.354 [MoveExecutor] INFO  [Car009] tick=323 预约成功(3,45)
+18:42:21.371 [MoveExecutor] INFO  [Car009] 移动到(3,45)，tick=323
+18:42:21.872 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=324
+18:42:21.876 [MoveExecutor] INFO  [Car009] tick=324 预约成功(3,44)
+18:42:21.890 [MoveExecutor] INFO  [Car009] 移动到(3,44)，tick=324
+18:42:22.397 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=325
+18:42:22.408 [MoveExecutor] INFO  [Car009] tick=325 预约成功(3,43)
+18:42:22.422 [MoveExecutor] INFO  [Car009] 移动到(3,43)，tick=325
+18:42:22.918 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=326
+18:42:22.921 [MoveExecutor] INFO  [Car009] tick=326 预约成功(3,42)
+18:42:22.934 [MoveExecutor] INFO  [Car009] 移动到(3,42)，tick=326
+18:42:23.441 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=327
+18:42:23.443 [MoveExecutor] INFO  [Car009] tick=327 预约成功(3,41)
+18:42:23.456 [MoveExecutor] INFO  [Car009] 移动到(3,41)，tick=327
+18:42:23.960 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=328
+18:42:23.963 [MoveExecutor] INFO  [Car009] tick=328 预约成功(3,40)
+18:42:23.976 [MoveExecutor] INFO  [Car009] 移动到(3,40)，tick=328
+18:42:24.479 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=329
+18:42:24.482 [MoveExecutor] INFO  [Car009] tick=329 预约成功(3,39)
+18:42:24.495 [MoveExecutor] INFO  [Car009] 移动到(3,39)，tick=329
+18:42:25.000 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=330
+18:42:25.003 [MoveExecutor] INFO  [Car009] tick=330 预约成功(3,38)
+18:42:25.016 [MoveExecutor] INFO  [Car009] 移动到(3,38)，tick=330
+18:42:25.524 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=331
+18:42:25.527 [MoveExecutor] INFO  [Car009] tick=331 预约成功(3,37)
+18:42:25.538 [MoveExecutor] INFO  [Car009] 移动到(3,37)，tick=331
+18:42:26.046 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=332
+18:42:26.050 [MoveExecutor] INFO  [Car009] tick=332 预约成功(3,36)
+18:42:26.069 [MoveExecutor] INFO  [Car009] 移动到(3,36)，tick=332
+18:42:26.566 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=333
+18:42:26.568 [MoveExecutor] INFO  [Car009] tick=333 预约成功(3,35)
+18:42:26.580 [MoveExecutor] INFO  [Car009] 移动到(3,35)，tick=333
+18:42:27.088 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=334
+18:42:27.091 [MoveExecutor] INFO  [Car009] tick=334 预约成功(3,34)
+18:42:27.102 [MoveExecutor] INFO  [Car009] 移动到(3,34)，tick=334
+18:42:27.608 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=335
+18:42:27.611 [MoveExecutor] INFO  [Car009] tick=335 预约成功(4,34)
+18:42:27.623 [MoveExecutor] INFO  [Car009] 移动到(4,34)，tick=335
+18:42:28.129 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=336
+18:42:28.132 [MoveExecutor] INFO  [Car009] tick=336 预约成功(4,33)
+18:42:28.148 [MoveExecutor] INFO  [Car009] 移动到(4,33)，tick=336
+18:42:28.647 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=337
+18:42:28.650 [MoveExecutor] INFO  [Car009] tick=337 预约成功(4,32)
+18:42:28.664 [MoveExecutor] INFO  [Car009] 移动到(4,32)，tick=337
+18:42:29.169 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=338
+18:42:29.173 [MoveExecutor] INFO  [Car009] tick=338 预约成功(5,32)
+18:42:29.186 [MoveExecutor] INFO  [Car009] 移动到(5,32)，tick=338
+18:42:29.697 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=339
+18:42:29.700 [MoveExecutor] INFO  [Car009] tick=339 预约成功(6,32)
+18:42:29.713 [MoveExecutor] INFO  [Car009] 移动到(6,32)，tick=339
+18:42:30.214 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=340
+18:42:30.217 [MoveExecutor] INFO  [Car009] tick=340 预约成功(6,31)
+18:42:30.231 [MoveExecutor] INFO  [Car009] 移动到(6,31)，tick=340
+18:42:30.746 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=341
+18:42:30.750 [MoveExecutor] INFO  [Car009] tick=341 预约成功(6,30)
+18:42:30.774 [MoveExecutor] INFO  [Car009] 移动到(6,30)，tick=341
+18:42:31.272 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=342
+18:42:31.275 [MoveExecutor] INFO  [Car009] tick=342 预约成功(6,29)
+18:42:31.288 [MoveExecutor] INFO  [Car009] 移动到(6,29)，tick=342
+18:42:31.790 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=343
+18:42:31.793 [MoveExecutor] INFO  [Car009] tick=343 预约成功(6,28)
+18:42:31.806 [MoveExecutor] INFO  [Car009] 移动到(6,28)，tick=343
+18:42:32.316 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=344
+18:42:32.319 [MoveExecutor] INFO  [Car009] tick=344 预约成功(6,27)
+18:42:32.331 [MoveExecutor] INFO  [Car009] 移动到(6,27)，tick=344
+18:42:32.838 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=345
+18:42:32.840 [MoveExecutor] INFO  [Car009] tick=345 预约成功(6,26)
+18:42:32.855 [MoveExecutor] INFO  [Car009] 移动到(6,26)，tick=345
+18:42:33.358 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=346
+18:42:33.361 [MoveExecutor] INFO  [Car009] tick=346 预约成功(6,25)
+18:42:33.374 [MoveExecutor] INFO  [Car009] 移动到(6,25)，tick=346
+18:42:33.881 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=347
+18:42:33.883 [MoveExecutor] INFO  [Car009] tick=347 预约成功(6,24)
+18:42:33.897 [MoveExecutor] INFO  [Car009] 移动到(6,24)，tick=347
+18:42:34.417 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=348
+18:42:34.421 [MoveExecutor] INFO  [Car009] tick=348 预约成功(6,23)
+18:42:34.443 [MoveExecutor] INFO  [Car009] 移动到(6,23)，tick=348
+18:42:34.934 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=349
+18:42:34.937 [MoveExecutor] INFO  [Car009] tick=349 预约成功(6,22)
+18:42:34.948 [MoveExecutor] INFO  [Car009] 移动到(6,22)，tick=349
+18:42:35.473 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=350
+18:42:35.476 [MoveExecutor] INFO  [Car009] tick=350 预约成功(6,21)
+18:42:35.489 [MoveExecutor] INFO  [Car009] 移动到(6,21)，tick=350
+18:42:36.000 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=351
+18:42:36.003 [MoveExecutor] INFO  [Car009] tick=351 预约成功(7,21)
+18:42:36.015 [MoveExecutor] INFO  [Car009] 移动到(7,21)，tick=351
+18:42:36.542 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=352
+18:42:36.545 [MoveExecutor] INFO  [Car009] tick=352 预约成功(8,21)
+18:42:36.557 [MoveExecutor] INFO  [Car009] 移动到(8,21)，tick=352
+18:42:37.048 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=353
+18:42:37.051 [MoveExecutor] INFO  [Car009] tick=353 预约成功(9,21)
+18:42:37.064 [MoveExecutor] INFO  [Car009] 移动到(9,21)，tick=353
+18:42:37.581 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=354
+18:42:37.585 [MoveExecutor] INFO  [Car009] tick=354 预约成功(10,21)
+18:42:37.598 [MoveExecutor] INFO  [Car009] 移动到(10,21)，tick=354
+18:42:38.119 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=355
+18:42:38.122 [MoveExecutor] INFO  [Car009] tick=355 预约成功(10,20)
+18:42:38.137 [MoveExecutor] INFO  [Car009] 移动到(10,20)，tick=355
+18:42:38.653 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=356
+18:42:38.657 [MoveExecutor] INFO  [Car009] tick=356 预约成功(11,20)
+18:42:38.671 [MoveExecutor] INFO  [Car009] 移动到(11,20)，tick=356
+18:42:39.190 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=357
+18:42:39.196 [MoveExecutor] INFO  [Car009] tick=357 预约成功(12,20)
+18:42:39.210 [MoveExecutor] INFO  [Car009] 移动到(12,20)，tick=357
+18:42:39.717 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=358
+18:42:39.722 [MoveExecutor] INFO  [Car009] tick=358 预约成功(13,20)
+18:42:39.736 [MoveExecutor] INFO  [Car009] 移动到(13,20)，tick=358
+18:42:40.256 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=359
+18:42:40.267 [MoveExecutor] INFO  [Car009] tick=359 预约成功(14,20)
+18:42:40.287 [MoveExecutor] INFO  [Car009] 移动到(14,20)，tick=359
+18:42:40.782 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=360
+18:42:40.785 [MoveExecutor] INFO  [Car009] tick=360 预约成功(14,19)
+18:42:40.797 [MoveExecutor] INFO  [Car009] 移动到(14,19)，tick=360
+18:42:41.302 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=361
+18:42:41.306 [MoveExecutor] INFO  [Car009] tick=361 预约成功(15,19)
+18:42:41.322 [MoveExecutor] INFO  [Car009] 移动到(15,19)，tick=361
+18:42:41.827 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=362
+18:42:41.830 [MoveExecutor] INFO  [Car009] tick=362 预约成功(16,19)
+18:42:41.845 [MoveExecutor] INFO  [Car009] 移动到(16,19)，tick=362
+18:42:42.343 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=363
+18:42:42.346 [MoveExecutor] INFO  [Car009] tick=363 预约成功(17,19)
+18:42:42.360 [MoveExecutor] INFO  [Car009] 移动到(17,19)，tick=363
+18:42:42.876 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=364
+18:42:42.880 [MoveExecutor] INFO  [Car009] tick=364 预约成功(18,19)
+18:42:42.893 [MoveExecutor] INFO  [Car009] 移动到(18,19)，tick=364
+18:42:43.399 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=365
+18:42:43.404 [MoveExecutor] INFO  [Car009] tick=365 预约成功(19,19)
+18:42:43.425 [MoveExecutor] INFO  [Car009] 移动到(19,19)，tick=365
+18:42:43.936 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=366
+18:42:43.939 [MoveExecutor] INFO  [Car009] tick=366 预约成功(20,19)
+18:42:43.955 [MoveExecutor] INFO  [Car009] 移动到(20,19)，tick=366
+18:42:44.459 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=367
+18:42:44.464 [MoveExecutor] INFO  [Car009] tick=367 预约成功(21,19)
+18:42:44.480 [MoveExecutor] INFO  [Car009] 移动到(21,19)，tick=367
+18:42:44.983 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=368
+18:42:44.987 [MoveExecutor] INFO  [Car009] tick=368 预约成功(22,19)
+18:42:45.008 [MoveExecutor] INFO  [Car009] 移动到(22,19)，tick=368
+18:42:45.497 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=369
+18:42:45.500 [MoveExecutor] INFO  [Car009] tick=369 预约成功(23,19)
+18:42:45.512 [MoveExecutor] INFO  [Car009] 移动到(23,19)，tick=369
+18:42:46.024 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=370
+18:42:46.028 [MoveExecutor] INFO  [Car009] tick=370 预约成功(24,19)
+18:42:46.042 [MoveExecutor] INFO  [Car009] 移动到(24,19)，tick=370
+18:42:46.543 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=371
+18:42:46.545 [MoveExecutor] INFO  [Car009] tick=371 预约成功(25,19)
+18:42:46.560 [MoveExecutor] INFO  [Car009] 移动到(25,19)，tick=371
+18:42:47.067 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=372
+18:42:47.072 [MoveExecutor] INFO  [Car009] tick=372 预约成功(26,19)
+18:42:47.086 [MoveExecutor] INFO  [Car009] 移动到(26,19)，tick=372
+18:42:47.597 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=373
+18:42:47.601 [MoveExecutor] INFO  [Car009] tick=373 预约成功(27,19)
+18:42:47.622 [MoveExecutor] INFO  [Car009] 移动到(27,19)，tick=373
+18:42:48.122 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=374
+18:42:48.126 [MoveExecutor] INFO  [Car009] tick=374 预约成功(27,18)
+18:42:48.140 [MoveExecutor] INFO  [Car009] 移动到(27,18)，tick=374
+18:42:48.646 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=375
+18:42:48.649 [MoveExecutor] INFO  [Car009] tick=375 预约成功(27,17)
+18:42:48.663 [MoveExecutor] INFO  [Car009] 移动到(27,17)，tick=375
+18:42:49.166 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=376
+18:42:49.170 [MoveExecutor] INFO  [Car009] tick=376 预约成功(27,16)
+18:42:49.182 [MoveExecutor] INFO  [Car009] 移动到(27,16)，tick=376
+18:42:49.690 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=377
+18:42:49.693 [MoveExecutor] INFO  [Car009] tick=377 预约成功(28,16)
+18:42:49.710 [MoveExecutor] INFO  [Car009] 移动到(28,16)，tick=377
+18:42:50.210 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=378
+18:42:50.213 [MoveExecutor] INFO  [Car009] tick=378 预约成功(29,16)
+18:42:50.227 [MoveExecutor] INFO  [Car009] 移动到(29,16)，tick=378
+18:42:50.729 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=379
+18:42:50.734 [MoveExecutor] INFO  [Car009] tick=379 预约成功(30,16)
+18:42:50.749 [MoveExecutor] INFO  [Car009] 移动到(30,16)，tick=379
+18:42:51.250 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=380
+18:42:51.256 [MoveExecutor] INFO  [Car009] tick=380 预约成功(31,16)
+18:42:51.276 [MoveExecutor] INFO  [Car009] 移动到(31,16)，tick=380
+18:42:51.784 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=381
+18:42:51.786 [MoveExecutor] INFO  [Car009] tick=381 预约成功(32,16)
+18:42:51.801 [MoveExecutor] INFO  [Car009] 移动到(32,16)，tick=381
+18:42:52.320 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=382
+18:42:52.323 [MoveExecutor] INFO  [Car009] tick=382 预约成功(33,16)
+18:42:52.337 [MoveExecutor] INFO  [Car009] 移动到(33,16)，tick=382
+18:42:52.842 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=383
+18:42:52.845 [MoveExecutor] INFO  [Car009] tick=383 预约成功(34,16)
+18:42:52.859 [MoveExecutor] INFO  [Car009] 移动到(34,16)，tick=383
+18:42:53.363 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=384
+18:42:53.367 [MoveExecutor] INFO  [Car009] tick=384 预约成功(35,16)
+18:42:53.380 [MoveExecutor] INFO  [Car009] 移动到(35,16)，tick=384
+18:42:53.889 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=385
+18:42:53.892 [MoveExecutor] INFO  [Car009] tick=385 预约成功(35,15)
+18:42:53.904 [MoveExecutor] INFO  [Car009] 移动到(35,15)，tick=385
+18:42:54.413 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=386
+18:42:54.416 [MoveExecutor] INFO  [Car009] tick=386 预约成功(36,15)
+18:42:54.435 [MoveExecutor] INFO  [Car009] 移动到(36,15)，tick=386
+18:42:54.932 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=387
+18:42:54.935 [MoveExecutor] INFO  [Car009] tick=387 预约成功(37,15)
+18:42:54.949 [MoveExecutor] INFO  [Car009] 移动到(37,15)，tick=387
+18:42:55.452 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=388
+18:42:55.456 [MoveExecutor] INFO  [Car009] tick=388 预约成功(38,15)
+18:42:55.468 [MoveExecutor] INFO  [Car009] 移动到(38,15)，tick=388
+18:42:55.979 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=389
+18:42:55.983 [MoveExecutor] INFO  [Car009] tick=389 预约成功(39,15)
+18:42:55.998 [MoveExecutor] INFO  [Car009] 移动到(39,15)，tick=389
+18:42:56.495 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=390
+18:42:56.498 [MoveExecutor] INFO  [Car009] tick=390 预约成功(40,15)
+18:42:56.515 [MoveExecutor] INFO  [Car009] 移动到(40,15)，tick=390
+18:42:57.025 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=391
+18:42:57.029 [MoveExecutor] INFO  [Car009] tick=391 预约成功(41,15)
+18:42:57.042 [MoveExecutor] INFO  [Car009] 移动到(41,15)，tick=391
+18:42:57.551 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=392
+18:42:57.554 [MoveExecutor] INFO  [Car009] tick=392 预约成功(41,14)
+18:42:57.567 [MoveExecutor] INFO  [Car009] 移动到(41,14)，tick=392
+18:42:58.077 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=393
+18:42:58.080 [MoveExecutor] INFO  [Car009] tick=393 预约成功(42,14)
+18:42:58.094 [MoveExecutor] INFO  [Car009] 移动到(42,14)，tick=393
+18:42:58.593 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=394
+18:42:58.597 [MoveExecutor] INFO  [Car009] tick=394 预约成功(43,14)
+18:42:58.611 [MoveExecutor] INFO  [Car009] 移动到(43,14)，tick=394
+18:42:59.116 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=395
+18:42:59.120 [MoveExecutor] INFO  [Car009] tick=395 预约成功(44,14)
+18:42:59.138 [MoveExecutor] INFO  [Car009] 移动到(44,14)，tick=395
+18:42:59.633 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=396
+18:42:59.636 [MoveExecutor] INFO  [Car009] tick=396 预约成功(45,14)
+18:42:59.648 [MoveExecutor] INFO  [Car009] 移动到(45,14)，tick=396
+18:43:00.151 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=397
+18:43:00.154 [MoveExecutor] INFO  [Car009] tick=397 预约成功(46,14)
+18:43:00.168 [MoveExecutor] INFO  [Car009] 移动到(46,14)，tick=397
+18:43:00.677 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=398
+18:43:00.680 [MoveExecutor] INFO  [Car009] tick=398 预约成功(47,14)
+18:43:00.695 [MoveExecutor] INFO  [Car009] 移动到(47,14)，tick=398
+18:43:01.197 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=399
+18:43:01.201 [MoveExecutor] INFO  [Car009] tick=399 预约成功(47,13)
+18:43:01.216 [MoveExecutor] INFO  [Car009] 移动到(47,13)，tick=399
+18:43:01.714 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=400
+18:43:01.717 [MoveExecutor] INFO  [Car009] tick=400 预约成功(48,13)
+18:43:01.730 [MoveExecutor] INFO  [Car009] 移动到(48,13)，tick=400
+18:43:02.234 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=401
+18:43:02.236 [MoveExecutor] INFO  [Car009] tick=401 预约成功(48,12)
+18:43:02.249 [MoveExecutor] INFO  [Car009] 路径走完，最终位置(48,12)，tick=401
+18:43:04.860 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=406
+18:43:04.863 [MoveExecutor] INFO  [Car009] tick=406 预约成功(48,11)
+18:43:04.877 [MoveExecutor] INFO  [Car009] 移动到(48,11)，tick=406
+18:43:05.380 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=407
+18:43:05.384 [MoveExecutor] INFO  [Car009] tick=407 预约成功(47,11)
+18:43:05.396 [MoveExecutor] INFO  [Car009] 移动到(47,11)，tick=407
+18:43:05.899 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=408
+18:43:05.902 [MoveExecutor] INFO  [Car009] tick=408 预约成功(46,11)
+18:43:05.916 [MoveExecutor] INFO  [Car009] 移动到(46,11)，tick=408
+18:43:06.419 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=409
+18:43:06.422 [MoveExecutor] INFO  [Car009] tick=409 预约成功(45,11)
+18:43:06.435 [MoveExecutor] INFO  [Car009] 移动到(45,11)，tick=409
+18:43:06.943 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=410
+18:43:06.946 [MoveExecutor] INFO  [Car009] tick=410 预约成功(45,12)
+18:43:06.956 [MoveExecutor] INFO  [Car009] 移动到(45,12)，tick=410
+18:43:07.473 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=411
+18:43:07.476 [MoveExecutor] INFO  [Car009] tick=411 预约成功(45,13)
+18:43:07.489 [MoveExecutor] INFO  [Car009] 移动到(45,13)，tick=411
+18:43:08.011 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=412
+18:43:08.014 [MoveExecutor] INFO  [Car009] tick=412 预约成功(45,14)
+18:43:08.028 [MoveExecutor] INFO  [Car009] 移动到(45,14)，tick=412
+18:43:08.550 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=413
+18:43:08.554 [MoveExecutor] INFO  [Car009] tick=413 预约成功(45,15)
+18:43:08.570 [MoveExecutor] INFO  [Car009] 移动到(45,15)，tick=413
+18:43:09.083 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=414
+18:43:09.086 [MoveExecutor] INFO  [Car009] tick=414 预约成功(45,16)
+18:43:09.100 [MoveExecutor] INFO  [Car009] 移动到(45,16)，tick=414
+18:43:09.621 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=415
+18:43:09.624 [MoveExecutor] INFO  [Car009] tick=415 预约成功(45,17)
+18:43:09.638 [MoveExecutor] INFO  [Car009] 移动到(45,17)，tick=415
+18:43:10.163 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=416
+18:43:10.168 [MoveExecutor] INFO  [Car009] tick=416 预约成功(45,18)
+18:43:10.182 [MoveExecutor] INFO  [Car009] 移动到(45,18)，tick=416
+18:43:10.693 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=417
+18:43:10.696 [MoveExecutor] INFO  [Car009] tick=417 预约成功(45,19)
+18:43:10.711 [MoveExecutor] INFO  [Car009] 移动到(45,19)，tick=417
+18:43:11.223 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=418
+18:43:11.227 [MoveExecutor] INFO  [Car009] tick=418 预约成功(45,20)
+18:43:11.241 [MoveExecutor] INFO  [Car009] 移动到(45,20)，tick=418
+18:43:11.746 [CarAgent] DEBUG [Car009] 收到消息 type=TICK_MOVE, tick=419
+18:43:11.753 [MoveExecutor] INFO  [Car009] tick=419 预约成功(44,20)
+18:43:11.776 [MoveExecutor] INFO  [Car009] 移动到(44,20)，tick=419

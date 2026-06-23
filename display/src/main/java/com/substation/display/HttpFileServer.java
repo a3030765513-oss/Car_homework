@@ -33,7 +33,7 @@ final class HttpFileServer {
 
     private static final Set<String> WHITELIST = Set.of(
             "/login.html", "/index.html", "/dashboard.html", "/analysis.html",
-            "/css/", "/js/", "/api/auth/login", "/api/auth/register",
+            "/css/", "/js/",
             "/favicon.ico", "/");
 
     private final HttpServer server;

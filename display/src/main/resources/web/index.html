@@ -91,6 +91,7 @@
       <!-- 附加功能按钮 -->
       <div class="btn-group" style="margin-top:4px">
         <button id="btn-addcar" class="btn secondary" title="动态添加一台新车">+ 添加小车</button>
+        <button id="btn-unity" class="btn" title="切换到 Unity 3D 地图">&#x1F3AE; 3D视图</button>
       </div>
 
       <!-- 回放控制 -->
@@ -150,6 +151,10 @@
     <div class="map-stack" id="map-stack" style="display:none">
       <canvas id="map-canvas"></canvas>
       <canvas id="car-canvas"></canvas>
+    </div>
+    <div id="unity-shell" class="unity-shell" hidden>
+      <iframe id="unity-frame" class="unity-frame" src="unity/index.html" title="Unity 3D 地图" tabindex="-1"></iframe>
+      <div id="unity-input" class="unity-input-layer" title="左键拖移 | Shift+左键或右键旋转 | 滚轮缩放"></div>
     </div>
   </main>
 

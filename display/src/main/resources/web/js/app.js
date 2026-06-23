@@ -22,22 +22,25 @@
     MOVING: '移动中', BLOCKED: '受阻'
   };
 
-  // ══════════════ 每车固定颜色
-  var CAR_COLORS = ['#E74C3C','#3498DB','#2ECC71','#9B59B6','#F39C12','#1ABC9C','#E91E63','#00BCD4'];
+  // ══════════════ 每车固定颜色（与 Unity 3D 端一致：同色相、降饱和）
+  var CAR_COLORS = ['#A6665F','#58829E','#51936D','#785C83','#AF8B51','#44877A','#A85370','#408F99'];
 
   // ══════════════ 浅色主题颜色
   var LIGHT = {
-    gridBg: '#D0D0D0',
-    gridLine: '#94A3B8',
-    explored: '#B0C4DE',
-    obstacle: '#C0C0C0',
-    obstacleFill: '#A0A0A0',
-    sealedFill: '#E53935'
+    gridBg: '#8E8A82',
+    gridLine: '#7A7670',
+    explored: '#9EABB8',
+    obstacle: '#B85C38',
+    obstacleFill: '#B85C38',
+    sealedFill: '#A84840'
   };
 
   // ══════════════ DOM
   var $mapStack = document.getElementById('map-stack');
   var $welcome  = document.getElementById('welcome-overlay');
+  var $unityShell = document.getElementById('unity-shell');
+  var $unityFrame = document.getElementById('unity-frame');
+  var $unityInput = document.getElementById('unity-input');
   var mapCanvas = document.getElementById('map-canvas');
   var mapCtx    = mapCanvas.getContext('2d');
   var carCanvas = document.getElementById('car-canvas');
@@ -53,6 +56,7 @@
   var $btnStart = document.getElementById('btn-start');
   var $btnPause = document.getElementById('btn-pause');
   var $btnReset = document.getElementById('btn-reset');
+  var $btnUnity = document.getElementById('btn-unity');
   var $btnAddCar = document.getElementById('btn-addcar');
   var $btnReplay = document.getElementById('btn-replay');
   var $btnLive = document.getElementById('btn-live');
@@ -101,6 +105,11 @@
   var addCarPending = { active: false, carId: '', baselineCount: 0, timerId: null };
   var ADD_CAR_TIMEOUT_MS = 30000;
   var ADD_CAR_LABEL_DEFAULT = '+ 添加小车';
+  var is3DView = false;
+  var UNITY_BTN_2D = '\uD83D\uDCD0 2D视图';
+  var UNITY_BTN_3D = '\uD83C\uDFAE 3D视图';
+  var UNITY_BRIDGE = 'GameController';
+  var cameraDrag = { active: false, mode: 'none', lastX: 0, lastY: 0 };
 
   // ══════════════ WebSocket
   function connectWebSocket() {
@@ -305,7 +314,158 @@
     canvasReady = true;
     mapLayerDirty = true;
     if ($welcome) $welcome.style.display = 'none';
-    if ($mapStack) $mapStack.style.display = 'block';
+    if ($mapStack && !is3DView) $mapStack.style.display = 'block';
+    if (is3DView) syncUnityFrameSize();
+  }
+
+  function syncUnityFrameSize() {
+    if (!$unityShell) return;
+    var mapArea = document.querySelector('.map-area');
+    if (!mapArea) return;
+
+    var availW = mapArea.clientWidth - 20;
+    var availH = mapArea.clientHeight - 20;
+    var w = DEFAULT_GRID_W;
+    var h = DEFAULT_GRID_H;
+
+    if (liveData && liveData.taskConfig) {
+      w = parseInt(liveData.taskConfig.mapWidth, 10) || DEFAULT_GRID_W;
+      h = parseInt(liveData.taskConfig.mapHeight, 10) || DEFAULT_GRID_H;
+    } else if (replayData) {
+      w = replayData.mapWidth || DEFAULT_GRID_W;
+      h = replayData.mapHeight || DEFAULT_GRID_H;
+    }
+
+    var cellW = Math.floor(availW / w);
+    var cellH = Math.floor(availH / h);
+    var cellSize = Math.max(4, Math.min(cellW, cellH));
+    var widthPx = (w * cellSize) + 'px';
+    var heightPx = (h * cellSize) + 'px';
+    $unityShell.style.width = widthPx;
+    $unityShell.style.height = heightPx;
+  }
+
+  function resolveUnityInstance() {
+    try {
+      if (!$unityFrame || !$unityFrame.contentWindow) return null;
+      return $unityFrame.contentWindow.unityInstance || null;
+    } catch (ignored) {
+      return null;
+    }
+  }
+
+  function sendUnityCamera(method, payload) {
+    var instance = resolveUnityInstance();
+    if (!instance) return;
+    instance.SendMessage(UNITY_BRIDGE, method, payload || '');
+  }
+
+  function resolveCameraDragMode(button, shiftKey, altKey) {
+    if (button === 0 && !shiftKey && !altKey) return 'pan';
+    if (button === 0 && (shiftKey || altKey)) return 'orbit';
+    if (button === 1 || button === 2) return 'orbit';
+    return 'none';
+  }
+
+  function onUnityInputDown(event) {
+    if (!is3DView || !$unityShell || $unityShell.hidden) return;
+    event.preventDefault();
+    event.stopPropagation();
+    cameraDrag.mode = resolveCameraDragMode(event.button, event.shiftKey, event.altKey);
+    if (cameraDrag.mode === 'none') return;
+    cameraDrag.active = true;
+    cameraDrag.lastX = event.clientX;
+    cameraDrag.lastY = event.clientY;
+    if ($unityInput && $unityInput.setPointerCapture) {
+      $unityInput.setPointerCapture(event.pointerId);
+    }
+  }
+
+  function onUnityInputMove(event) {
+    if (!cameraDrag.active || cameraDrag.mode === 'none') return;
+    event.preventDefault();
+    var dx = event.clientX - cameraDrag.lastX;
+    var dy = event.clientY - cameraDrag.lastY;
+    cameraDrag.lastX = event.clientX;
+    cameraDrag.lastY = event.clientY;
+    if (dx === 0 && dy === 0) return;
+    var payload = dx + ',' + dy;
+    if (cameraDrag.mode === 'pan') sendUnityCamera('OnWebPan', payload);
+    else sendUnityCamera('OnWebOrbit', payload);
+  }
+
+  function onUnityInputUp(event) {
+    cameraDrag.active = false;
+    cameraDrag.mode = 'none';
+    if ($unityInput && $unityInput.hasPointerCapture && $unityInput.hasPointerCapture(event.pointerId)) {
+      $unityInput.releasePointerCapture(event.pointerId);
+    }
+  }
+
+  function onUnityInputWheel(event) {
+    if (!is3DView || !$unityShell || $unityShell.hidden) return;
+    event.preventDefault();
+    event.stopPropagation();
+    sendUnityCamera('OnWebZoom', String(-event.deltaY));
+  }
+
+  function initUnityCameraInput() {
+    if (!$unityInput) return;
+    $unityInput.addEventListener('pointerdown', onUnityInputDown, { passive: false });
+    $unityInput.addEventListener('contextmenu', function (event) { event.preventDefault(); });
+    document.addEventListener('pointermove', onUnityInputMove, { passive: false });
+    document.addEventListener('pointerup', onUnityInputUp);
+    document.addEventListener('pointercancel', onUnityInputUp);
+    if ($unityShell) {
+      $unityShell.addEventListener('wheel', onUnityInputWheel, { passive: false });
+    }
+  }
+
+  function show2DMapView() {
+    var mapArea = document.querySelector('.map-area');
+    if (mapArea) mapArea.classList.remove('map-area-unity');
+    cameraDrag.active = false;
+    cameraDrag.mode = 'none';
+    if ($unityShell) {
+      $unityShell.hidden = true;
+      $unityShell.classList.remove('active');
+    }
+    if ($mapStack) {
+      $mapStack.style.display = (canvasReady || liveData || replayData) ? 'block' : 'none';
+    }
+    if ($welcome && !canvasReady && !liveData && !replayData) {
+      $welcome.style.display = 'flex';
+    }
+  }
+
+  function show3DMapView() {
+    if ($welcome) $welcome.style.display = 'none';
+    if ($mapStack) $mapStack.style.display = 'none';
+    var mapArea = document.querySelector('.map-area');
+    if (mapArea) mapArea.classList.add('map-area-unity');
+    syncUnityFrameSize();
+    if ($unityShell) {
+      $unityShell.hidden = false;
+      $unityShell.classList.add('active');
+    }
+  }
+
+  function onUnityClick() {
+    is3DView = !is3DView;
+    if (is3DView) {
+      show3DMapView();
+      if ($btnUnity) $btnUnity.textContent = UNITY_BTN_2D;
+      return;
+    }
+    show2DMapView();
+    if ($btnUnity) $btnUnity.textContent = UNITY_BTN_3D;
+    if (!canvasReady && liveData) finalizeCanvas();
+  }
+
+  function exitUnityView() {
+    is3DView = false;
+    if ($btnUnity) $btnUnity.textContent = UNITY_BTN_3D;
+    show2DMapView();
   }
 
   // ══════════════ 地图层（静态：网格+探索+障碍物）
@@ -599,6 +759,7 @@
   }
 
   function resetCanvas() {
+    exitUnityView();
     if ($welcome) $welcome.style.display = 'flex';
     if ($mapStack) $mapStack.style.display = 'none';
     $carsPanel.innerHTML = '<div class="car-card placeholder"><p>等待车辆数据...</p></div>';
@@ -644,7 +805,8 @@
       canvasReady = true;
     }
     if ($welcome) $welcome.style.display = 'none';
-    if ($mapStack) $mapStack.style.display = 'block';
+    if ($mapStack && !is3DView) $mapStack.style.display = 'block';
+    if (is3DView) syncUnityFrameSize();
 
     // 车位置索引
     replayData._carIndex = {};
@@ -819,6 +981,7 @@
   $btnStart.addEventListener('click', onStartClick);
   $btnPause.addEventListener('click', onPauseClick);
   $btnReset.addEventListener('click', onResetClick);
+  if ($btnUnity) $btnUnity.addEventListener('click', onUnityClick);
   if ($btnAddCar) $btnAddCar.addEventListener('click', onAddCarClick);
   carCanvas.addEventListener('contextmenu', onCanvasContextMenu);
   $btnReplay.addEventListener('click', enterReplay);
@@ -843,6 +1006,7 @@
 
   // ══════════════ 启动
   resetCanvas();
+  initUnityCameraInput();
   if (window.Auth) {
     Auth.checkAuth().then(function (user) {
       if (!user || !user.success) return;
@@ -854,6 +1018,7 @@
     if (!liveData) return;
     canvasReady = false; finalizeCanvas();
     if (canvasReady) { mapLayerDirty = true; renderMapLayer(); renderCarsLayer(); }
+    if (is3DView) syncUnityFrameSize();
   });
   connectWebSocket();
 })();

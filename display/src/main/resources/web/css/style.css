@@ -103,6 +103,23 @@ body {
 #map-canvas { display:block; background:#D0D0D0; image-rendering:pixelated; }
 #car-canvas { position:absolute; top:0; left:0; display:block; image-rendering:pixelated; pointer-events:none; }
 
+.unity-shell {
+  display: none; position: relative; flex-shrink: 0;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08); border-radius: 4px; overflow: hidden;
+  overscroll-behavior: none; touch-action: none;
+}
+.unity-shell.active { display: block; }
+.unity-frame {
+  display: block; width: 100%; height: 100%; border: none; background: #231F20;
+  pointer-events: none;
+}
+.unity-input-layer {
+  position: absolute; inset: 0; z-index: 2;
+  touch-action: none; cursor: grab; background: transparent;
+}
+.unity-input-layer:active { cursor: grabbing; }
+.map-area.map-area-unity { overflow: hidden; }
+
 /* ════════════ Right Cars Panel ════════════ */
 .cars-panel {
   width:290px; min-width:290px; background:rgba(255,255,255,0.92); border-left:1px solid #E2E8F0;
