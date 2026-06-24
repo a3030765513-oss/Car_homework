@@ -77,7 +77,7 @@ public class StrategySupervisorMain {
                 handleSupervise(evaluator, overlapEvaluator, planner, carId, tick);
             } catch (Exception e) {
                 log.error("[StrategySupervisor] 监督失败 carId={}", carId, e);
-                sendResult(carId, false, 0, 0, tick);
+                sendResult(carId, false, 0, 0, tick, "异常: " + e.getMessage());
             }
         });
 
@@ -105,13 +105,13 @@ public class StrategySupervisorMain {
         Optional<CarStatus> statusOpt = bb.getCarStatus(carId);
 
         if (posOpt.isEmpty() || targetOpt.isEmpty() || currentRoute.isEmpty()) {
-            sendResult(carId, false, 0, 0, tick);
+            sendResult(carId, false, 0, 0, tick, "缺少位置/目标/路线");
             return;
         }
 
         if (statusOpt.isEmpty() || statusOpt.get() != CarStatus.READY) {
             log.info("[StrategySupervisor] carId={} 非 READY，跳过监督", carId);
-            sendResult(carId, false, 0, 0, tick);
+            sendResult(carId, false, 0, 0, tick, "非READY跳过");
             return;
         }
 
@@ -128,7 +128,7 @@ public class StrategySupervisorMain {
 
         RouteEvaluator.Result evalResult = evaluator.evaluate(bb, currentRoute);
         if (evalResult == RouteEvaluator.Result.SKIP) {
-            sendResult(carId, false, 0, 0, tick);
+            sendResult(carId, false, 0, 0, tick, "路线质量合格");
             return;
         }
 
@@ -136,11 +136,11 @@ public class StrategySupervisorMain {
         List<Point> newRoute = planner.plan(posOpt.get(), targetOpt.get(), bb, currentRoute);
 
         if (newRoute == currentRoute || newRoute.isEmpty()) {
-            sendResult(carId, false, 0, 0, tick);
+            sendResult(carId, false, 0, 0, tick, "优化无改善");
             return;
         }
         if (newRoute.size() > currentRoute.size() * MAX_PATH_LENGTH_RATIO) {
-            sendResult(carId, false, 0, 0, tick);
+            sendResult(carId, false, 0, 0, tick, "优化路径过长");
             return;
         }
 
@@ -148,12 +148,12 @@ public class StrategySupervisorMain {
         Point nowPos = bb.getCarPosition(carId).orElse(null);
         if (nowPos == null || !nowPos.equals(posOpt.get())) {
             log.info("[StrategySupervisor] carId={} 车已移动，放弃优化", carId);
-            sendResult(carId, false, 0, 0, tick);
+            sendResult(carId, false, 0, 0, tick, "车已移动");
             return;
         }
         bb.pushRoute(carId, newRoute);
         log.info("[StrategySupervisor] carId={} 路线已优化 (原{}步→新{}步) 静默替换", carId, currentRoute.size(), newRoute.size());
-        sendResult(carId, true, currentRoute.size(), newRoute.size(), tick);
+        sendResult(carId, true, currentRoute.size(), newRoute.size(), tick, "路线已优化");
     }
 
     private boolean shouldReassignForOverlap(String carId, int tick) {
@@ -172,12 +172,16 @@ public class StrategySupervisorMain {
             );
             String msg = MessageBuilder.build(MessageTypes.ROUTE_OPTIMIZED, tick, carId, data);
             messageBus.publish(QueueNames.CONTROLLER_CMD, msg);
+            log.info("[StrategySupervisor] carId={} 监督完成 tick={} 重合重分配", carId, tick);
         } catch (IOException e) {
             log.error("[StrategySupervisor] 发送重合重分配失败 carId={}", carId, e);
         }
     }
 
-    private void sendResult(String carId, boolean optimized, int oldLen, int newLen, int tick) {
+    private void sendResult(String carId, boolean optimized, int oldLen, int newLen,
+                            int tick, String reason) {
+        log.info("[StrategySupervisor] carId={} 监督完成 tick={} optimized={} reason={}",
+            carId, tick, optimized, reason);
         try {
             Map<String, Object> data = Map.of(
                 "carId", carId,

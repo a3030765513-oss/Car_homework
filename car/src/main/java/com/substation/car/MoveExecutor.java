@@ -81,6 +81,7 @@ public class MoveExecutor {
     private void doMove(int tick) {
         Optional<CarStatus> statusOpt = bb.getCarStatus(carId);
         if (statusOpt.isEmpty() || statusOpt.get() != CarStatus.READY) {
+            ackMoveDeferred(tick);
             return;
         }
         bb.setCarStatus(carId, CarStatus.MOVING);
@@ -89,6 +90,7 @@ public class MoveExecutor {
         if (nextStep.isEmpty()) {
             log.warn("[{}] 状态为 READY 但 RouteList 为空", carId);
             bb.setCarStatus(carId, CarStatus.IDLE);
+            ackMoveDeferred(tick);
             return;
         }
         Point nextPos = nextStep.get();

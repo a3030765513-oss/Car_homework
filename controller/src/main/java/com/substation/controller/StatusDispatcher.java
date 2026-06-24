@@ -30,12 +30,14 @@ public class StatusDispatcher {
     private static final int BLOCKED_TIMEOUT_MAX = 5;
     /** 移动卡住节拍数，连续MOVING超此时长则强制切为READY */
     private static final int MOVING_STUCK_TICKS = 2;
-    /** 等待路径超时节拍数，超时后移除锁并退回IDLE重新分配 */
-    private static final int WAITING_ROUTE_TIMEOUT_TICKS = 5;
+    /** 等待路径超时节拍数，超时后移除锁并退回IDLE重新分配（联调远程 MQ 需更宽裕） */
+    private static final int WAITING_ROUTE_TIMEOUT_TICKS = 15;
     /** 全局探索率超此阈值则跳过策略监督 */
     private static final int SUPERVISE_RATE_THRESHOLD = 85;
     /** 同一辆车两次监督间的最小tick间隔 */
     private static final int SUPERVISE_COOLDOWN_TICKS = 15;
+    /** 监督器无响应时放行 TICK_MOVE 的最大等待节拍数（500ms×12≈6s） */
+    private static final int SUPERVISION_TIMEOUT_TICKS = 12;
     /** 消息字段名：车辆ID */
     private static final String FIELD_CAR_ID = "carId";
     /** 消息字段名：路径起点 */
@@ -71,6 +73,8 @@ public class StatusDispatcher {
     private final Set<String> supervisedFlags;
     /** 已发监督请求、等待监督结果后再切 READY 的车辆 */
     private final Set<String> awaitingSupervision;
+    /** 各车发起监督请求时的 tick（用于超时放行） */
+    private final Map<String, Integer> supervisionRequestedTick;
     /** 已声明 MQ 队列的小车，避免重复 declare */
     private final Set<String> declaredCarQueues = ConcurrentHashMap.newKeySet();
     /** 随机数生成器 */
@@ -102,6 +106,7 @@ public class StatusDispatcher {
         this.lastSupervisedTick = new ConcurrentHashMap<>();
         this.supervisedFlags = ConcurrentHashMap.newKeySet();
         this.awaitingSupervision = ConcurrentHashMap.newKeySet();
+        this.supervisionRequestedTick = new ConcurrentHashMap<>();
         this.blockedTimeoutTicks = new ConcurrentHashMap<>();
     }
 
@@ -141,6 +146,8 @@ public class StatusDispatcher {
                 bb.setCarStatus(carId, CarStatus.READY);
             }
         }
+
+        expireSupervisionTimeouts();
 
         for (String carId : carIds) {
             bb.getCarStatus(carId).ifPresent(status -> {
@@ -201,6 +208,7 @@ public class StatusDispatcher {
             if (shouldSupervise(carId)) {
                 lastSupervisedTick.put(carId, tick);
                 awaitingSupervision.add(carId);
+                supervisionRequestedTick.put(carId, tick);
                 bb.setCarStatus(carId, CarStatus.READY);
                 sendSuperviseRoute(carId);
                 return;
@@ -216,6 +224,7 @@ public class StatusDispatcher {
     /** 监督器完成（含跳过优化），将车辆切为 READY */
     public void onRouteSupervisionFinished(String carId) {
         awaitingSupervision.remove(carId);
+        supervisionRequestedTick.remove(carId);
         if (!taskActive) {
             return;
         }
@@ -229,6 +238,7 @@ public class StatusDispatcher {
     /** 监督器判定路线重合，请求清除状态并重新分配目标 */
     public void onRouteOverlapReassign(String carId) {
         awaitingSupervision.remove(carId);
+        supervisionRequestedTick.remove(carId);
         bb.clearRoute(carId);
         bb.clearCarTarget(carId);
         bb.setCarStatus(carId, CarStatus.IDLE);
@@ -304,6 +314,7 @@ public class StatusDispatcher {
         lastSupervisedTick.clear();
         supervisedFlags.clear();
         awaitingSupervision.clear();
+        supervisionRequestedTick.clear();
         blockedTimeoutTicks.clear();
         declaredCarQueues.clear();
     }
@@ -361,19 +372,23 @@ public class StatusDispatcher {
     /** 转发重置消息并清理本地状态（待响应请求、移动计数、任务活跃标志） */
     public void forwardReset() {
         System.out.println("[Controller] forwardReset called, taskActive=" + taskActive + " tick=" + tick);
+        taskActive = false;
         if (scheduler != null) {
             scheduler.stop();
             scheduler.resetPaused();
             System.out.println("[Controller] scheduler stopped, paused=" + scheduler.isPaused());
         }
+        clearPendingState();
+        freezeAllCars();
+        purgeAllCarQueues();
+        bb.setTaskActive(false);
         try {
             String msg = MessageBuilder.build(MessageTypes.FORWARD_RESET, tick);
             bus.publish(QueueNames.TASK_CONFIG_CMD, msg);
+            System.out.println("[Controller] 已转发 FORWARD_RESET，小车队列已清空");
         } catch (Exception e) {
             e.printStackTrace();
         }
-        clearPendingState();
-        taskActive = false;
     }
 
     // ==================== private dispatch helpers ====================
@@ -581,12 +596,36 @@ public class StatusDispatcher {
         }
     }
 
+    /** 监督超时：远程 Redis/MQ 慢时避免永久挡住 TICK_MOVE */
+    private void expireSupervisionTimeouts() {
+        for (String carId : new HashSet<>(awaitingSupervision)) {
+            int requestedAt = supervisionRequestedTick.getOrDefault(carId, tick);
+            if (tick - requestedAt < SUPERVISION_TIMEOUT_TICKS) {
+                continue;
+            }
+            awaitingSupervision.remove(carId);
+            supervisionRequestedTick.remove(carId);
+            System.out.println("[Controller] 监督超时，放行 TICK_MOVE carId=" + carId + " tick=" + tick);
+        }
+    }
+
     private void freezeAllCars() {
         for (String carId : bb.discoverCarIds()) {
             bb.clearRoute(carId);
             bb.clearCarTarget(carId);
             bb.clearBlockedTick(carId);
             bb.setCarStatus(carId, CarStatus.IDLE);
+        }
+    }
+
+    /** 丢弃各车 MQ 队列中尚未消费的 TICK_MOVE，防止重置后仍移动 */
+    private void purgeAllCarQueues() {
+        for (String carId : bb.discoverCarIds()) {
+            try {
+                bus.purgeQueue(QueueNames.carQueue(carId));
+            } catch (IOException e) {
+                System.err.println("[Controller] 清空小车队列失败 " + carId + ": " + e.getMessage());
+            }
         }
     }
 

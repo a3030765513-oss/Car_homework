@@ -93,6 +93,8 @@
   var MAP_RENDER_INTERVAL = 3;
 
   var replay = { currentTick: 0, maxTick: 0, playing: false, timerId: null };
+  /** 重置后忽略迟到的 REFRESH_ALL，防止页面被旧状态覆盖 */
+  var liveUpdatesPaused = false;
   var replayData = null;
   var taskCompleteShown = false;
   var simulationFrozenTick = null;
@@ -164,6 +166,7 @@
       return;
     }
     if (msg.type === 'CAR_LAUNCH_FAILED') { failAddCarPending(msg.reason); return; }
+    if (liveUpdatesPaused && mode === 'live') return;
     liveData = normalizeMapPayload(msg);
     if (mode === 'live') {
       syncControlButtons(liveData);
@@ -806,6 +809,7 @@
       alert('WebSocket 未连接，请确认 Display 模块已启动并刷新页面');
       return;
     }
+    liveUpdatesPaused = false;
     startTimestamp = null;
     if (elapsedTimerId) stopElapsedTimer();
     taskCompleteShown = false;
@@ -839,6 +843,7 @@
   }
 
   function onResetClick() {
+    liveUpdatesPaused = true;
     sendCommand({ type: 'RESET' });
     clearMapCaches();
     canvasReady = false;
