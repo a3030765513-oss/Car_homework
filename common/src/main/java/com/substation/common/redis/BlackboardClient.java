@@ -197,6 +197,29 @@ public class BlackboardClient implements AutoCloseable {
         return bitmap;
     }
 
+    /** 将位图编码为 Redis SETBIT 兼容的字节数组（与 {@link #bytesToBitmap} 互逆） */
+    public static byte[] bitmapToBytes(boolean[][] bitmap, int mapWidth) {
+        int height = bitmap.length;
+        int byteLength = (mapWidth * height + 7) / 8;
+        byte[] bytes = new byte[byteLength];
+        for (int row = 0; row < height; row++) {
+            int rowWidth = Math.min(bitmap[row].length, mapWidth);
+            for (int col = 0; col < rowWidth; col++) {
+                if (!bitmap[row][col]) {
+                    continue;
+                }
+                setBitInByteArray(bytes, bitmapOffset(row, col, mapWidth));
+            }
+        }
+        return bytes;
+    }
+
+    private static void setBitInByteArray(byte[] bytes, long offset) {
+        int byteIdx = (int) (offset / 8);
+        int bitIdx = (int) (7 - (offset % 8));
+        bytes[byteIdx] |= (1 << bitIdx);
+    }
+
     /** 一次 Redis 读取构建探索位图（行=row，列=col） */
     public boolean[][] loadExploredBitmap() {
         int width = getMapWidth();
@@ -227,16 +250,7 @@ public class BlackboardClient implements AutoCloseable {
 
     /** 写入密封区位图（初始化地图时调用，mapWidth 必须与 TaskConfig 一致） */
     public void writeSealedBitmap(boolean[][] sealed, int mapWidth) {
-        try (Jedis jedis = pool.getResource()) {
-            jedis.del(KEY_MAP_SEALED);
-            for (int row = 0; row < sealed.length; row++) {
-                for (int col = 0; col < sealed[row].length; col++) {
-                    if (sealed[row][col]) {
-                        jedis.setbit(KEY_MAP_SEALED, bitmapOffset(row, col, mapWidth), true);
-                    }
-                }
-            }
-        }
+        writeBitmapKey(KEY_MAP_SEALED, sealed, mapWidth);
     }
 
     private void markCarPositionsOnMap(boolean[][] blocked) {
@@ -383,6 +397,19 @@ public class BlackboardClient implements AutoCloseable {
     public void setBlock(int row, int col, boolean blocked) {
         try (Jedis jedis = pool.getResource()) {
             jedis.setbit(KEY_MAP_BLOCK, bitmapOffset(row, col), blocked);
+        }
+    }
+
+    /** 整图写入障碍位图（初始化时批量写入，避免逐格 SETBIT 的网络往返） */
+    public void writeBlockBitmap(boolean[][] blocked, int mapWidth) {
+        writeBitmapKey(KEY_MAP_BLOCK, blocked, mapWidth);
+    }
+
+    private void writeBitmapKey(String key, boolean[][] bitmap, int mapWidth) {
+        byte[] payload = bitmapToBytes(bitmap, mapWidth);
+        try (Jedis jedis = pool.getResource()) {
+            jedis.del(key);
+            jedis.set(key.getBytes(), payload);
         }
     }
 

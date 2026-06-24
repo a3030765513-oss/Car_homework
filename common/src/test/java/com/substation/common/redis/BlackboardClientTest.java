@@ -55,7 +55,42 @@ class BlackboardClientTest {
     void mapBlockBit() {
         assertFalse(bb.isBlocked(3, 7));
         bb.setBlock(3, 7, true);
-        assertTrue(bb.isBlocked(3, 7));
+        assertTrue(bb.isBlocked(3,  7));
+    }
+
+    @Test
+    void writeBlockBitmap_roundTripsWithLoadObstacleBitmap() {
+        bb.initTaskConfig(Map.of("mapWidth", "20", "mapHeight", "15"));
+        boolean[][] blocked = new boolean[15][20];
+        blocked[3][7] = true;
+        blocked[10][18] = true;
+        blocked[14][0] = true;
+
+        bb.writeBlockBitmap(blocked, 20);
+
+        boolean[][] loaded = bb.loadObstacleBitmap();
+        assertTrue(loaded[3][7]);
+        assertTrue(loaded[10][18]);
+        assertTrue(loaded[14][0]);
+        assertFalse(loaded[0][0]);
+    }
+
+    @Test
+    void bitmapToBytes_matchesBytesToBitmap() {
+        int width = 17;
+        int height = 13;
+        boolean[][] source = new boolean[height][width];
+        source[2][5] = true;
+        source[12][16] = true;
+
+        byte[] encoded = BlackboardClient.bitmapToBytes(source, width);
+        boolean[][] decoded = BlackboardClient.bytesToBitmap(encoded, width, height);
+
+        for (int row = 0; row < height; row++) {
+            for (int col = 0; col < width; col++) {
+                assertEquals(source[row][col], decoded[row][col], "cell " + row + "," + col);
+            }
+        }
     }
 
     @Test

@@ -170,10 +170,10 @@ final class TaskInitializer {
             Point candidate = new Point(x, y);
             if (!exclude.contains(candidate) && !obstacles[y][x]) {
                 obstacles[y][x] = true;
-                bb.setBlock(y, x, true);
                 placed++;
             }
         }
+        bb.writeBlockBitmap(obstacles, width);
         return obstacles;
     }
 
