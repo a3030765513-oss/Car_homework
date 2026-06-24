@@ -102,6 +102,7 @@ public class CommandHandler {
                         int interval = data.getIntValue("interval");
                         if (interval >= MIN_TICK_INTERVAL_MS && interval <= MAX_TICK_INTERVAL_MS) {
                             scheduler.setInterval(interval);
+                            dispatcher.applyTickInterval(interval);
                         }
                     }
                 }

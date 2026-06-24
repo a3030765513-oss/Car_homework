@@ -178,6 +178,13 @@ class BlackboardClientTest {
     }
 
     @Test
+    void setTickInterval_updatesTaskConfig() {
+        bb.initTaskConfig(Map.of("tickInterval", "500"));
+        bb.setTickInterval(300);
+        assertEquals(300, bb.getTickInterval());
+    }
+
+    @Test
     void mapHeat() {
         bb.incrementMapHeat(5, 10);
         bb.incrementMapHeat(5, 10);
@@ -312,6 +319,20 @@ class BlackboardClientTest {
         assertTrue(loaded[10][50]);
         assertTrue(loaded[80][80]);
         assertFalse(loaded[0][0]);
+    }
+
+    @Test
+    void clearSimulationState_preservesSimRunStarter() {
+        bb.beginSimRun("admin");
+        bb.clearSimulationState();
+        assertEquals("admin", bb.getSimRunStartedBy().orElse(""));
+    }
+
+    @Test
+    void clearSimRunMetadata_removesSimRunStarter() {
+        bb.beginSimRun("admin");
+        bb.clearSimRunMetadata();
+        assertTrue(bb.getSimRunStartedBy().isEmpty());
     }
 
     @Test

@@ -91,7 +91,8 @@ class CommandHandlerTest {
     @Test
     void handleSetTickInterval() {
         StubTickScheduler scheduler = new StubTickScheduler();
-        CommandHandler handler = new CommandHandler(null, new StubStatusDispatcher(), scheduler);
+        StubStatusDispatcher dispatcher = new StubStatusDispatcher();
+        CommandHandler handler = new CommandHandler(null, dispatcher, scheduler);
 
         JSONObject data = new JSONObject();
         data.put("interval", 200);
@@ -99,6 +100,7 @@ class CommandHandlerTest {
         handler.handle(msg);
 
         assertEquals(200, scheduler.interval);
+        assertEquals(200, dispatcher.appliedTickInterval);
     }
 
     @Test
@@ -137,6 +139,8 @@ class CommandHandlerTest {
     }
 
     private static class StubStatusDispatcher extends StatusDispatcher {
+        volatile Integer appliedTickInterval;
+
         StubStatusDispatcher() {
             super(null, null);
         }
@@ -144,6 +148,11 @@ class CommandHandlerTest {
         @Override
         public boolean isActive() {
             return true;
+        }
+
+        @Override
+        public void applyTickInterval(int intervalMs) {
+            appliedTickInterval = intervalMs;
         }
     }
 

@@ -956,6 +956,13 @@ public class BlackboardClient implements AutoCloseable {
         }
     }
 
+    /** 更新节拍间隔（单字段写入，供多观众页同步滑块） */
+    public void setTickInterval(int intervalMs) {
+        try (Jedis jedis = pool.getResource()) {
+            jedis.hset(KEY_TASK_CONFIG, FIELD_TICK_INTERVAL, String.valueOf(intervalMs));
+        }
+    }
+
     // ==================== 位置预约锁（防多车重叠） ====================
 
     /** 尝试预约目标位置，防止两车同时移动到同一格 */
@@ -988,11 +995,17 @@ public class BlackboardClient implements AutoCloseable {
      * 清空仿真黑板数据，保留登录会话（auth:session:*）等非仿真键。
      * 替代 flushDB，避免点击「开始」后用户被登出。
      */
+    /** 清除本场仿真元数据（操作者、开始时间、归档标记），仅在用户点「重置」时调用。 */
+    public void clearSimRunMetadata() {
+        try (Jedis jedis = pool.getResource()) {
+            jedis.del(KEY_SIM_RUN_STARTED_AT, KEY_SIM_RUN_STARTED_BY, KEY_SIM_RUN_ARCHIVED);
+        }
+    }
+
     public void clearSimulationState() {
         try (Jedis jedis = pool.getResource()) {
             jedis.del(KEY_MAP_VIEW, KEY_MAP_BLOCK, KEY_MAP_SEALED,
-                KEY_MAP_HEAT, KEY_TASK_CONFIG, KEY_EXPLORATION_EVENTS,
-                KEY_SIM_RUN_STARTED_AT, KEY_SIM_RUN_STARTED_BY, KEY_SIM_RUN_ARCHIVED);
+                KEY_MAP_HEAT, KEY_TASK_CONFIG, KEY_EXPLORATION_EVENTS);
             for (String pattern : SIMULATION_SCAN_PATTERNS) {
                 deleteKeysMatching(jedis, pattern);
             }

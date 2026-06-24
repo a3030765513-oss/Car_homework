@@ -334,6 +334,12 @@ public class StatusDispatcher {
         }
     }
 
+    /** 持久化节拍间隔并立即广播，使所有观众页滑块同步 */
+    public void applyTickInterval(int intervalMs) {
+        bb.setTickInterval(intervalMs);
+        broadcastRefresh();
+    }
+
     /** 转发配置消息到任务配置队列 */
     public void forwardConfig(Map<String, Object> config) {
         try {

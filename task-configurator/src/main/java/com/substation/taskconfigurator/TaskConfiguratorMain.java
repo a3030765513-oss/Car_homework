@@ -92,6 +92,7 @@ public class TaskConfiguratorMain {
         selectiveClear();
 
         initializer.initialize(bb, config);
+        recordRunStarter(config);
         log.info("[TaskConfigurator] 初始化完成");
 
         String reply = MessageBuilder.build(MessageTypes.TASK_READY, tick);
@@ -105,7 +106,14 @@ public class TaskConfiguratorMain {
 
     private void handleReset(int tick) {
         selectiveClear();
+        bb.clearSimRunMetadata();
         log.info("[TaskConfigurator] 已重置黑板，等待用户点击开始");
+    }
+
+    private void recordRunStarter(Map<String, Object> config) {
+        Object operator = config.get("operator");
+        String startedBy = operator == null ? null : String.valueOf(operator);
+        bb.beginSimRun(startedBy);
     }
 
     private void selectiveClear() {

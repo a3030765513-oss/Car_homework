@@ -95,7 +95,10 @@
   var replay = { currentTick: 0, maxTick: 0, playing: false, timerId: null };
   var replayData = null;
   var taskCompleteShown = false;
+  var savePopupShown = false;
   var simulationFrozenTick = null;
+  var localRunStarter = '';
+  var lastKnownRunStartedBy = '';
 
   var elapsedTimerId = null;
   var startTimestamp = null;
@@ -109,6 +112,10 @@
   var ADD_CAR_TIMEOUT_MS = 30000;
   var ADD_CAR_LABEL_DEFAULT = '+ 添加小车';
   var WS_PORT = 8888;
+  var isEditingTickInterval = false;
+  var suppressTickIntervalSync = false;
+  var MIN_TICK_INTERVAL_MS = 100;
+  var MAX_TICK_INTERVAL_MS = 2000;
 
   // ══════════════ WebSocket
   function buildWebSocketUrl() {
@@ -166,6 +173,7 @@
     if (msg.type === 'CAR_LAUNCH_FAILED') { failAddCarPending(msg.reason); return; }
     liveData = normalizeMapPayload(msg);
     if (mode === 'live') {
+      syncTickIntervalFromTaskConfig(liveData.taskConfig);
       syncControlButtons(liveData);
       syncCarCountFromLiveData(liveData);
       finalizeCanvas();
@@ -637,9 +645,17 @@
     $btnPause.textContent = '⏯ 暂停';
   }
 
+  function resolveRunStarter(data) {
+    if (data && data.runStartedBy) {
+      lastKnownRunStartedBy = data.runStartedBy;
+    }
+    return (data && data.runStartedBy) || lastKnownRunStartedBy
+      || (data && data.taskConfig && data.taskConfig.operator) || '';
+  }
+
   function applyTaskCompleteUi(data, tick, rate) {
     $tick.textContent = '节拍: ' + tick;
-    var startedBy = data.runStartedBy || '';
+    var startedBy = resolveRunStarter(data);
     if (isCurrentRunOperator(startedBy)) {
       $rate.textContent = '探索率: ' + rate + '% ✓ 任务完成';
       $modeTag.textContent = '✓ 任务完成';
@@ -657,18 +673,37 @@
     $btnPause.textContent = '⏯ 暂停';
     if (!taskCompleteShown) {
       taskCompleteShown = true;
-      if (isCurrentRunOperator(startedBy)) {
-        var snapshot = Object.assign({}, data, { tick: tick, explorationRate: rate });
-        showSavePopup(snapshot, rate);
-      }
+    }
+    if (!savePopupShown && isCurrentRunOperator(startedBy)) {
+      savePopupShown = true;
+      var snapshot = Object.assign({}, data, { tick: tick, explorationRate: rate });
+      showSavePopup(snapshot, rate);
     }
   }
 
   function isCurrentRunOperator(runStartedBy) {
-    if (!runStartedBy) {
-      return false;
+    var starter = runStartedBy || localRunStarter || '';
+    if (!starter || starter === 'unknown') {
+      return localRunStarter !== '' && localRunStarter !== 'unknown'
+        && currentOperator === localRunStarter;
     }
-    return currentOperator === runStartedBy;
+    if (currentOperator === starter) {
+      return true;
+    }
+    return localRunStarter !== '' && localRunStarter === starter;
+  }
+
+  function refreshCurrentOperator(done) {
+    if (!window.Auth || typeof Auth.getCurrentUser !== 'function') {
+      done();
+      return;
+    }
+    Auth.getCurrentUser().then(function (user) {
+      if (user && user.success) {
+        currentOperator = user.username || user.displayName || 'unknown';
+      }
+      done();
+    }).catch(function () { done(); });
   }
 
   function updateGlobalInfo(data) {
@@ -819,16 +854,15 @@
     if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
   }
 
-  function onStartClick() {
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
-      alert('WebSocket 未连接，请确认 Display 模块已启动并刷新页面');
-      return;
-    }
+  function beginSimulationStart() {
     startTimestamp = null;
     if (elapsedTimerId) stopElapsedTimer();
     taskCompleteShown = false;
+    savePopupShown = false;
     simulationFrozenTick = null;
+    lastKnownRunStartedBy = '';
     lastSavedRunId = null;
+    localRunStarter = currentOperator !== 'unknown' ? currentOperator : '';
     canvasReady = false;
     clearMapCaches();
     mapLayerDirty = true;
@@ -850,6 +884,14 @@
     $btnPause.textContent = '⏯ 暂停';
   }
 
+  function onStartClick() {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      alert('WebSocket 未连接，请确认 Display 模块已启动并刷新页面');
+      return;
+    }
+    refreshCurrentOperator(beginSimulationStart);
+  }
+
   function onPauseClick() {
     sendCommand({ type: 'TOGGLE_PAUSE' });
     var label = $btnPause.textContent;
@@ -868,7 +910,10 @@
     $elapsed.textContent = '⏱ 00:00';
     if (mode === 'replay') exitReplay();
     taskCompleteShown = false;
+    savePopupShown = false;
     simulationFrozenTick = null;
+    localRunStarter = '';
+    lastKnownRunStartedBy = '';
     lastSavedRunId = null;
     if ($cfgCarCount) { $cfgCarCount.value = initialCarCount; }
     liveData = null;
@@ -908,7 +953,29 @@
 
   function onObstacleRatioInput() { $lblObstacleRatio.textContent = Math.round($cfgObstacleRatio.value * 100) + '%'; }
   function onTickIntervalInput() { $lblTickInterval.textContent = $cfgTickInterval.value + 'ms'; }
+
+  function syncTickIntervalFromTaskConfig(taskConfig) {
+    if (!taskConfig || !$cfgTickInterval || isEditingTickInterval) {
+      return;
+    }
+    var remote = parseInt(taskConfig.tickInterval, 10);
+    if (isNaN(remote) || remote < MIN_TICK_INTERVAL_MS || remote > MAX_TICK_INTERVAL_MS) {
+      return;
+    }
+    var local = parseInt($cfgTickInterval.value, 10);
+    if (local === remote) {
+      return;
+    }
+    suppressTickIntervalSync = true;
+    $cfgTickInterval.value = String(remote);
+    onTickIntervalInput();
+    suppressTickIntervalSync = false;
+  }
+
   function onTickIntervalChange() {
+    if (suppressTickIntervalSync) {
+      return;
+    }
     sendCommand({ type: 'SET_TICK_INTERVAL', data: { interval: parseInt($cfgTickInterval.value, 10) } });
   }
 
@@ -1195,6 +1262,10 @@
   $cfgObstacleRatio.addEventListener('input', onObstacleRatioInput);
   $cfgTickInterval.addEventListener('input', onTickIntervalInput);
   $cfgTickInterval.addEventListener('change', onTickIntervalChange);
+  $cfgTickInterval.addEventListener('pointerdown', function () { isEditingTickInterval = true; });
+  $cfgTickInterval.addEventListener('pointerup', function () { isEditingTickInterval = false; });
+  $cfgTickInterval.addEventListener('pointercancel', function () { isEditingTickInterval = false; });
+  $cfgTickInterval.addEventListener('blur', function () { isEditingTickInterval = false; });
   $replaySlider.addEventListener('input', onReplaySliderInput);
   $replayToggle.addEventListener('click', onReplayToggleClick);
   document.getElementById('replay-step-prev').addEventListener('click', onReplayStepPrev);
