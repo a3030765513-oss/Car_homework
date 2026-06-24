@@ -7,6 +7,8 @@ import com.substation.common.model.Point;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
+import redis.clients.jedis.Pipeline;
+import redis.clients.jedis.Response;
 import redis.clients.jedis.params.SetParams;
 
 import java.util.*;
@@ -164,6 +166,18 @@ public class BlackboardClient implements AutoCloseable {
         try (Jedis jedis = pool.getResource()) {
             byte[] bytes = jedis.get(KEY_MAP_SEALED.getBytes());
             return bytes != null ? bytes : new byte[0];
+        }
+    }
+
+    /** pipeline 批量读取三张地图位图，缩短 Display 快照与并发写入的竞态窗口 */
+    public MapBitmapSnapshot readMapBitmapSnapshot() {
+        try (Jedis jedis = pool.getResource()) {
+            Pipeline pipeline = jedis.pipelined();
+            Response<byte[]> mapView = pipeline.get(KEY_MAP_VIEW.getBytes());
+            Response<byte[]> mapBlock = pipeline.get(KEY_MAP_BLOCK.getBytes());
+            Response<byte[]> mapSealed = pipeline.get(KEY_MAP_SEALED.getBytes());
+            pipeline.sync();
+            return new MapBitmapSnapshot(mapView.get(), mapBlock.get(), mapSealed.get());
         }
     }
 

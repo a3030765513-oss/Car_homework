@@ -868,7 +868,11 @@
   }
 
   function resetCanvas() {
-    if (window.UnityView) UnityView.exit();
+    if (window.UnityView && UnityView.resetForNewSimulation) {
+      UnityView.resetForNewSimulation();
+    } else if (window.UnityView) {
+      UnityView.exit();
+    }
     if ($welcome) $welcome.style.display = 'flex';
     if ($mapStack) $mapStack.style.display = 'none';
     $carsPanel.innerHTML = '<div class="car-card placeholder"><p>等待车辆数据...</p></div>';

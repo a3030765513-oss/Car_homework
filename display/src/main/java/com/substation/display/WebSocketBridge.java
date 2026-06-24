@@ -8,6 +8,7 @@ import com.substation.common.model.Point;
 import com.substation.common.model.SimulationState;
 import com.substation.common.mq.QueueNames;
 import com.substation.common.redis.BlackboardClient;
+import com.substation.common.redis.MapBitmapSnapshot;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
@@ -323,14 +324,15 @@ public class WebSocketBridge extends WebSocketServer {
         Map<String, String> config = blackboard.getTaskConfig();
         int mapWidth = parseIntOrDefault(config.get("mapWidth"), DEFAULT_W);
         int mapHeight = parseIntOrDefault(config.get("mapHeight"), DEFAULT_H);
+        MapBitmapSnapshot mapBitmaps = blackboard.readMapBitmapSnapshot();
         List<SimulationState.CarInfo> cars = buildCarInfoList();
 
         if (mapWidth * mapHeight <= COMPACT_MAP_CELL_THRESHOLD) {
             SimulationState state = new SimulationState(
                 tick, explorationRate, config, cars,
-                readViewBitmap(mapWidth, mapHeight),
-                readBlockBitmap(mapWidth, mapHeight),
-                readSealedBitmap(mapWidth, mapHeight));
+                toBitmap(mapBitmaps.mapView(), mapWidth, mapHeight),
+                toBitmap(mapBitmaps.mapBlock(), mapWidth, mapHeight),
+                toBitmap(mapBitmaps.mapSealed(), mapWidth, mapHeight));
             return JSON.toJSONString(state);
         }
 
@@ -339,25 +341,14 @@ public class WebSocketBridge extends WebSocketServer {
         json.put("explorationRate", explorationRate);
         json.put("taskConfig", config);
         json.put("cars", cars);
-        json.put("mapViewB64", Base64.getEncoder().encodeToString(blackboard.getMapViewBytes()));
-        json.put("mapBlockB64", Base64.getEncoder().encodeToString(blackboard.getMapBlockBytes()));
-        json.put("mapSealedB64", Base64.getEncoder().encodeToString(blackboard.getMapSealedBytes()));
+        json.put("mapViewB64", Base64.getEncoder().encodeToString(mapBitmaps.mapView()));
+        json.put("mapBlockB64", Base64.getEncoder().encodeToString(mapBitmaps.mapBlock()));
+        json.put("mapSealedB64", Base64.getEncoder().encodeToString(mapBitmaps.mapSealed()));
         return json.toJSONString();
     }
 
-    private boolean[][] readViewBitmap(int mapWidth, int mapHeight) {
-        return BlackboardClient.bytesToBitmap(
-            blackboard.getMapViewBytes(), mapWidth, mapHeight);
-    }
-
-    private boolean[][] readBlockBitmap(int mapWidth, int mapHeight) {
-        return BlackboardClient.bytesToBitmap(
-            blackboard.getMapBlockBytes(), mapWidth, mapHeight);
-    }
-
-    private boolean[][] readSealedBitmap(int mapWidth, int mapHeight) {
-        return BlackboardClient.bytesToBitmap(
-            blackboard.getMapSealedBytes(), mapWidth, mapHeight);
+    private static boolean[][] toBitmap(byte[] bytes, int mapWidth, int mapHeight) {
+        return BlackboardClient.bytesToBitmap(bytes, mapWidth, mapHeight);
     }
 
     private List<SimulationState.CarInfo> buildCarInfoList() {

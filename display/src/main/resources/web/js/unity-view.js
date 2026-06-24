@@ -11,6 +11,7 @@
   var UNITY_BRIDGE = 'GameController';
 
   var is3DView = false;
+  var needsFrameReload = false;
   var cameraDrag = { active: false, mode: 'none', lastX: 0, lastY: 0 };
 
   var $unityShell = null;
@@ -57,6 +58,19 @@
     if (is3DView) {
       syncSize();
     }
+  }
+
+  function reloadFrame() {
+    if (!$unityFrame) return;
+    needsFrameReload = false;
+    $unityFrame.src = 'unity/index.html?_=' + Date.now();
+  }
+
+  /** 仿真重置：退出 3D 并重载 iframe，清掉 Unity 内缓存的探索格 */
+  function resetForNewSimulation() {
+    exit();
+    needsFrameReload = true;
+    reloadFrame();
   }
 
   function syncSize() {
@@ -185,6 +199,9 @@
   }
 
   function show3DMapView() {
+    if (needsFrameReload) {
+      reloadFrame();
+    }
     if ($welcome) $welcome.style.display = 'none';
     if ($mapStack) $mapStack.style.display = 'none';
     var mapArea = document.querySelector('.map-area');
@@ -222,6 +239,7 @@
     is3D: is3D,
     onCanvasReady: onCanvasReady,
     syncSize: syncSize,
-    exit: exit
+    exit: exit,
+    resetForNewSimulation: resetForNewSimulation
   };
 }(window));

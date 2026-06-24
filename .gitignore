@@ -15,3 +15,6 @@ Thumbs.db
 
 # Local deploy config (copy from deploy/infra.example.json)
 deploy/infra.local.json
+
+# Runtime logs (local only)
+logs/
