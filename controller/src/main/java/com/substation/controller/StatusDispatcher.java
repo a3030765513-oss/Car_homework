@@ -126,9 +126,6 @@ public class StatusDispatcher {
 
         ensureCarQueuesDeclared(carIds);
 
-        // 先广播当前帧（Display 读到车移动前的干净状态，避免跳格）
-        broadcastRefresh();
-
         for (String carId : carIds) {
             bb.getCarStatus(carId).ifPresent(status -> dispatchCar(carId, status));
         }
@@ -142,12 +139,9 @@ public class StatusDispatcher {
             }
         }
 
-        for (String carId : carIds) {
-            bb.getCarStatus(carId).ifPresent(status -> {
-                if (status == CarStatus.READY && !awaitingSupervision.contains(carId)) {
-                    sendTickMove(carId);
-                }
-            });
+        int movesSent = sendReadyCarMoves(carIds);
+        if (movesSent == 0) {
+            broadcastRefresh();
         }
 
         // 辅助判定：全部车 IDLE 且无待处理请求持续 N tick → 强制完成
@@ -247,12 +241,15 @@ public class StatusDispatcher {
         return last == null || tick - last >= SUPERVISE_COOLDOWN_TICKS;
     }
 
-    /** 车辆移动完成回调：清除 TICK_MOVE 发送标记，允许下一轮发送 */
+    /** 车辆移动完成回调：清除 TICK_MOVE 发送标记，全部车到位后刷新 Display */
     public void onMoveAcknowledged(String carId) {
         if (!taskActive) {
             return;
         }
         pendingMoveRequests.remove(carId);
+        if (pendingMoveRequests.isEmpty()) {
+            broadcastRefresh();
+        }
         tryCompleteIfExplorationDone();
     }
 
@@ -292,6 +289,7 @@ public class StatusDispatcher {
         if (bb.isExplorationComplete()) {
             System.err.println("[Controller] 警告: 黑板已无未探索格，请确认 TaskConfigurator 已启动并执行了 flushDB");
         }
+        broadcastRefresh();
     }
 
     /** 清空上一轮任务残留的待响应集合，避免阻塞 ASSIGN_TARGET / PLAN_ROUTE */
@@ -511,18 +509,41 @@ public class StatusDispatcher {
         }
     }
 
-    /** 发送移动指令给指定车辆 */
-    private void sendTickMove(String carId) {
+    /** 对本 tick 所有 READY 车辆发送移动指令，返回实际发出的数量 */
+    private int sendReadyCarMoves(Set<String> carIds) {
+        int sent = 0;
+        for (String carId : carIds) {
+            if (!isReadyToMove(carId)) {
+                continue;
+            }
+            if (trySendTickMove(carId)) {
+                sent++;
+            }
+        }
+        return sent;
+    }
+
+    private boolean isReadyToMove(String carId) {
+        if (awaitingSupervision.contains(carId)) {
+            return false;
+        }
+        return bb.getCarStatus(carId).orElse(CarStatus.IDLE) == CarStatus.READY;
+    }
+
+    /** 发送移动指令给指定车辆；已在等待 ack 时返回 false */
+    private boolean trySendTickMove(String carId) {
         if (!pendingMoveRequests.add(carId)) {
-            return;
+            return false;
         }
         Map<String, Object> data = Map.of(FIELD_TICK, tick);
         try {
             String msg = MessageBuilder.build(MessageTypes.TICK_MOVE, tick, carId, data);
             bus.publish(QueueNames.carQueue(carId), msg);
+            return true;
         } catch (Exception e) {
             pendingMoveRequests.remove(carId);
             e.printStackTrace();
+            return false;
         }
     }
 
