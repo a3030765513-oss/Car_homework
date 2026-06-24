@@ -18,7 +18,9 @@ public record SimulationState(
         /** 地图障碍物，true表示该格子不可通行 */
         boolean[][] mapBlock,
         /** 被障碍物包裹、小车不可达的格子，true表示密封区 */
-        boolean[][] mapSealed) {
+        boolean[][] mapSealed,
+        /** 本场仿真点「开始」的操作者用户名，观众端用于判断是否弹出保存框 */
+        String runStartedBy) {
 
     /** 单辆小车在某一tick的状态快照 */
     public record CarInfo(

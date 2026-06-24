@@ -320,19 +320,25 @@ public class WebSocketBridge extends WebSocketServer {
         return blackboard.getExplorationRate();
     }
 
+    private String resolveRunStartedBy() {
+        return blackboard.getSimRunStartedBy().orElse("");
+    }
+
     private String serializeState(int tick, int explorationRate) {
         Map<String, String> config = blackboard.getTaskConfig();
         int mapWidth = parseIntOrDefault(config.get("mapWidth"), DEFAULT_W);
         int mapHeight = parseIntOrDefault(config.get("mapHeight"), DEFAULT_H);
         MapBitmapSnapshot mapBitmaps = blackboard.readMapBitmapSnapshot();
         List<SimulationState.CarInfo> cars = buildCarInfoList();
+        String runStartedBy = resolveRunStartedBy();
 
         if (mapWidth * mapHeight <= COMPACT_MAP_CELL_THRESHOLD) {
             SimulationState state = new SimulationState(
                 tick, explorationRate, config, cars,
                 toBitmap(mapBitmaps.mapView(), mapWidth, mapHeight),
                 toBitmap(mapBitmaps.mapBlock(), mapWidth, mapHeight),
-                toBitmap(mapBitmaps.mapSealed(), mapWidth, mapHeight));
+                toBitmap(mapBitmaps.mapSealed(), mapWidth, mapHeight),
+                runStartedBy);
             return JSON.toJSONString(state);
         }
 
@@ -341,6 +347,7 @@ public class WebSocketBridge extends WebSocketServer {
         json.put("explorationRate", explorationRate);
         json.put("taskConfig", config);
         json.put("cars", cars);
+        json.put("runStartedBy", runStartedBy);
         json.put("mapViewB64", Base64.getEncoder().encodeToString(mapBitmaps.mapView()));
         json.put("mapBlockB64", Base64.getEncoder().encodeToString(mapBitmaps.mapBlock()));
         json.put("mapSealedB64", Base64.getEncoder().encodeToString(mapBitmaps.mapSealed()));

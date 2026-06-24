@@ -639,8 +639,17 @@
 
   function applyTaskCompleteUi(data, tick, rate) {
     $tick.textContent = '节拍: ' + tick;
-    $rate.textContent = '探索率: ' + rate + '% ✓ 任务完成';
-    $modeTag.textContent = '✓ 任务完成';
+    var startedBy = data.runStartedBy || '';
+    if (isCurrentRunOperator(startedBy)) {
+      $rate.textContent = '探索率: ' + rate + '% ✓ 任务完成';
+      $modeTag.textContent = '✓ 任务完成';
+    } else if (startedBy) {
+      $rate.textContent = '探索率: ' + rate + '% ✓ 任务完成（观看）';
+      $modeTag.textContent = '✓ 由 ' + startedBy + ' 发起的任务已完成';
+    } else {
+      $rate.textContent = '探索率: ' + rate + '% ✓ 任务完成';
+      $modeTag.textContent = '✓ 任务完成';
+    }
     $modeTag.hidden = false;
     if (elapsedTimerId) stopElapsedTimer();
     $btnStart.disabled = false;
@@ -648,9 +657,18 @@
     $btnPause.textContent = '⏯ 暂停';
     if (!taskCompleteShown) {
       taskCompleteShown = true;
-      var snapshot = Object.assign({}, data, { tick: tick, explorationRate: rate });
-      showSavePopup(snapshot, rate);
+      if (isCurrentRunOperator(startedBy)) {
+        var snapshot = Object.assign({}, data, { tick: tick, explorationRate: rate });
+        showSavePopup(snapshot, rate);
+      }
     }
+  }
+
+  function isCurrentRunOperator(runStartedBy) {
+    if (!runStartedBy) {
+      return false;
+    }
+    return currentOperator === runStartedBy;
   }
 
   function updateGlobalInfo(data) {
