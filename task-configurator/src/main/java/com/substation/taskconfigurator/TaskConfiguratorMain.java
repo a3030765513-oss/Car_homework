@@ -104,6 +104,7 @@ public class TaskConfiguratorMain {
     }
 
     private void handleReset(int tick) {
+        selectiveClear();
         log.info("[TaskConfigurator] 已重置黑板，等待用户点击开始");
     }
 
