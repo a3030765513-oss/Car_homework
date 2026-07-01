@@ -1,0 +1,20 @@
+# IDE
+.idea/
+*.iml
+
+# Build
+target/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp
+~$*.doc*
+*.tmp
+
+# Local deploy config (copy from deploy/infra.example.json)
+deploy/infra.local.json
+
+# Runtime logs (local only)
+logs/
